@@ -1,0 +1,6 @@
+# Test output: regenerated on every test run
+Artifacts/
+
+# Lua bytecode
+*.luac
+luac.out
