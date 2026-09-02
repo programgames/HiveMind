@@ -11,7 +11,7 @@ repos:
       - id: lua-syntax-check
         name: Lua Syntax Check
         entry: lua
-        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua", "test_genome.lua", "test_state.lua", "test_species.lua", "lib/genome.lua", "lib/state.lua", "lib/species.lua", "lib/jobs.lua", "test_jobs.lua", "lib/config.lua", "lib/transport.lua", "lib/machines.lua", "test_transport.lua", "test_machines.lua", "lib/data/mutations.lua", "tools/calibrate.lua", "tools/upload.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
+        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua", "test_genome.lua", "test_state.lua", "test_species.lua", "lib/genome.lua", "lib/state.lua", "lib/species.lua", "lib/jobs.lua", "test_jobs.lua", "lib/config.lua", "lib/transport.lua", "lib/machines.lua", "test_transport.lua", "test_machines.lua", "lib/library.lua", "test_library.lua", "lib/data/mutations.lua", "tools/calibrate.lua", "tools/upload.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
         language: system
         files: '\.lua$'
         pass_filenames: false
@@ -31,6 +31,14 @@ repos:
         args: ['test_machines.lua']
         language: system
         files: '(lib/machines|lib/config|lib/genome|test_machines)\.lua$'
+        pass_filenames: false
+
+      - id: hivemind-library-tests
+        name: HiveMind Gene Library Tests
+        entry: lua
+        args: ['test_library.lua']
+        language: system
+        files: '(lib/library|lib/genome|lib/state|test_library)\.lua$'
         pass_filenames: false
 
       # Job queue tests (resume, idempotence)

@@ -33,7 +33,15 @@ jobs:
       run: |
         echo "Checking Lua syntax..."
         lua -e "
-        local files = {'main.lua', 'test_planning.lua', 'test_example.lua'}
+        local files = {
+          'main.lua', 'test_planning.lua', 'test_example.lua',
+          'lib/config.lua', 'lib/genome.lua', 'lib/state.lua', 'lib/species.lua',
+          'lib/jobs.lua', 'lib/transport.lua', 'lib/machines.lua', 'lib/library.lua',
+          'lib/data/mutations.lua',
+          'test_genome.lua', 'test_state.lua', 'test_species.lua', 'test_jobs.lua',
+          'test_transport.lua', 'test_machines.lua', 'test_library.lua',
+          'tools/calibrate.lua', 'tools/upload.lua'
+        }
         local errors = false
         for _, file in ipairs(files) do
           local f = io.open(file, 'r')
@@ -82,6 +90,7 @@ jobs:
         lua test_jobs.lua
         lua test_transport.lua
         lua test_machines.lua
+        lua test_library.lua
         echo "::endgroup::"
 
     - name: Test Suite - Genome Layer
