@@ -16,6 +16,15 @@ repos:
         files: '\.lua$'
         pass_filenames: false
 
+      # Genome layer tests (NBT parsing, sample labels, profiles)
+      - id: hivemind-genome-tests
+        name: HiveMind Genome Tests
+        entry: lua
+        args: ['test_genome.lua']
+        language: system
+        files: '(lib/genome|test_genome)\.lua$'
+        pass_filenames: false
+
       # Item detection tests (labels, stack sizes, key codes)
       - id: hivemind-detection-tests
         name: HiveMind Item Detection Tests
