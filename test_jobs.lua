@@ -1,0 +1,285 @@
+-- HiveMind job queue tests
+--
+-- The property under test is not "it runs steps in order". It is that killing
+-- the computer at any moment and starting again produces the same outcome,
+-- without repeating an action that already took effect in the world.
+
+package.path = package.path .. ";./?.lua"
+
+local jobs = require("lib.jobs")
+
+local passed, failed = 0, 0
+
+local function check(description, actual, expected)
+    if actual == expected then
+        passed = passed + 1
+        print("  OK   " .. description)
+    else
+        failed = failed + 1
+        print("  FAIL " .. description
+            .. "\n         obtenu  : " .. tostring(actual)
+            .. "\n         attendu : " .. tostring(expected))
+    end
+end
+
+local function checkTruthy(description, value)
+    if value then
+        passed = passed + 1
+        print("  OK   " .. description)
+    else
+        failed = failed + 1
+        print("  FAIL " .. description)
+    end
+end
+
+local TMP = (os.getenv("TEMP") or os.getenv("TMPDIR") or "/tmp"):gsub("\\", "/")
+local PATH = TMP .. "/hivemind-jobs-test.lua"
+
+local tick = 0
+local function clock() tick = tick + 1 return tick end
+
+-- A simulated world the steps act on, so "already done" is a real question
+local world
+
+local function freshWorld()
+    world = {mutagen = 10, queenProduced = false, queenCollected = false, actions = {}}
+end
+
+local function record(action)
+    table.insert(world.actions, action)
+end
+
+--- A breeding job whose steps look at the world before acting
+local BREED = {
+    steps = {
+        {
+            name = "load-parents",
+            verify = function() return world.parentsLoaded end,
+            run = function()
+                record("load")
+                world.parentsLoaded = true
+                return jobs.DONE
+            end,
+        },
+        {
+            name = "produce-queen",
+            verify = function() return world.queenProduced end,
+            run = function()
+                if world.mutagen <= 0 then
+                    -- Not an error: the machine simply cannot work right now
+                    return jobs.RETRY, "reservoir de mutagene vide"
+                end
+                record("produce")
+                world.mutagen = world.mutagen - 1
+                world.queenProduced = true
+                return jobs.DONE
+            end,
+        },
+        {
+            name = "collect",
+            verify = function() return world.queenCollected end,
+            run = function()
+                record("collect")
+                world.queenCollected = true
+                return jobs.DONE
+            end,
+        },
+    },
+}
+
+local FLAKY_ATTEMPTS = 0
+local FLAKY = {
+    steps = {{
+        name = "always-fails",
+        run = function()
+            FLAKY_ATTEMPTS = FLAKY_ATTEMPTS + 1
+            return jobs.FAILED, "panne simulee"
+        end,
+    }},
+}
+
+local THROWING = {
+    steps = {{
+        name = "throws",
+        run = function() error("exception dans l'etape") end,
+    }},
+}
+
+local function newQueue()
+    return jobs.new({
+        path = PATH,
+        handlers = {breed = BREED, flaky = FLAKY, throwing = THROWING},
+        clock = clock,
+    })
+end
+
+os.remove(PATH)
+freshWorld()
+
+print("=== Job queue tests ===")
+print("")
+print("-- soumission --")
+
+local queue = newQueue()
+local id, err = queue:submit("breed", {target = "Imperial"})
+check("tache creee (" .. tostring(err) .. ")", id, 1)
+check("type inconnu refuse", (queue:submit("inexistant")), nil)
+check("statut initial", queue:get(id).status, jobs.PENDING)
+check("parametres conserves", queue:get(id).params.target, "Imperial")
+
+print("")
+print("-- execution complete --")
+
+local report = queue:run({})
+check("3 etapes executees", report.steps, 3)
+check("1 tache terminee", report.completed, 1)
+check("statut final", queue:get(id).status, jobs.COMPLETE)
+check("actions dans l'ordre", table.concat(world.actions, ","), "load,produce,collect")
+
+print("")
+print("-- reprise apres crash --")
+
+-- Kill everything mid-job: the world keeps the effects, the queue is reloaded
+os.remove(PATH)
+freshWorld()
+
+local crashing = newQueue()
+crashing:submit("breed", {target = "Imperial"})
+crashing:step(crashing:pending()[1], {})   -- load-parents
+crashing:step(crashing:pending()[1], {})   -- produce-queen
+
+check("deux etapes faites avant le crash", table.concat(world.actions, ","), "load,produce")
+
+-- New process: nothing in memory, everything reread from disk
+local resumed = newQueue()
+local resumed_job = resumed:pending()[1]
+checkTruthy("la tache interrompue est retrouvee", resumed_job)
+check("reprise a la bonne etape", resumed_job.step, 3)
+
+resumed:run({})
+check("la tache s'acheve", resumed:get(1).status, jobs.COMPLETE)
+check("aucune action rejouee", table.concat(world.actions, ","), "load,produce,collect")
+
+print("")
+print("-- crash entre l'action et son enregistrement --")
+
+-- The nastiest case: the machine acted, the queue never got to write it down.
+-- On resume the step number is stale, and only verify() can save us.
+os.remove(PATH)
+freshWorld()
+
+local stale = newQueue()
+stale:submit("breed", {})
+stale:step(stale:pending()[1], {})     -- load-parents recorded
+
+-- The world moves on without the queue knowing
+world.queenProduced = true
+record("produce")
+
+local recovered = newQueue()
+recovered:run({})
+
+check("l'etape deja accomplie est sautee", table.concat(world.actions, ","),
+      "load,produce,collect")
+check("le mutagene n'a pas ete consomme deux fois", world.mutagen, 10)
+check("tache terminee malgre l'ecart", recovered:get(1).status, jobs.COMPLETE)
+
+print("")
+print("-- attente (RETRY) --")
+
+os.remove(PATH)
+freshWorld()
+world.mutagen = 0   -- machine unable to work
+
+local waiting = newQueue()
+waiting:submit("breed", {})
+local waiting_report = waiting:run({})
+
+check("la file signale un blocage", waiting_report.blocked, true)
+check("une attente comptee", waiting_report.retried, 1)
+check("la tache reste en attente, pas en erreur", waiting:get(1).status, jobs.PENDING)
+check("raison conservee", waiting:get(1).error, "reservoir de mutagene vide")
+check("l'etape n'a pas avance", waiting:get(1).step, 2)
+
+-- Supply the machine and come back: it picks up where it stopped
+world.mutagen = 5
+waiting:run({})
+check("reprise apres approvisionnement", waiting:get(1).status, jobs.COMPLETE)
+check("aucune etape rejouee", table.concat(world.actions, ","), "load,produce,collect")
+
+print("")
+print("-- echec repete --")
+
+os.remove(PATH)
+FLAKY_ATTEMPTS = 0
+
+local failing = jobs.new({path = PATH, handlers = {flaky = FLAKY}, clock = clock,
+                          maxAttempts = 3})
+failing:submit("flaky", {})
+
+for _ = 1, 5 do failing:run({}) end
+
+check("statut d'erreur apres 3 tentatives", failing:get(1).status, jobs.ERROR)
+check("tentatives plafonnees", FLAKY_ATTEMPTS, 3)
+check("raison conservee", failing:get(1).error, "panne simulee")
+
+print("")
+print("-- une exception dans une etape ne tue pas la file --")
+
+os.remove(PATH)
+local throwing = jobs.new({path = PATH, handlers = {throwing = THROWING}, clock = clock,
+                           maxAttempts = 1})
+throwing:submit("throwing", {})
+local throwing_report = throwing:run({})
+
+check("l'exception devient un echec", throwing_report.failed, 1)
+check("tache en erreur", throwing:get(1).status, jobs.ERROR)
+checkTruthy("message d'exception conserve",
+            throwing:get(1).error and throwing:get(1).error:find("exception"))
+
+print("")
+print("-- annulation et nettoyage --")
+
+os.remove(PATH)
+freshWorld()
+
+local managed = newQueue()
+local a = managed:submit("breed", {})
+local b = managed:submit("breed", {})
+
+checkTruthy("annulation reussie", managed:cancel(b))
+check("statut annule", managed:get(b).status, jobs.CANCELLED)
+check("une seule tache en attente", #managed:pending(), 1)
+check("annulation d'une tache absente", (managed:cancel(999)), false)
+
+managed:run({})
+check("la tache restante s'execute", managed:get(a).status, jobs.COMPLETE)
+check("2 taches purgees", managed:prune(), 2)
+check("file vide apres purge", #managed:list(), 0)
+
+print("")
+print("-- persistance de la file --")
+
+os.remove(PATH)
+freshWorld()
+
+local persisted = newQueue()
+persisted:submit("breed", {target = "Wintry"})
+
+local reread = newQueue()
+check("tache relue depuis le disque", reread:get(1).params.target, "Wintry")
+check("compteur d'id conserve", reread:submit("breed", {}), 2)
+
+local lines = reread:describe()
+check("une ligne par tache", #lines, 2)
+checkTruthy("la ligne nomme le type", lines[1]:find("breed", 1, true))
+
+os.remove(PATH)
+
+print("")
+print("=== Resultats ===")
+print("Reussis : " .. passed)
+print("Echoues : " .. failed)
+print(failed == 0 and "Tous les tests de la file passent." or "Des tests echouent.")
+
+os.exit(failed == 0 and 0 or 1)
