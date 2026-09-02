@@ -73,6 +73,14 @@ jobs:
         mkdir -p Artifacts
         echo "Test environment ready"
 
+    - name: Test Suite - Foundation Modules
+      id: foundation-tests
+      run: |
+        echo "::group::Foundation Tests"
+        lua test_state.lua
+        lua test_species.lua
+        echo "::endgroup::"
+
     - name: Test Suite - Genome Layer
       id: genome-tests
       run: |

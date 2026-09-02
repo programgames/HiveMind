@@ -11,9 +11,27 @@ repos:
       - id: lua-syntax-check
         name: Lua Syntax Check
         entry: lua
-        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
+        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua", "test_genome.lua", "test_state.lua", "test_species.lua", "lib/genome.lua", "lib/state.lua", "lib/species.lua", "lib/data/mutations.lua", "tools/calibrate.lua", "tools/upload.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
         language: system
         files: '\.lua$'
+        pass_filenames: false
+
+      # Persistence layer tests
+      - id: hivemind-state-tests
+        name: HiveMind State Tests
+        entry: lua
+        args: ['test_state.lua']
+        language: system
+        files: '(lib/state|test_state)\.lua$'
+        pass_filenames: false
+
+      # Species registry tests
+      - id: hivemind-species-tests
+        name: HiveMind Species Tests
+        entry: lua
+        args: ['test_species.lua']
+        language: system
+        files: '(lib/species|lib/state|test_species)\.lua$'
         pass_filenames: false
 
       # Genome layer tests (NBT parsing, sample labels, profiles)

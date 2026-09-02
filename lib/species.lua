@@ -1,0 +1,293 @@
+-- HiveMind species registry
+--
+-- Where the program learns which bees exist and how to breed them.
+--
+-- The source of truth is the game itself: the Industrial Apiary driver exposes
+-- listAllSpecies() and getBeeParents(), which the hardcoded table never could
+-- match. Calibration measured 329 live species against 304 hardcoded ones, and
+-- the live data carries two things the table has no way to express:
+--
+--   * several mutation paths for one species (getBeeParents returns an array),
+--   * mutation chance and special conditions, e.g. "Requires blockNickel as a
+--     foundation." - plan a step that ignores those and the Mutatron simply
+--     never produces anything, with no way to explain why.
+--
+-- Queries are cached on disk. Pulling the parents of 329 species one by one is
+-- far too slow to redo at every boot, so parents are fetched lazily and kept.
+-- With no apiary reachable the registry degrades to the bundled table, clearly
+-- flagged as such, so planning still works offline and in tests.
+
+local state = require("lib.state")
+
+local species = {}
+
+local CACHE_VERSION = 1
+
+local Registry = {}
+Registry.__index = Registry
+
+--- Create a registry
+--- @param options table|nil {apiary, cachePath, fallback}
+---   apiary    component exposing listAllSpecies/getBeeParents (nil = offline)
+---   cachePath where to persist what was learned
+---   fallback  bundled mutations table, keyed by display name
+--- @return table registry
+function species.new(options)
+    options = options or {}
+
+    return setmetatable({
+        apiary = options.apiary,
+        cachePath = options.cachePath or state.pathFor("species"),
+        fallback = options.fallback,
+        cache = {
+            version = CACHE_VERSION,
+            species = {},   -- uid -> {uid, name}
+            parents = {},   -- uid -> array of mutation entries
+        },
+        loaded = false,
+    }, Registry)
+end
+
+--- Call a component method without ever letting it abort the caller
+--- @param component table|nil
+--- @param method string
+--- @return boolean ok
+--- @return any result
+local function invoke(component, method, ...)
+    if not component then return false, "aucun composant apiary" end
+
+    local target = component[method]
+    if target == nil then return false, "methode " .. method .. " absente" end
+
+    return pcall(target, ...)
+end
+
+--- Load the disk cache, once
+--- @return boolean ok
+--- @return string|nil error
+function Registry:load()
+    if self.loaded then return true end
+
+    local cached, err = state.load(self.cachePath, nil)
+
+    if err then
+        -- A corrupted cache is rebuildable; say so and carry on empty rather
+        -- than refusing to start.
+        self.loaded = true
+        return false, "cache illisible, il sera reconstruit: " .. err
+    end
+
+    if cached and cached.version == CACHE_VERSION then
+        self.cache = cached
+        self.cache.species = self.cache.species or {}
+        self.cache.parents = self.cache.parents or {}
+    end
+
+    self.loaded = true
+    return true
+end
+
+--- Persist what has been learned
+--- @return boolean ok
+--- @return string|nil error
+function Registry:save()
+    return state.save(self.cachePath, self.cache)
+end
+
+--- Pull the full species list from the game
+--- @return number|nil count Species learned
+--- @return string|nil error
+function Registry:refresh()
+    self:load()
+
+    local ok, result = invoke(self.apiary, "listAllSpecies")
+    if not ok then return nil, tostring(result) end
+    if type(result) ~= "table" then return nil, "listAllSpecies n'a pas rendu de table" end
+
+    local learned = {}
+    local count = 0
+
+    for _, entry in pairs(result) do
+        if type(entry) == "table" and entry.uid then
+            -- Index on uid: some names are unresolved lang keys such as
+            -- "gendustry.bees.species.NerdySpider", uid never is.
+            learned[entry.uid] = {uid = entry.uid, name = entry.name or entry.uid}
+            count = count + 1
+        end
+    end
+
+    if count == 0 then return nil, "listAllSpecies n'a rendu aucune espece exploitable" end
+
+    self.cache.species = learned
+    self.cache.source = "live"
+    return count
+end
+
+--- Every known species
+--- Falls back to the bundled table when the game was never reached.
+--- @return table<string, {uid: string, name: string}> byUid
+--- @return string source "live", "cache" or "fallback"
+function Registry:list()
+    self:load()
+
+    if next(self.cache.species) then
+        return self.cache.species, self.cache.source or "cache"
+    end
+
+    if self.fallback then
+        local built = {}
+        for name, data in pairs(self.fallback) do
+            built[name] = {uid = name, name = name}
+            -- Parents are species too, and base species never appear as keys
+            for _, parent in ipairs(data.parents or {}) do
+                built[parent] = built[parent] or {uid = parent, name = parent}
+            end
+        end
+        return built, "fallback"
+    end
+
+    return {}, "vide"
+end
+
+--- Normalize whatever getBeeParents returned into our own shape
+--- @param raw table
+--- @return table[] mutations
+local function normalizeParents(raw)
+    local mutations = {}
+
+    for _, entry in pairs(raw) do
+        if type(entry) == "table" and entry.allele1 and entry.allele2 then
+            local conditions = {}
+            for _, condition in ipairs(entry.specialConditions or {}) do
+                table.insert(conditions, tostring(condition))
+            end
+
+            table.insert(mutations, {
+                parent1 = {
+                    uid = entry.allele1.uid or entry.allele1.name,
+                    name = entry.allele1.name or entry.allele1.uid,
+                },
+                parent2 = {
+                    uid = entry.allele2.uid or entry.allele2.name,
+                    name = entry.allele2.name or entry.allele2.uid,
+                },
+                chance = tonumber(entry.chance),
+                conditions = conditions,
+            })
+        end
+    end
+
+    return mutations
+end
+
+--- Mutation paths producing a species
+--- Fetched from the game on first ask, then cached. An empty array is cached
+--- too: "this species has no parents" is an answer worth remembering, and it is
+--- how base species are recognized.
+--- @param uid string Species uid, or display name in fallback mode
+--- @return table[] mutations Possibly empty
+--- @return string source "cache", "live" or "fallback"
+function Registry:parents(uid)
+    self:load()
+
+    if type(uid) ~= "string" then return {}, "invalide" end
+
+    local cached = self.cache.parents[uid]
+    if cached then return cached, "cache" end
+
+    local ok, result = invoke(self.apiary, "getBeeParents", uid)
+
+    if ok and type(result) == "table" then
+        local mutations = normalizeParents(result)
+        self.cache.parents[uid] = mutations
+        return mutations, "live"
+    end
+
+    -- Offline: read the bundled table, which only knows one path per species
+    if self.fallback then
+        local data = self.fallback[uid]
+        if data and data.parents then
+            local mutations = {{
+                parent1 = {uid = data.parents[1], name = data.parents[1]},
+                parent2 = {uid = data.parents[2], name = data.parents[2]},
+                chance = nil,
+                conditions = {},
+            }}
+            return mutations, "fallback"
+        end
+        return {}, "fallback"
+    end
+
+    return {}, "inconnu"
+end
+
+--- A species the program can never produce, only be given
+--- @param uid string
+--- @return boolean isBase
+function Registry:isBase(uid)
+    return #(self:parents(uid)) == 0
+end
+
+--- Mutation paths that need something beyond two parents
+--- These are the ones a planner must not treat as ordinary steps.
+--- @param uid string
+--- @return table[] constrained
+function Registry:constrainedPaths(uid)
+    local constrained = {}
+
+    for _, mutation in ipairs(self:parents(uid)) do
+        if #mutation.conditions > 0 then
+            table.insert(constrained, mutation)
+        end
+    end
+
+    return constrained
+end
+
+--- Find a species by uid or by display name
+--- @param needle string
+--- @return table|nil entry
+function Registry:resolve(needle)
+    if type(needle) ~= "string" then return nil end
+
+    local all = self:list()
+    if all[needle] then return all[needle] end
+
+    local lowered = needle:lower()
+    for _, entry in pairs(all) do
+        if entry.name and entry.name:lower() == lowered then
+            return entry
+        end
+    end
+
+    return nil
+end
+
+--- How many species and paths are known
+--- @return table stats {species, withParents, base, constrained, source}
+function Registry:stats()
+    local all, source = self:list()
+
+    local total, with_parents, constrained = 0, 0, 0
+    for _ in pairs(all) do total = total + 1 end
+
+    for uid, mutations in pairs(self.cache.parents) do
+        if #mutations > 0 then with_parents = with_parents + 1 end
+        for _, mutation in ipairs(mutations) do
+            if #mutation.conditions > 0 then
+                constrained = constrained + 1
+                break
+            end
+        end
+    end
+
+    return {
+        species = total,
+        withParents = with_parents,
+        pathsKnown = 0,
+        constrained = constrained,
+        source = source,
+    }
+end
+
+return species
