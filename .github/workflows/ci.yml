@@ -73,6 +73,18 @@ jobs:
         mkdir -p Artifacts
         echo "Test environment ready"
 
+    - name: Test Suite - Item Detection
+      id: detection-tests
+      run: |
+        echo "::group::Item Detection Tests"
+        lua -e "
+        package.path = package.path .. ';./?.lua'
+        local test_planning = require('test_planning')
+        local success = test_planning.testItemDetection()
+        if not success then os.exit(1) end
+        "
+        echo "::endgroup::"
+
     - name: Test Suite - Planning
       id: planning-tests
       run: |

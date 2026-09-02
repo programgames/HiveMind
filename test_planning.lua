@@ -5,7 +5,10 @@
 -- Mock OpenComputers components before requiring main.lua
 local function mockOpenComputersEnvironment()
     -- Mock component module
-    local mock_component = {
+    -- Declared before the table literal: getPrimary closes over this local, and
+    -- inside the constructor the name would still resolve to a nil global.
+    local mock_component
+    mock_component = {
         isAvailable = function(name)
             -- Mock availability of basic components
             if name == "inventory_controller" then return true end
@@ -143,10 +146,10 @@ Type Definitions for Testing:
 --]]
 
 -- Mock the global inventory for testing
-local test_inventory = {
-    princesses = {},
-    drones = {}
-}
+-- This is main.lua's own inventory table, not a copy: the stock-aware planning
+-- (optimizeTreeByStock, countAvailableDrones, base requirements) reads that
+-- table directly, so a separate one would leave those paths untested.
+local test_inventory = main.inventory
 
 -- Mock the global functions that main.lua uses for inventory management
 local function mockGlobalFunctions()
@@ -491,9 +494,33 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
         os.execute(string.format('mkdir -p "%s"', artifacts_dir))
     end
 
+    -- Summarize the stock this run assumed. Every species is analyzed several
+    -- times (from base bees, with intermediates, from nothing) and each run
+    -- overwrites this file, so without it the numbers below are unreadable.
+    local function summarizeStock(list)
+        local counts = {}
+        local names = {}
+
+        for _, species in ipairs(list) do
+            if not counts[species] then table.insert(names, species) end
+            counts[species] = (counts[species] or 0) + 1
+        end
+
+        if #names == 0 then return "(none)" end
+
+        table.sort(names)
+        local parts = {}
+        for _, species in ipairs(names) do
+            table.insert(parts, species .. " x" .. counts[species])
+        end
+        return table.concat(parts, ", ")
+    end
+
     local content = {}
     table.insert(content, "=== Breeding Analysis for " .. target .. " ===")
     table.insert(content, "Generated: " .. os.date())
+    table.insert(content, "Stock assumed - princesses: " .. summarizeStock(test_inventory.princesses))
+    table.insert(content, "Stock assumed - drones: " .. summarizeStock(test_inventory.drones))
     table.insert(content, "")
 
     if not plan then
@@ -523,6 +550,38 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
             end
         end
         table.insert(content, "")
+
+        -- Base species shopping list with real quantities
+        if plan.base_requirements and next(plan.base_requirements) then
+            table.insert(content, "🐝 BASE SPECIES CONSUMED BY THIS PLAN:")
+            local species_names = {}
+            for species, _ in pairs(plan.base_requirements) do
+                table.insert(species_names, species)
+            end
+            table.sort(species_names)
+
+            for _, species in ipairs(species_names) do
+                local req = plan.base_requirements[species]
+                local status = "✅"
+                if req.princesses_short > 0 or req.drones_short > 0 then
+                    local parts = {}
+                    if req.princesses_short > 0 then
+                        table.insert(parts, req.princesses_short .. " princess(es)")
+                    end
+                    if req.drones_short > 0 then
+                        table.insert(parts, req.drones_short .. " drone(s)")
+                    end
+                    status = "❌ short of " .. table.concat(parts, " and ")
+                end
+                table.insert(content, string.format("  %s: %d/%d princesses, %d/%d drones  %s",
+                    species,
+                    req.princesses_available, req.princesses_required,
+                    req.drones_available, req.drones_required,
+                    status))
+            end
+            table.insert(content, "  (drones can be regrown with accumulation cycles, princesses cannot)")
+            table.insert(content, "")
+        end
 
         -- Missing species (if any)
         if next(plan.missing_princesses) or next(plan.missing_drones) then
@@ -2177,6 +2236,104 @@ local function runAllTestsComplete()
     end
 end
 
+--- Test item recognition: labels, registry names, stack sizes and key codes
+--- These paths never ran in tests before, yet they decide whether a bee sitting
+--- in a chest is seen at all.
+--- @return boolean success True if every assertion passed
+function testItemDetection()
+    print("=== Item Detection Tests ===")
+    print()
+
+    local passed, failed = 0, 0
+
+    local function check(description, actual, expected)
+        if actual == expected then
+            passed = passed + 1
+            print("  ✅ " .. description)
+        else
+            failed = failed + 1
+            print("  ❌ " .. description .. " (got " .. tostring(actual) .. ", expected " .. tostring(expected) .. ")")
+        end
+    end
+
+    -- Species extraction from display labels
+    check("Forest princess label", main.extractSpecies("Forest Princess"), "Forest")
+    check("Common drone label", main.extractSpecies("Common Drone"), "Common")
+    check("Two-word species wins over its suffix",
+          main.extractSpecies("Light Gray Drone"), "Light Gray")
+
+    -- The registry name must not leak "forestry" into the species
+    check("Registry name is not read as Forest",
+          main.extractSpecies("forestry:bee_drone_ge"), nil)
+    check("Unknown item yields no species", main.extractSpecies("minecraft:stone"), nil)
+    check("Nil item is handled", main.extractSpecies(nil), nil)
+
+    -- Base species have no mutation of their own but must still be recognized
+    check("Base species are known", main.extractSpecies("Meadows Princess"), "Meadows")
+
+    -- Bee classification prefers the label but falls back to the registry name
+    local bee_type, species = main.identifyBee({label = "Forest Princess", name = "forestry:bee_princess_ge"})
+    check("Princess type from label", bee_type, "princess")
+    check("Princess species from label", species, "Forest")
+
+    bee_type, species = main.identifyBee({label = "Meadows Queen", name = "forestry:bee_queen_ge"})
+    check("Queen type", bee_type, "queen")
+    check("Queen species", species, "Meadows")
+
+    bee_type = main.identifyBee({label = "Diamond", name = "minecraft:diamond"})
+    check("Non-bee item is ignored", bee_type, nil)
+
+    -- Keyboard codes: 0 for modifier keys, high codes for unicode input
+    check("Letter key", main.keyFromChar(82), "r")
+    check("Modifier key (code 0)", main.keyFromChar(0), nil)
+    check("Unicode key does not crash", main.keyFromChar(8364), nil)
+    check("Nil key code", main.keyFromChar(nil), nil)
+
+    -- Stack sizes must be honoured: 64 drones in one slot are 64 drones
+    local saved_princesses = test_inventory.princesses
+    local saved_drones = test_inventory.drones
+    local saved_getStackInSlot = _G.component.inventory_controller.getStackInSlot
+    local saved_getInventorySize = _G.component.inventory_controller.getInventorySize
+
+    local fake_chest = {
+        [1] = {label = "Forest Princess", name = "forestry:bee_princess_ge", size = 1},
+        [2] = {label = "Meadows Drone", name = "forestry:bee_drone_ge", size = 64},
+        [3] = {label = "Cobblestone", name = "minecraft:cobblestone", size = 12}
+    }
+
+    _G.component.inventory_controller.getInventorySize = function(side)
+        return side == main.config.input_chest_side and 3 or nil
+    end
+    _G.component.inventory_controller.getStackInSlot = function(side, slot)
+        if side ~= main.config.input_chest_side then return nil end
+        return fake_chest[slot]
+    end
+
+    main.scanInventory()
+
+    check("Princess counted once", main.countAvailablePrincesses("Forest"), 1)
+    check("Full drone stack counted", main.countAvailableDrones("Meadows"), 64)
+    check("Non-bee item not counted", main.countAvailableDrones("Forest"), 0)
+
+    _G.component.inventory_controller.getStackInSlot = saved_getStackInSlot
+    _G.component.inventory_controller.getInventorySize = saved_getInventorySize
+    test_inventory.princesses = saved_princesses
+    test_inventory.drones = saved_drones
+
+    print()
+    print("=== Item Detection Results ===")
+    print("Passed: " .. passed)
+    print("Failed: " .. failed)
+
+    if failed == 0 then
+        print("🎉 All item detection tests passed!")
+        return true
+    end
+
+    print("❌ Some item detection tests failed.")
+    return false
+end
+
 -- Run tests automatically if executed directly
 if ... == nil then
     runAllTestsComplete()  -- Run complete test suite including execution tests
@@ -2186,6 +2343,7 @@ end
 return {
     runAllTests = runAllTests,
     runAllTestsComplete = runAllTestsComplete,
+    testItemDetection = testItemDetection,
     runTest = runTest,
     testSpecificTarget = testSpecificTarget,
     performanceTest = performanceTest,

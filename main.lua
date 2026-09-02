@@ -30,6 +30,21 @@ Type Definitions:
 @field validation_required boolean Whether error requires validation before resume
 --]]
 
+-- nil when the file is executed directly, the module name when required (tests)
+local MODULE_NAME = ...
+
+-- Make the sibling lib/ modules importable whatever the working directory is.
+-- OpenComputers runs a program from wherever the shell happens to sit, so a
+-- relative "./?.lua" is not enough: the search path is anchored on this file.
+do
+    local source = debug.getinfo(1, "S").source
+    local here = source:match("^@(.*)[/\\][^/\\]*$")
+
+    if here and not package.path:find(here, 1, true) then
+        package.path = here .. "/?.lua;" .. here .. "/?/init.lua;" .. package.path
+    end
+end
+
 local component = require("component")
 local computer = require("computer")
 local term = require("term")
@@ -98,331 +113,13 @@ local function getComponentMethods(comp)
 end
 
 --- Comprehensive bee mutation database
---- @return table<string, {parent1: string, parent2: string, mod: string}> mutations Map of species to their parent combinations
-local function loadBeeDatabase()
-    local mutations = {}
-
-    -- Forestry Base Bees (https://github.com/ForestryMC/ForestryMC/blob/mc-1.12/src/main/java/forestry/apiculture/genetics/BeeBranchDefinition.java)
-    mutations["Imperial"] = {parents = {"Noble", "Majestic"}, mod = "Forestry"}
-    mutations["Edenic"] = {parents = {"Tropical", "Exotic"}, mod = "Forestry"}
-    mutations["Black"] = {parents = {"White", "Diligent"}, mod = "Forestry"}
-    mutations["Vengeful"] = {parents = {"Demonic", "Vindictive"}, mod = "Forestry"}
-    mutations["Spectral"] = {parents = {"Ender", "Hermitic"}, mod = "Forestry"}
-    mutations["Pink"] = {parents = {"White", "Red"}, mod = "Forestry"}
-    mutations["Rural"] = {parents = {"Meadows", "Diligent"}, mod = "Forestry"}
-    mutations["Gray"] = {parents = {"Black", "White"}, mod = "Forestry"}
-    mutations["Green"] = {parents = {"Blue", "Yellow"}, mod = "Forestry"}
-    mutations["Farmerly"] = {parents = {"Rural", "Unweary"}, mod = "Forestry"}
-    mutations["Light Gray"] = {parents = {"Gray", "White"}, mod = "Forestry"}
-    mutations["Cultivated"] = {parents = {"Meadows", "Common"}, mod = "Forestry"}
-    mutations["White"] = {parents = {"Wintry", "Diligent"}, mod = "Forestry"}
-    mutations["Majestic"] = {parents = {"Noble", "Cultivated"}, mod = "Forestry"}
-    mutations["Avenging"] = {parents = {"Vengeful", "Vindictive"}, mod = "Forestry"}
-    mutations["Secluded"] = {parents = {"Austere", "Monastic"}, mod = "Forestry"}
-    mutations["Diligent"] = {parents = {"Common", "Cultivated"}, mod = "Forestry"}
-    mutations["Fiendish"] = {parents = {"Sinister", "Cultivated"}, mod = "Forestry"}
-    mutations["Derpious"] = {parents = {"Marshy", "Cultivated"}, mod = "Forestry"}
-    mutations["Hermitic"] = {parents = {"Secluded", "Monastic"}, mod = "Forestry"}
-    mutations["Exotic"] = {parents = {"Austere", "Tropical"}, mod = "Forestry"}
-    mutations["Yellow"] = {parents = {"Modest", "Diligent"}, mod = "Forestry"}
-    mutations["Purple"] = {parents = {"Red", "Blue"}, mod = "Forestry"}
-    mutations["Industrious"] = {parents = {"Diligent", "Unweary"}, mod = "Forestry"}
-    mutations["Cyan"] = {parents = {"Green", "Blue"}, mod = "Forestry"}
-    mutations["Miry"] = {parents = {"Marshy", "Noble"}, mod = "Forestry"}
-    mutations["Unweary"] = {parents = {"Diligent", "Cultivated"}, mod = "Forestry"}
-    mutations["Sinister"] = {parents = {"Modest", "Cultivated"}, mod = "Forestry"}
-    mutations["Noble"] = {parents = {"Cultivated", "Common"}, mod = "Forestry"}
-    mutations["Icy"] = {parents = {"Wintry", "Industrious"}, mod = "Forestry"}
-    mutations["Lime"] = {parents = {"White", "Green"}, mod = "Forestry"}
-    mutations["Vindictive"] = {parents = {"Demonic", "Monastic"}, mod = "Forestry"}
-    mutations["Frugal"] = {parents = {"Modest", "Sinister"}, mod = "Forestry"}
-    mutations["Demonic"] = {parents = {"Sinister", "Fiendish"}, mod = "Forestry"}
-    mutations["Heroic"] = {parents = {"Valiant", "Steadfast"}, mod = "Forestry"}
-    mutations["Blue"] = {parents = {"Forest", "Diligent"}, mod = "Forestry"}
-    mutations["Phantasmal"] = {parents = {"Ender", "Spectral"}, mod = "Forestry"}
-    mutations["Glacial"] = {parents = {"Wintry", "Icy"}, mod = "Forestry"}
-    mutations["Orange"] = {parents = {"Yellow", "Red"}, mod = "Forestry"}
-    mutations["Agrarian"] = {parents = {"Farmerly", "Industrious"}, mod = "Forestry"}
-    mutations["Common"] = {parents = {"Meadows", "Forest"}, mod = "Forestry"}
-    mutations["Red"] = {parents = {"Common", "Diligent"}, mod = "Forestry"}
-    mutations["Austere"] = {parents = {"Modest", "Frugal"}, mod = "Forestry"}
-    mutations["Brown"] = {parents = {"Tropical", "Diligent"}, mod = "Forestry"}
-
-    -- MagicBees (https://github.com/ForestryMC/MagicBees/blob/1.12/src/main/java/magicbees/bees/EnumBeeSpecies.java)
-    mutations["Manyullyn"] = {parents = {"Ardite", "Cobalt"}, mod = "MagicBees"}
-    mutations["Electrum"] = {parents = {"Argentum", "Auric"}, mod = "MagicBees"}
-    mutations["Windy"] = {parents = {"Supernatural", "Ethereal"}, mod = "MagicBees"}
-    mutations["Lordly"] = {parents = {"Imperial", "Timely"}, mod = "MagicBees"}
-    mutations["Withering"] = {parents = {"Demonic", "Spiteful"}, mod = "MagicBees"}
-    mutations["Grounded"] = {parents = {"Smouldering", "Earthen"}, mod = "MagicBees"}
-    mutations["Soul"] = {parents = {"Spirit", "Aware"}, mod = "MagicBees"}
-    mutations["Porcine"] = {parents = {"Common", "Shulking"}, mod = "MagicBees"}
-    mutations["Winsome"] = {parents = {"Oblivion", "Platinum"}, mod = "MagicBees"}
-    mutations["Batty"] = {parents = {"Shulking", "Windy"}, mod = "MagicBees"}
-    mutations["Charmed"] = {parents = {"Cultivated", "Eldritch"}, mod = "MagicBees"}
-    mutations["Scholarly"] = {parents = {"Pupil", "Arcane"}, mod = "MagicBees"}
-    mutations["Enchanted"] = {parents = {"Eldritch", "Charmed"}, mod = "MagicBees"}
-    mutations["Invisible"] = {parents = {"Mystical", "Mutable"}, mod = "MagicBees"}
-    mutations["Crumbling"] = {parents = {"Unusual", "Mutable"}, mod = "MagicBees"}
-    mutations["Dreaming"] = {parents = {"Windy", "Somnolent"}, mod = "MagicBees"}
-    mutations["Fluxed"] = {parents = {"Electrum", "Destabilized"}, mod = "MagicBees"}
-    mutations["Auric"] = {parents = {"Plumbum", "Imperial"}, mod = "MagicBees"}
-    mutations["Argentum"] = {parents = {"Modest", "Imperial"}, mod = "MagicBees"}
-    mutations["Osmium"] = {parents = {"Argentum", "Cobalt"}, mod = "MagicBees"}
-    mutations["Earthen"] = {parents = {"Supernatural", "Ethereal"}, mod = "MagicBees"}
-    mutations["Maroon"] = {parents = {"Forest", "Valiant"}, mod = "MagicBees"}
-    mutations["Plumbum"] = {parents = {"Common", "Stannum"}, mod = "MagicBees"}
-    mutations["Timely"] = {parents = {"Imperial", "Ethereal"}, mod = "MagicBees"}
-    mutations["Spiteful"] = {parents = {"Infernal", "Hateful"}, mod = "MagicBees"}
-    mutations["Big Bad"] = {parents = {"Shulking", "Mysterious"}, mod = "MagicBees"}
-    mutations["Cobalt"] = {parents = {"Infernal", "Imperial"}, mod = "MagicBees"}
-    mutations["Cobalt"] = {parents = {"Infernal", "Industrious"}, mod = "MagicBees"}
-    mutations["Beefy"] = {parents = {"Common", "Shulking"}, mod = "MagicBees"}
-    mutations["Esoteric"] = {parents = {"Cultivated", "Eldritch"}, mod = "MagicBees"}
-    mutations["Catty"] = {parents = {"Poultry", "Spidery"}, mod = "MagicBees"}
-    mutations["Poultry"] = {parents = {"Common", "Shulking"}, mod = "MagicBees"}
-    mutations["Firey"] = {parents = {"Supernatural", "Ethereal"}, mod = "MagicBees"}
-    mutations["Floral"] = {parents = {"Botanic", "Blossom"}, mod = "MagicBees"}
-    mutations["Invar"] = {parents = {"Ferrous", "Nickel"}, mod = "MagicBees"}
-    mutations["Endearing"] = {parents = {"Winsome", "Carbon"}, mod = "MagicBees"}
-    mutations["Shocking"] = {parents = {"Smouldering", "Windy"}, mod = "MagicBees"}
-    mutations["Aluminum"] = {parents = {"Cultivated", "Industrious"}, mod = "MagicBees"}
-    mutations["Supernatural"] = {parents = {"Enchanted", "Charmed"}, mod = "MagicBees"}
-    mutations["Dante"] = {parents = {"Austere", "Smouldering"}, mod = "MagicBees"}
-    mutations["Platinum"] = {parents = {"Nickel", "Invar"}, mod = "MagicBees"}
-    mutations["Destabilized"] = {parents = {"Industrious", "Spiteful"}, mod = "MagicBees"}
-    mutations["Aware"] = {parents = {"Attuned", "Ethereal"}, mod = "MagicBees"}
-    mutations["Transmuting"] = {parents = {"Unusual", "Mutable"}, mod = "MagicBees"}
-    mutations["Hateful"] = {parents = {"Infernal", "Eldritch"}, mod = "MagicBees"}
-    mutations["Spirit"] = {parents = {"Aware", "Ethereal"}, mod = "MagicBees"}
-    mutations["Rockin'"] = {parents = {"Grounded", "Earthen"}, mod = "MagicBees"}
-    mutations["Pupil"] = {parents = {"Arcane", "Monastic"}, mod = "MagicBees"}
-    mutations["Stannum"] = {parents = {"Forest", "Industrious"}, mod = "MagicBees"}
-    mutations["Draconic"] = {parents = {"Abandoned", "Imperial"}, mod = "MagicBees"}
-    mutations["Carbon"] = {parents = {"Spiteful", "Stannum"}, mod = "MagicBees"}
-    mutations["Arcane"] = {parents = {"Esoteric", "Mysterious"}, mod = "MagicBees"}
-    mutations["Blossom"] = {parents = {"Botanic", "Earthen"}, mod = "MagicBees"}
-    mutations["Ferrous"] = {parents = {"Common", "Industrious"}, mod = "MagicBees"}
-    mutations["Watery"] = {parents = {"Supernatural", "Ethereal"}, mod = "MagicBees"}
-    mutations["Somnolent"] = {parents = {"Rooted", "Watery"}, mod = "MagicBees"}
-    mutations["Savant"] = {parents = {"Scholarly", "Pupil"}, mod = "MagicBees"}
-    mutations["Lux"] = {parents = {"Infernal", "Smouldering"}, mod = "MagicBees"}
-    mutations["Neighsayer"] = {parents = {"Beefy", "Sheepish"}, mod = "MagicBees"}
-    mutations["Diamandi"] = {parents = {"Austere", "Auric"}, mod = "MagicBees"}
-    mutations["Rooted"] = {parents = {"Forest", "Eldritch"}, mod = "MagicBees"}
-    mutations["Cuprum"] = {parents = {"Meadows", "Industrious"}, mod = "MagicBees"}
-    mutations["Eldritch"] = {parents = {"Mystical", "Cultivated"}, mod = "MagicBees"}
-    mutations["Pyro"] = {parents = {"Dante", "Carbon"}, mod = "MagicBees"}
-    mutations["Nickel"] = {parents = {"Ferrous", "Esoteric"}, mod = "MagicBees"}
-    mutations["Bronzed"] = {parents = {"Stannum", "Cuprum"}, mod = "MagicBees"}
-    mutations["Nameless"] = {parents = {"Oblivion", "Ethereal"}, mod = "MagicBees"}
-    mutations["Apatine"] = {parents = {"Rural", "Cuprum"}, mod = "MagicBees"}
-    mutations["Tarnished"] = {parents = {"Marshy", "Resilient"}, mod = "MagicBees"}
-    mutations["Ethereal"] = {parents = {"Supernatural", "Arcane"}, mod = "MagicBees"}
-    mutations["Abandoned"] = {parents = {"Oblivion", "Nameless"}, mod = "MagicBees"}
-    mutations["Forlorn"] = {parents = {"Abandoned", "Nameless"}, mod = "MagicBees"}
-    mutations["Amped"] = {parents = {"Shocking", "Windy"}, mod = "MagicBees"}
-    mutations["Skystone"] = {parents = {"Earthen", "Windy"}, mod = "MagicBees"}
-    mutations["Doctoral"] = {parents = {"Timely", "Lordly"}, mod = "MagicBees"}
-    mutations["Mutable"] = {parents = {"Unusual", "Eldritch"}, mod = "MagicBees"}
-    mutations["Mysterious"] = {parents = {"Forest", "Common"}, mod = "MagicBees"}
-    mutations["Sheepish"] = {parents = {"Porcine", "Shulking"}, mod = "MagicBees"}
-
-    -- ExtraBees (https://github.com/ForestryMC/Binnie/blob/master-MC1.12/extrabees/src/main/java/binnie/extrabees/genetics/ExtraBeeDefinition.java)
-    mutations["Lustered"] = {parents = {"Forest", "Resilient"}, mod = "ExtraBees"}
-    mutations["Tarry"] = {parents = {"Distilled", "Fossilised"}, mod = "ExtraBees"}
-    mutations["Malicious"] = {parents = {"Tropical", "Sinister"}, mod = "ExtraBees"}
-    mutations["Sugary"] = {parents = {"Rural", "Sweetened"}, mod = "ExtraBees"}
-    mutations["Bovine"] = {parents = {"Water", "Farmerly"}, mod = "ExtraBees"}
-    mutations["Furious"] = {parents = {"Embittered", "Fiendish"}, mod = "ExtraBees"}
-    mutations["Yellorium"] = {parents = {"Frugal", "Nuclear"}, mod = "ExtraBees"}
-    mutations["Sepia"] = {parents = {"Marshy", "Valiant"}, mod = "ExtraBees"}
-    mutations["Bauxite"] = {parents = {"Resilient", "Diligent"}, mod = "ExtraBees"}
-    mutations["Shining"] = {parents = {"Majestic", "Galvanized"}, mod = "ExtraBees"}
-    mutations["Viscous"] = {parents = {"Water", "Exotic"}, mod = "ExtraBees"}
-    mutations["Turquoise"] = {parents = {"Natural", "Prussian"}, mod = "ExtraBees"}
-    mutations["Glutinous"] = {parents = {"Exotic", "Viscous"}, mod = "ExtraBees"}
-    mutations["Glittering"] = {parents = {"Majestic", "Rusty"}, mod = "ExtraBees"}
-    mutations["Energetic"] = {parents = {"Diligent", "Excited"}, mod = "ExtraBees"}
-    mutations["Abyssal"] = {parents = {"Shadowed", "Darkened"}, mod = "ExtraBees"}
-    mutations["Bleached"] = {parents = {"Wintry", "Valiant"}, mod = "ExtraBees"}
-    mutations["Pyrite"] = {parents = {"Rusty", "Sinister"}, mod = "ExtraBees"}
-    mutations["Farmed"] = {parents = {"Meadows", "Farmerly"}, mod = "ExtraBees"}
-    mutations["Jaded"] = {parents = {"Ender", "Relic"}, mod = "ExtraBees"}
-    mutations["Fruity"] = {parents = {"Sweetened", "Thriving"}, mod = "ExtraBees"}
-    mutations["Radioactive"] = {parents = {"Nuclear", "Glittering"}, mod = "ExtraBees"}
-    mutations["Lavender"] = {parents = {"Maroon", "Bleached"}, mod = "ExtraBees"}
-    mutations["Magenta"] = {parents = {"Blue", "Pink"}, mod = "ExtraBees"}
-    mutations["Boggy"] = {parents = {"Miry", "Swamp"}, mod = "ExtraBees"}
-    mutations["Light Blue"] = {parents = {"Blue", "White"}, mod = "ExtraBees"}
-    mutations["Stained"] = {parents = {"Ebony", "Ocean"}, mod = "ExtraBees"}
-    mutations["Glowering"] = {parents = {"Furious", "Excited"}, mod = "ExtraBees"}
-    mutations["Nuclear"] = {parents = {"Unstable", "Rusty"}, mod = "ExtraBees"}
-    mutations["Frigid"] = {parents = {"Wintry", "Diligent"}, mod = "ExtraBees"}
-    mutations["Sweetened"] = {parents = {"Valiant", "Diligent"}, mod = "ExtraBees"}
-    mutations["Fuchsia"] = {parents = {"Indigo", "Lavender"}, mod = "ExtraBees"}
-    mutations["Gelid"] = {parents = {"Blizzy", "Icy"}, mod = "ExtraBees"}
-    mutations["Ripening"] = {parents = {"Sweetened", "Growing"}, mod = "ExtraBees"}
-    mutations["Prussian"] = {parents = {"Water", "Valiant"}, mod = "ExtraBees"}
-    mutations["Impregnable"] = {parents = {"Cultivated", "Resilient"}, mod = "ExtraBees"}
-    mutations["Prehistoric"] = {parents = {"Primeval", "Ancient"}, mod = "ExtraBees"}
-    mutations["Decomposing"] = {parents = {"Marshy", "Barren"}, mod = "ExtraBees"}
-    mutations["Sphalerite"] = {parents = {"Tarnished", "Sinister"}, mod = "ExtraBees"}
-    mutations["Thriving"] = {parents = {"Unweary", "Growing"}, mod = "ExtraBees"}
-    mutations["Blutonium"] = {parents = {"Cyanite", "Yellorium"}, mod = "ExtraBees"}
-    mutations["Hazardous"] = {parents = {"Austere", "Desolate"}, mod = "ExtraBees"}
-    mutations["Corrosive"] = {parents = {"Malicious", "Viscous"}, mod = "ExtraBees"}
-    mutations["Oily"] = {parents = {"Ocean", "Primeval"}, mod = "ExtraBees"}
-    mutations["Excited"] = {parents = {"Valiant", "Cultivated"}, mod = "ExtraBees"}
-    mutations["Galvanized"] = {parents = {"Wintry", "Resilient"}, mod = "ExtraBees"}
-    mutations["Ashen"] = {parents = {"Bleached", "Slate"}, mod = "ExtraBees"}
-    mutations["Primeval"] = {parents = {"Secluded", "Ancient"}, mod = "ExtraBees"}
-    mutations["Robust"] = {parents = {"Tolerant", "Unweary"}, mod = "ExtraBees"}
-    mutations["Caustic"] = {parents = {"Fiendish", "Corrosive"}, mod = "ExtraBees"}
-    mutations["Lime"] = {parents = {"Natural", "Bleached"}, mod = "ExtraBees"}
-    mutations["Ebony"] = {parents = {"Rocky", "Valiant"}, mod = "ExtraBees"}
-    mutations["Saffron"] = {parents = {"Meadows", "Valiant"}, mod = "ExtraBees"}
-    mutations["Slate"] = {parents = {"Ebony", "Bleached"}, mod = "ExtraBees"}
-    mutations["Virulent"] = {parents = {"Malicious", "Infectious"}, mod = "ExtraBees"}
-    mutations["Diamond"] = {parents = {"Cultivated", "Lapis"}, mod = "ExtraBees"}
-    mutations["River"] = {parents = {"Water", "Diligent"}, mod = "ExtraBees"}
-    mutations["Spatial"] = {parents = {"Abnormal", "Hermitic"}, mod = "ExtraBees"}
-    mutations["Ocean"] = {parents = {"Water", "Diligent"}, mod = "ExtraBees"}
-    mutations["Sticky"] = {parents = {"Viscous", "Glutinous"}, mod = "ExtraBees"}
-    mutations["Decaying"] = {parents = {"Meadows", "Desolate"}, mod = "ExtraBees"}
-    mutations["Sodalite"] = {parents = {"Lapis", "Diligent"}, mod = "ExtraBees"}
-    mutations["Valuable"] = {parents = {"Glittering", "Shining"}, mod = "ExtraBees"}
-    mutations["Abnormal"] = {parents = {"Ender", "Secluded"}, mod = "ExtraBees"}
-    mutations["Sapphire"] = {parents = {"Water", "Lapis"}, mod = "ExtraBees"}
-    mutations["Skeletal"] = {parents = {"Forest", "Desolate"}, mod = "ExtraBees"}
-    mutations["Unstable"] = {parents = {"Prehistoric", "Resilient"}, mod = "ExtraBees"}
-    mutations["Growing"] = {parents = {"Forest", "Diligent"}, mod = "ExtraBees"}
-    mutations["Amber"] = {parents = {"Maroon", "Saffron"}, mod = "ExtraBees"}
-    mutations["Distilled"] = {parents = {"Industrious", "Oily"}, mod = "ExtraBees"}
-    mutations["Indigo"] = {parents = {"Maroon", "Prussian"}, mod = "ExtraBees"}
-    mutations["Desolate"] = {parents = {"Arid", "Barren"}, mod = "ExtraBees"}
-    mutations["Corroded"] = {parents = {"Wintry", "Resilient"}, mod = "ExtraBees"}
-    mutations["Resilient"] = {parents = {"Industrious", "Robust"}, mod = "ExtraBees"}
-    mutations["Fungal"] = {parents = {"Boggy", "Miry"}, mod = "ExtraBees"}
-    mutations["Mystical"] = {parents = {"Noble", "Monastic"}, mod = "MagicBees"}
-    mutations["Cinnabar"] = {parents = {"Sinister", "Resilient"}, mod = "ExtraBees"}
-    mutations["Ruby"] = {parents = {"Modest", "Lapis"}, mod = "ExtraBees"}
-    mutations["Darkened"] = {parents = {"Shadowed", "Rocky"}, mod = "ExtraBees"}
-    mutations["Blizzy"] = {parents = {"Wintry", "Shulking"}, mod = "ExtraBees"}
-    mutations["Absolute"] = {parents = {"Ocean", "Frigid"}, mod = "ExtraBees"}
-    mutations["Invincible"] = {parents = {"Common", "Resilient"}, mod = "ExtraBees"}
-    mutations["Natural"] = {parents = {"Tropical", "Valiant"}, mod = "ExtraBees"}
-    mutations["Tolerant"] = {parents = {"Rocky", "Diligent"}, mod = "ExtraBees"}
-    mutations["Ancient"] = {parents = {"Noble", "Diligent"}, mod = "ExtraBees"}
-    mutations["Shadowed"] = {parents = {"Rocky", "Sinister"}, mod = "ExtraBees"}
-    mutations["Cyanite"] = {parents = {"Nuclear", "Yellorium"}, mod = "ExtraBees"}
-    mutations["Fossilised"] = {parents = {"Growing", "Primeval"}, mod = "ExtraBees"}
-    mutations["Emerald"] = {parents = {"Forest", "Lapis"}, mod = "ExtraBees"}
-    mutations["Infectious"] = {parents = {"Tropical", "Malicious"}, mod = "ExtraBees"}
-    mutations["Sodden"] = {parents = {"Boggy", "Damp"}, mod = "ExtraBees"}
-    mutations["Arid"] = {parents = {"Meadows", "Frugal"}, mod = "ExtraBees"}
-    mutations["Rusty"] = {parents = {"Meadows", "Resilient"}, mod = "ExtraBees"}
-    mutations["Classical"] = {parents = {"Greek", "Roman"}, mod = "ExtraBees"}
-    mutations["Acidic"] = {parents = {"Corrosive", "Caustic"}, mod = "ExtraBees"}
-    mutations["Damp"] = {parents = {"Water", "Miry"}, mod = "ExtraBees"}
-    mutations["Creepy"] = {parents = {"Modest", "Desolate"}, mod = "ExtraBees"}
-    mutations["Relic"] = {parents = {"Imperial", "Prehistoric"}, mod = "ExtraBees"}
-    mutations["Lapis"] = {parents = {"Water", "Resilient"}, mod = "ExtraBees"}
-    mutations["Ecstatic"] = {parents = {"Excited", "Energetic"}, mod = "ExtraBees"}
-    mutations["Barren"] = {parents = {"Common", "Arid"}, mod = "ExtraBees"}
-    mutations["Blooming"] = {parents = {"Industrious", "Thriving"}, mod = "ExtraBees"}
-    mutations["Azure"] = {parents = {"Prussian", "Bleached"}, mod = "ExtraBees"}
-    mutations["Greek"] = {parents = {"Roman", "Marble"}, mod = "ExtraBees"}
-    mutations["Roman"] = {parents = {"Marble", "Heroic"}, mod = "ExtraBees"}
-    mutations["Leaden"] = {parents = {"Meadows", "Resilient"}, mod = "ExtraBees"}
-    mutations["Fermented"] = {parents = {"Farmerly", "Meadows"}, mod = "ExtraBees"}
-    mutations["Esmeraldi"] = {parents = {"Austere", "Argentum"}, mod = "ExtraBees"}
-    mutations["Quantum"] = {parents = {"Spectral", "Spatial"}, mod = "ExtraBees"}
-    mutations["Celebratory"] = {parents = {"Austere", "Excited"}, mod = "ExtraBees"}
-    mutations["Volcanic"] = {parents = {"Demonic", "Furious"}, mod = "ExtraBees"}
-
-    -- Career Bees mod (https://github.com/rwtema/Careerbees/blob/master/src/main/java/com/rwtema/careerbees/bees/CareerBeeSpecies.java)
-    mutations["PHD"] = {parents = {"Graduate", "Student"}, mod = "Career Bees"}
-    mutations["Clockwork"] = {parents = {"Smelter", "Engineer"}, mod = "Career Bees"}
-    mutations["Junk Seller"] = {parents = {"Common", "Buisness"}, mod = "Career Bees"}
-    mutations["Engineer"] = {parents = {"Noble", "PHD"}, mod = "Career Bees"}
-    mutations["Honey-Smelter"] = {parents = {"Graduate", "Smelter"}, mod = "Career Bees"}
-    mutations["Thief"] = {parents = {"Sinister", "Police"}, mod = "Career Bees"}
-    mutations["Priest"] = {parents = {"Graduate", "Yente"}, mod = "Career Bees"}
-    mutations["Quantum Charming"] = {parents = {"Phantasmal", "Mad Scientist"}, mod = "Career Bees"}
-    mutations["Mason"] = {parents = {"Smelter", "Graduate"}, mod = "Career Bees"}
-    mutations["Yente"] = {parents = {"Student", "Husbandry"}, mod = "Career Bees"}
-    mutations["Graduate"] = {parents = {"Common", "Student"}, mod = "Career Bees"}
-    mutations["Rainbow"] = {parents = {"Artistic", "PHD"}, mod = "Career Bees"}
-    mutations["Buisness"] = {parents = {"Imperial", "PHD"}, mod = "Career Bees"}
-    mutations["Butcher"] = {parents = {"Lumber", "Graduate"}, mod = "Career Bees"}
-    mutations["Police"] = {parents = {"Valiant", "Graduate"}, mod = "Career Bees"}
-    -- mutations["Mad Scientist"] = {parents = {"Science", "Engineer"}, mod = "Career Bees"}
-    mutations["Artistic"] = {parents = {"Cultivated", "Graduate"}, mod = "Career Bees"}
-    mutations["Science"] = {parents = {"PHD", "Industrious"}, mod = "Career Bees"}
-    mutations["Husbandry"] = {parents = {"Meadows", "Graduate"}, mod = "Career Bees"}
-    mutations["Lumber"] = {parents = {"Forest", "Graduate"}, mod = "Career Bees"}
-    mutations["Plague"] = {parents = {"Sinister", "Doctor"}, mod = "Career Bees"}
-    mutations["Student"] = {parents = {"Common", "Cultivated"}, mod = "Career Bees"}
-    mutations["Politician"] = {parents = {"Devil", "Thief"}, mod = "Career Bees"}
-    mutations["Assassin"] = {parents = {"Police", "Devil"}, mod = "Career Bees"}
-    mutations["Robot"] = {parents = {"Clockwork", "Electrician"}, mod = "Career Bees"}
-    mutations["Devil"] = {parents = {"Smelter", "Demonic"}, mod = "Career Bees"}
-    mutations["Quantum Strange"] = {parents = {"Mad Scientist", "Phantasmal"}, mod = "Career Bees"}
-    mutations["N.C.A."] = {parents = {"Devil", "Politician"}, mod = "Career Bees"}
-    mutations["Electrician"] = {parents = {"Clockwork", "Engineer"}, mod = "Career Bees"}
-    mutations["Smelter"] = {parents = {"Graduate", "Industrious"}, mod = "Career Bees"}
-    mutations["Collecting"] = {parents = {"Student", "Common"}, mod = "Career Bees"}
-    mutations["Doctor"] = {parents = {"PHD", "Majestic"}, mod = "Career Bees"}
-    mutations["Temporal"] = {parents = {"Quantum Charming", "Quantum Strange"}, mod = "Career Bees"}
-
-    -- MeatballCraft Custom Bees (https://github.com/sainagh/meatballcraft/blob/main/config/gendustry/meatball_bees.cfg)
-    mutations["Baguette"] = {parents = {"Thief", "Pupil"}, mod = "MeatballCraft"}
-    mutations["RestlessClam"] = {parents = {"White", "Shocking"}, mod = "MeatballCraft"}
-    mutations["Formic"] = {parents = {"Meadows", "Acidic"}, mod = "MeatballCraft"}
-    mutations["Shadow46x2"] = {parents = {"Fermented", "Transmuting"}, mod = "MeatballCraft"}
-    mutations["LordRaine"] = {parents = {"Sorcerous", "Temporal"}, mod = "MeatballCraft"}
-    mutations["NerdySpider"] = {parents = {"Phantasmal", "Esmeraldi"}, mod = "MeatballCraft"}
-    mutations["Fios"] = {parents = {"Light Blue", "Classical"}, mod = "MeatballCraft"}
-    mutations["Luctor"] = {parents = {"Rainbow", "Abyssal"}, mod = "MeatballCraft"}
-    mutations["Balanced"] = {parents = {"Temporal", "Forlorn"}, mod = "MeatballCraft"}
-    mutations["Sandman366"] = {parents = {"Black", "Firey"}, mod = "MeatballCraft"}
-    mutations["KurryCat"] = {parents = {"Scholarly", "PHD"}, mod = "MeatballCraft"}
-    mutations["Thermally Expanded"] = {parents = {"Pyro", "PHD"}, mod = "MeatballCraft"}
-    mutations["Hyperventilating"] = {parents = {"Imperial", "Student"}, mod = "MeatballCraft"}
-    mutations["EMBee"] = {parents = {"Ethereal", "Arcane"}, mod = "MeatballCraft"}
-    mutations["Experienced"] = {parents = {"Radiant", "Armored"}, mod = "MeatballCraft"}
-    mutations["Freeky"] = {parents = {"Sweetened", "EMBee"}, mod = "MeatballCraft"}
-    mutations["Pyromaniacal"] = {parents = {"Devil", "Rainbow"}, mod = "MeatballCraft"}
-    mutations["SpoonyPanda"] = {parents = {"Supernatural", "Resilient"}, mod = "MeatballCraft"}
-    mutations["High-Pitched"] = {parents = {"Oxygen", "Deep Learner"}, mod = "MeatballCraft"}
-    mutations["Nuclear Technician"] = {parents = {"Bomber", "PHD"}, mod = "MeatballCraft"}
-    mutations["Dentist"] = {parents = {"High-Pitched", "Hyperventilating"}, mod = "MeatballCraft"}
-    mutations["Chevron"] = {parents = {"Light Blue", "Robot"}, mod = "MeatballCraft"}
-    mutations["Pyramid"] = {parents = {"Lordly", "Temporal"}, mod = "MeatballCraft"}
-    mutations["Mathias"] = {parents = {"Ringbearer", "Robust"}, mod = "MeatballCraft"}
-    mutations["Ringbearer"] = {parents = {"Glittering", "Endearing"}, mod = "MeatballCraft"}
-    mutations["Stargazer"] = {parents = {"Quantum", "Classical"}, mod = "MeatballCraft"}
-    mutations["Aedial"] = {parents = {"Skeletal", "Scholarly"}, mod = "MeatballCraft"}
-    mutations["Buried"] = {parents = {"Skystone", "Valuable"}, mod = "MeatballCraft"}
-    mutations["Isekai"] = {parents = {"Crepuscular", "Deep Learner"}, mod = "MeatballCraft"}
-    mutations["Meatball"] = {parents = {"Industrious", "Common"}, mod = "MeatballCraft"}
-    mutations["Tinkerest"] = {parents = {"Blutonium", "PHD"}, mod = "MeatballCraft"}
-    mutations["Connor"] = {parents = {"Radioactive", "Draconic"}, mod = "MeatballCraft"}
-    mutations["Controller"] = {parents = {"Ringbearer", "Chevron"}, mod = "MeatballCraft"}
-    mutations["Agricultural"] = {parents = {"Virulent", "Doctoral"}, mod = "MeatballCraft"}
-    mutations["Heraldry"] = {parents = {"Spectral", "Endearing"}, mod = "MeatballCraft"}
-    mutations["StaffiX"] = {parents = {"Water", "Prehistoric"}, mod = "MeatballCraft"}
-    mutations["Herblore"] = {parents = {"Esoteric", "Quantum"}, mod = "MeatballCraft"}
-    mutations["Necronomibee"] = {parents = {"Savant", "Abyssal"}, mod = "MeatballCraft"}
-    mutations["Serenading"] = {parents = {"Arcane", "Radiant"}, mod = "MeatballCraft"}
-    mutations["ChaosStrikez"] = {parents = {"Energetic", "Savant"}, mod = "MeatballCraft"}
-    mutations["UselessForce"] = {parents = {"Red", "Fiendish"}, mod = "MeatballCraft"}
-
-    return mutations
-end
-
-local mutations = loadBeeDatabase()
+--- Kept in lib/data/mutations.lua: 27 KB of table constructors do not belong in
+--- the middle of the control logic, and the planner is the only consumer.
+---
+--- Known limitation: the model holds a single parent pair per species, so the
+--- two duplicate keys in the data (Cobalt, Lime) silently keep the last one.
+--- @type table<string, {parents: string[], mod: string}>
+local mutations = require("lib.data.mutations")
 
 -- System configuration
 local config = {
@@ -454,13 +151,38 @@ local config = {
     beebee_gun_slot = 1               -- Slot where beebee gun should be in Mechanical User
 }
 
+--- Turn a mod filter into a lookup set, accepting both writing styles
+--- config.enabled_mods is documented as a list ({"Forestry", ...}) but the
+--- lookup below needs a set, so both forms are normalized here.
+--- @param modlist table|nil List or set of mod names (nil means "no filter")
+--- @return table<string, boolean>|nil filter Lookup set, or nil when unfiltered
+local function buildModFilter(modlist)
+    if not modlist then return nil end
+
+    local filter = {}
+    local has_entries = false
+
+    for key, value in pairs(modlist) do
+        if type(key) == "number" then
+            filter[value] = true      -- list form: {"Forestry", "MagicBees"}
+        elseif value then
+            filter[key] = true        -- set form: {Forestry = true}
+        end
+        has_entries = true
+    end
+
+    if not has_entries then return nil end
+    return filter
+end
+
 -- Generate dynamic bee list from mutations database
 local function generateBeeList(modlist)
+    local filter = buildModFilter(modlist)
     local bees = {}
 
     -- Add all bees from mutations
     for species, data in pairs(mutations) do
-        if not modlist or (modlist and modlist[data.mod]) then
+        if not filter or filter[data.mod] then
             table.insert(bees, species)
         end
     end
@@ -470,7 +192,37 @@ local function generateBeeList(modlist)
     return bees
 end
 
-local available_bees = generateBeeList()
+--- Every species the database mentions, including base species with no mutation
+--- Base species never appear as a key in the mutations table, yet they are
+--- exactly the bees the player brings in by hand - item detection has to know
+--- them or a Forest princess in the input chest is simply never seen.
+--- @return string[] species Species names, longest first for greedy matching
+local function generateKnownSpeciesList()
+    local seen = {}
+
+    for species, data in pairs(mutations) do
+        seen[species] = true
+        for _, parent in ipairs(data.parents) do
+            seen[parent] = true
+        end
+    end
+
+    local species_list = {}
+    for species, _ in pairs(seen) do
+        table.insert(species_list, species)
+    end
+
+    -- Longest first so "Light Gray" wins over "Gray" on a "Light Gray Drone" label
+    table.sort(species_list, function(a, b)
+        if #a ~= #b then return #a > #b end
+        return a < b
+    end)
+
+    return species_list
+end
+
+local available_bees = generateBeeList(config.enabled_mods)
+local known_species = generateKnownSpeciesList()
 
 -- Filter bees by mod
 local function getBeesByMod(mod_name)
@@ -493,6 +245,42 @@ local inventory = {
     drones = {}
 }
 
+-- GUI state variables
+-- Declared here, before the first function that touches it: a local only exists
+-- for code compiled after its declaration, so functions defined earlier would
+-- read a nil global instead and crash on the first field access.
+local gui_state = {
+    target = "",
+    current_species = "",
+    step_type = "", -- "breeding", "accumulation", "complete"
+    current_step = 0,
+    total_steps = 0,
+    inventory_status = "",
+    errors = "",
+    status = "Running", -- "Running", "Paused", "Error", "Complete"
+    progress = ""
+}
+
+-- Error handling and control state
+local control_state = {
+    paused = false,
+    error_state = false,
+    last_error = "",
+    abort_requested = false,
+    validation_required = false
+}
+
+-- Status indicator color scheme
+local status_colors = {
+    idle = 0xFFFFFF,      -- White - idle/ready
+    working = 0x00FF00,   -- Green - working normally
+    waiting = 0xFFFF00,   -- Yellow - waiting for resources
+    error = 0xFF0000,     -- Red - error state
+    paused = 0xFF8800,    -- Orange - paused
+    complete = 0x0000FF,  -- Blue - task complete
+    aborted = 0x800080    -- Purple - aborted
+}
+
 -- Clear screen and set up display
 function setupDisplay()
     term.clear()
@@ -506,6 +294,36 @@ function setupDisplay()
 
     -- Set initial status
     updateStatusIndicators("idle", "System started - Ready for commands")
+end
+
+--- Record every bee of one inventory into the global stock lists
+--- Stack size matters: a slot holding 64 Forest drones is 64 drones, not one,
+--- and the accumulation planning is built on those counts.
+--- @param side number Inventory side to scan
+--- @param inv_size number Number of slots to walk
+local function scanInventorySide(side, inv_size)
+    for slot = 1, inv_size do
+        local stack = inv_controller.getStackInSlot(side, slot)
+
+        -- TODO: if we find any queen, we should kill them to get princess + drone back and rescan
+        local bee_type, species = identifyBee(stack)
+
+        if species then
+            local target = nil
+            if bee_type == "princess" or bee_type == "queen" then
+                target = inventory.princesses
+            elseif bee_type == "drone" then
+                target = inventory.drones
+            end
+
+            if target then
+                local count = tonumber(stack.size) or 1
+                for _ = 1, math.max(1, math.floor(count)) do
+                    table.insert(target, species)
+                end
+            end
+        end
+    end
 end
 
 -- Scan inventories for princesses and drones (including input/output chests)
@@ -527,30 +345,10 @@ function scanInventory()
         local name = priority.name
         local inv_size = inv_controller.getInventorySize(side)
 
-        -- TODO: refactor to avoid code duplication
         if inv_size then
             total_inventories = total_inventories + 1
             print("Scanning " .. name .. " (" .. inv_size .. " slots)")
-
-            for slot = 1, inv_size do
-                local stack = inv_controller.getStackInSlot(side, slot)
-                if stack then
-                    local item_name = stack.name or stack.label or ""
-
-                    -- TODO: if we find any queen, we should kill them to get princess + drone back and rescan
-                    if item_name:lower():find("princess") or item_name:lower():find("queen") then
-                        local species = extractSpecies(item_name)
-                        if species then
-                            table.insert(inventory.princesses, species)
-                        end
-                    elseif item_name:lower():find("drone") then
-                        local species = extractSpecies(item_name)
-                        if species then
-                            table.insert(inventory.drones, species)
-                        end
-                    end
-                end
-            end
+            scanInventorySide(side, inv_size)
         end
     end
 
@@ -558,8 +356,8 @@ function scanInventory()
     local all_sides = {sides.up, sides.down, sides.north, sides.south, sides.east, sides.west}
 
     for _, side in ipairs(all_sides) do
-        -- Skip if this is already scanned as input/output chest
-        local skip = false
+        -- Skip if this is already scanned as input/output chest, or is a machine
+        local skip = (side == config.mutatron_side) or (side == config.apiary_side)
         for _, priority in ipairs(priority_sides) do
             if side == priority.side then
                 skip = true
@@ -573,25 +371,7 @@ function scanInventory()
             if inv_size and inv_size >= 10 then
                 total_inventories = total_inventories + 1
                 print("Found inventory on " .. getSideName(side) .. " side with " .. inv_size .. " slots")
-
-                -- Scan this inventory
-                for slot = 1, inv_size do
-                    local stack = inv_controller.getStackInSlot(side, slot)
-                    if stack then
-                        local item_name = stack.name or stack.label or ""
-                        if item_name:lower():find("princess") or item_name:lower():find("queen") then
-                            local species = extractSpecies(item_name)
-                            if species then
-                                table.insert(inventory.princesses, species)
-                            end
-                        elseif item_name:lower():find("drone") then
-                            local species = extractSpecies(item_name)
-                            if species then
-                                table.insert(inventory.drones, species)
-                            end
-                        end
-                    end
-                end
+                scanInventorySide(side, inv_size)
             end
         end
     end
@@ -620,14 +400,86 @@ function getSideName(side)
     return side_names[side] or "unknown"
 end
 
--- Extract species name from item name
-function extractSpecies(itemName)
-    for _, species in ipairs(available_bees) do
-        if itemName:lower():find(species:lower()) then
-            return species
-        end
+--- Readable name of an item stack, preferring the display label
+--- Forestry keeps the species in the label ("Forest Princess"); the registry
+--- name is generic ("forestry:bee_princess_ge") and would make every Forestry
+--- bee look like a Forest bee.
+--- @param stack table|nil Item stack from the inventory controller
+--- @return string|nil name Display label, registry name, or nil
+function getItemName(stack)
+    if not stack then return nil end
+
+    if type(stack.label) == "string" and stack.label ~= "" then
+        return stack.label
+    end
+    if type(stack.name) == "string" and stack.name ~= "" then
+        return stack.name
     end
     return nil
+end
+
+--- Everything an item can be matched against (label and registry name)
+--- @param stack table|nil Item stack from the inventory controller
+--- @return string haystack Lowercased searchable text (empty when unknown)
+function getItemHaystack(stack)
+    if not stack then return "" end
+
+    local parts = {}
+    if type(stack.label) == "string" then table.insert(parts, stack.label) end
+    if type(stack.name) == "string" then table.insert(parts, stack.name) end
+
+    return table.concat(parts, " "):lower()
+end
+
+--- Extract species name from item name
+--- Matching is anchored on word boundaries: without it "forestry:bee_drone_ge"
+--- would be read as a Forest drone, and every Forestry bee would collapse into
+--- the same species.
+--- @param itemName string|nil Item label or registry name
+--- @return string|nil species Species name, or nil when nothing matches
+function extractSpecies(itemName)
+    if type(itemName) ~= "string" then return nil end
+
+    local haystack = itemName:lower()
+
+    -- known_species is sorted longest first, so the most specific name wins
+    for _, species in ipairs(known_species) do
+        local needle = species:lower()
+        local start_pos, end_pos = haystack:find(needle, 1, true)
+
+        if start_pos then
+            local before = start_pos > 1 and haystack:sub(start_pos - 1, start_pos - 1) or " "
+            local after = end_pos < #haystack and haystack:sub(end_pos + 1, end_pos + 1) or " "
+
+            if not before:match("%a") and not after:match("%a") then
+                return species
+            end
+        end
+    end
+
+    return nil
+end
+
+--- Classify a bee item stack
+--- @param stack table|nil Item stack from the inventory controller
+--- @return string|nil beeType "princess", "queen", "drone" or nil
+--- @return string|nil species Species name when it could be identified
+function identifyBee(stack)
+    local haystack = getItemHaystack(stack)
+    if haystack == "" then return nil, nil end
+
+    local bee_type = nil
+    if haystack:find("princess", 1, true) then
+        bee_type = "princess"
+    elseif haystack:find("queen", 1, true) then
+        bee_type = "queen"
+    elseif haystack:find("drone", 1, true) then
+        bee_type = "drone"
+    end
+
+    if not bee_type then return nil, nil end
+
+    return bee_type, extractSpecies(getItemName(stack))
 end
 
 -- New tree-based breeding path calculation
@@ -686,6 +538,9 @@ function calculateBreedingPath(target)
         end
     end
 
+    -- Real quantities of base bees the plan will consume (independent of stock)
+    local base_requirements = calculateBaseRequirements(tree)
+
     -- Perform sanity checks on the optimized tree
     local sanity_results = performTreeSanityChecks(tree, target)
 
@@ -707,6 +562,7 @@ function calculateBreedingPath(target)
             target = target,
             missing_princesses = missing_princesses,
             missing_drones = missing_drones,
+            base_requirements = base_requirements,
             can_execute = false,
             critical_errors = sanity_results.errors,
             plan_failed = true,
@@ -740,6 +596,7 @@ function calculateBreedingPath(target)
         target = target,
         missing_princesses = missing_princesses,
         missing_drones = missing_drones,
+        base_requirements = base_requirements,
         can_execute = can_execute,
         sanity_issues = sanity_results.warnings -- Only pass warnings to artifacts (errors already failed the plan)
     }
@@ -1617,19 +1474,33 @@ end
 function optimizeTreeByStock(tree)
     if not tree then return end
 
-    -- Process tree level by level (breadth-first)
-    local current_level = {tree}
+    -- Process tree level by level (breadth-first), tracking what each node will
+    -- be consumed as: the left branch feeds princesses, the right branch drones.
+    local current_level = {{node = tree, role = "target"}}
 
     while #current_level > 0 do
         local next_level = {}
 
-        for _, node in ipairs(current_level) do
+        for _, entry in ipairs(current_level) do
+            local node = entry.node
+
             -- Check if we have stock of this species (accounting for breeding needs)
             local available_princesses = countAvailablePrincesses(node.species)
             local available_drones = countAvailableDrones(node.species)
 
+            -- Only stock matching the role counts: a drone in a chest cannot start
+            -- a princess lineage, and a princess cannot be fed in as a drone.
+            local covered_by_stock
+            if entry.role == "princess" then
+                covered_by_stock = available_princesses > 0
+            elseif entry.role == "drone" then
+                covered_by_stock = available_drones > 0
+            else
+                covered_by_stock = available_princesses > 0 or available_drones > 0
+            end
+
             -- If we have stock, we can simplify this node
-            if available_princesses > 0 or available_drones > 0 then
+            if covered_by_stock then
                 -- Remove breeding sub-tree but keep as leaf node for breeding
                 node.left_parent = nil
                 node.right_parent = nil
@@ -1638,10 +1509,10 @@ function optimizeTreeByStock(tree)
             else
                 -- Add children to next level for processing
                 if node.left_parent then
-                    table.insert(next_level, node.left_parent)
+                    table.insert(next_level, {node = node.left_parent, role = "princess"})
                 end
                 if node.right_parent then
-                    table.insert(next_level, node.right_parent)
+                    table.insert(next_level, {node = node.right_parent, role = "drone"})
                 end
             end
         end
@@ -2175,6 +2046,76 @@ function findBaseSpeciesNeeded(tree, base_princesses, base_drones)
     findBaseSpeciesNeeded(tree.right_parent, base_princesses, base_drones)
 end
 
+--- Count how many base bees the plan structurally consumes, split by role
+--- A bred node always consumes one princess of its left parent and one drone of
+--- its right parent, so the role of a leaf is decided by the branch it sits on.
+--- Unlike findBaseSpeciesNeeded this ignores current stock: it reports the real
+--- quantities the plan will burn, which is what the player has to prepare.
+--- @param node table Tree node to inspect
+--- @param princess_needs table<string, number> Accumulator for princess counts
+--- @param drone_needs table<string, number> Accumulator for drone counts
+--- @param role string|nil "princess" or "drone" (the root itself consumes nothing)
+function countBaseSpeciesRequirements(node, princess_needs, drone_needs, role)
+    if not node then return end
+
+    -- Intermediate species: recurse, tagging each branch with the role it fills
+    if node.left_parent or node.right_parent then
+        countBaseSpeciesRequirements(node.left_parent, princess_needs, drone_needs, "princess")
+        countBaseSpeciesRequirements(node.right_parent, princess_needs, drone_needs, "drone")
+        return
+    end
+
+    -- Leaf: only base species (no known mutation) have to be supplied by the player
+    if mutations[node.species] then return end
+
+    if role == "princess" then
+        princess_needs[node.species] = (princess_needs[node.species] or 0) + 1
+    elseif role == "drone" and not node.reusing_drone then
+        drone_needs[node.species] = (drone_needs[node.species] or 0) + 1
+    end
+end
+
+--- Build the shopping list of base bees for a plan, with stock and shortage
+--- Drones can be regrown with accumulation cycles, princesses cannot: an apiary
+--- cycle always yields exactly one princess back, so every princess lineage that
+--- starts on a base species needs its own princess up front.
+--- @param tree table Root of the (optimized) breeding tree
+--- @return table<string, {princesses_required: number, princesses_available: number, princesses_short: number, drones_required: number, drones_available: number, drones_short: number}> requirements
+function calculateBaseRequirements(tree)
+    local princess_needs = {}
+    local drone_needs = {}
+    countBaseSpeciesRequirements(tree, princess_needs, drone_needs, nil)
+
+    local requirements = {}
+    local function entryFor(species)
+        if not requirements[species] then
+            requirements[species] = {
+                princesses_required = 0,
+                princesses_available = countAvailablePrincesses(species),
+                princesses_short = 0,
+                drones_required = 0,
+                drones_available = countAvailableDrones(species),
+                drones_short = 0
+            }
+        end
+        return requirements[species]
+    end
+
+    for species, count in pairs(princess_needs) do
+        local entry = entryFor(species)
+        entry.princesses_required = count
+        entry.princesses_short = math.max(0, count - entry.princesses_available)
+    end
+
+    for species, count in pairs(drone_needs) do
+        local entry = entryFor(species)
+        entry.drones_required = count
+        entry.drones_short = math.max(0, count - entry.drones_available)
+    end
+
+    return requirements
+end
+
 -- Calculate missing base species needed for the breeding plan
 function calculateMissingBaseSpecies(tree, drone_requirements)
     local base_princesses_needed = {}
@@ -2186,10 +2127,7 @@ function calculateMissingBaseSpecies(tree, drone_requirements)
     -- Calculate missing princesses (base species only)
     local missing_princesses = {}
     for species, needed in pairs(base_princesses_needed) do
-        local available = 0
-        if hasSpeciesPrincess(species) then
-            available = 1 -- Simple count - could be enhanced to track actual quantities
-        end
+        local available = countAvailablePrincesses(species)
         if needed > available then
             missing_princesses[species] = needed - available
         end
@@ -2198,10 +2136,7 @@ function calculateMissingBaseSpecies(tree, drone_requirements)
     -- Calculate missing drones (base species only)
     local missing_drones = {}
     for species, needed in pairs(base_drones_needed) do
-        local available = 0
-        if hasSpeciesDrone(species) then
-            available = 1 -- Simple count - could be enhanced to track actual quantities
-        end
+        local available = countAvailableDrones(species)
         if needed > available then
             missing_drones[species] = needed - available
         end
@@ -2477,11 +2412,11 @@ end
 --- @return string|nil gunName Name of the gun item if found
 function checkBeebeeGun()
     local stack = inv_controller.getStackInSlot(config.mech_user_inventory_side, config.beebee_gun_slot)
+    local haystack = getItemHaystack(stack)
 
-    if stack and stack.name then
-        local name = stack.name:lower()
-        if name:find("beebee") or name:find("bee.*gun") then
-            return true, stack.name
+    if haystack ~= "" then
+        if haystack:find("beebee", 1, true) or haystack:find("bee.*gun") then
+            return true, getItemName(stack)
         end
     end
     return false, nil
@@ -2494,13 +2429,20 @@ function waitForBeebeeGun()
     if not hasGun then
         updateStatusIndicators("waiting", "Waiting for beebee gun", gui_state.current_species)
         handleError("Beebee gun not found in Mechanical User slot " .. config.beebee_gun_slot, validateBeebeeGun)
+
+        if control_state.abort_requested then
+            return false
+        end
+
+        -- Re-read the slot: the name was unknown while the gun was missing
+        hasGun, gunName = checkBeebeeGun()
     end
 
     if control_state.abort_requested then
         return false
     end
 
-    drawGUI({progress = "Beebee gun ready: " .. gunName, status = "Ready"})
+    drawGUI({progress = "Beebee gun ready: " .. (gunName or "unknown"), status = "Ready"})
     return true
 end
 
@@ -2524,13 +2466,42 @@ function moveItem(from_side, from_slot, to_side, to_slot, count)
     count = count or 64
 
     local moved = inv_controller.transferItem(from_side, to_side, count, from_slot, to_slot)
-    if moved > 0 then
-        print("Moved " .. moved .. " items from slot " .. from_slot .. " to slot " .. to_slot)
+    local destination = to_slot and ("slot " .. to_slot) or "the first free slot"
+
+    if moved and moved > 0 then
+        print("Moved " .. moved .. " items from slot " .. from_slot .. " to " .. destination)
         return true
     else
-        print("Failed to move items from slot " .. from_slot .. " to slot " .. to_slot)
+        print("Failed to move items from slot " .. from_slot .. " to " .. destination)
         return false
     end
+end
+
+--- Sides worth searching for bees, best candidates first
+--- @return table[] locations List of {side, name} entries
+function getSearchableSides()
+    local locations = {
+        {side = config.output_chest_side, name = "output chest"},
+        {side = config.input_chest_side, name = "input chest"}
+    }
+
+    local all_sides = {sides.up, sides.down, sides.north, sides.south, sides.east, sides.west}
+
+    for _, side in ipairs(all_sides) do
+        local already_listed = (side == config.mutatron_side) or (side == config.apiary_side)
+        for _, location in ipairs(locations) do
+            if side == location.side then
+                already_listed = true
+                break
+            end
+        end
+
+        if not already_listed then
+            table.insert(locations, {side = side, name = getSideName(side)})
+        end
+    end
+
+    return locations
 end
 
 -- Find item in inventory by name pattern (searches multiple inventories)
@@ -2540,54 +2511,69 @@ function findItem(side, pattern)
 
     for slot = 1, inv_size do
         local stack = inv_controller.getStackInSlot(side, slot)
+        local haystack = getItemHaystack(stack)
 
-        if stack and stack.name then
-            local name = stack.name:lower()
-
-            if name:find(pattern:lower()) then
-                return slot, stack
-            end
+        if haystack ~= "" and haystack:find(pattern:lower()) then
+            return slot, stack
         end
     end
     return nil
 end
 
--- Find item across all available inventories (input, output, and storage)
-function findItemAnyInventory(pattern)
-    -- Priority search: output chest first (for produced bees), then input chest
-    local search_order = {
-        {side = config.output_chest_side, name = "output chest"},
-        {side = config.input_chest_side, name = "input chest"}
-    }
+--- Find a specific bee in one inventory
+--- Species and bee type are compared field by field instead of through a text
+--- pattern: Lua patterns have no alternation, so "Forest.*(princess|queen)"
+--- never matched anything, and "Forest.*drone" happily matched every Forestry
+--- drone because the registry name starts with "forestry:".
+--- @param side number Inventory side to search
+--- @param species string Species to look for
+--- @param bee_type string "princess" (accepts queens too) or "drone"
+--- @return number|nil slot Slot number when found
+--- @return table|nil stack Item stack when found
+function findBee(side, species, bee_type)
+    local inv_size = inv_controller.getInventorySize(side)
+    if not inv_size then return nil end
 
-    for _, location in ipairs(search_order) do
-        local slot, stack = findItem(location.side, pattern)
+    for slot = 1, inv_size do
+        local stack = inv_controller.getStackInSlot(side, slot)
+        local found_type, found_species = identifyBee(stack)
+
+        if found_species == species and found_type then
+            local matches = (found_type == bee_type)
+                or (bee_type == "princess" and found_type == "queen")
+
+            if matches then
+                return slot, stack
+            end
+        end
+    end
+
+    return nil
+end
+
+--- Find a specific bee across every reachable inventory
+--- @param species string Species to look for
+--- @param bee_type string "princess" (accepts queens too), "queen" or "drone"
+--- @return number|nil side Inventory side when found
+--- @return number|nil slot Slot number when found
+--- @return table|nil stack Item stack when found
+function findBeeAnyInventory(species, bee_type)
+    for _, location in ipairs(getSearchableSides()) do
+        local slot, stack = findBee(location.side, species, bee_type)
         if slot then
             return location.side, slot, stack
         end
     end
 
-    -- Search other inventories
-    local all_sides = {sides.up, sides.down, sides.north, sides.south, sides.east, sides.west}
+    return nil
+end
 
-    for _, side in ipairs(all_sides) do
-        -- Skip already searched sides
-        local already_searched = false
-        for _, location in ipairs(search_order) do
-            if side == location.side then
-                already_searched = true
-                break
-            end
-        end
-
-        if not already_searched then
-            local inv_size = inv_controller.getInventorySize(side)
-            if inv_size and inv_size >= 10 then
-                local slot, stack = findItem(side, pattern)
-                if slot then
-                    return side, slot, stack
-                end
-            end
+-- Find item across all available inventories (input, output, and storage)
+function findItemAnyInventory(pattern)
+    for _, location in ipairs(getSearchableSides()) do
+        local slot, stack = findItem(location.side, pattern)
+        if slot then
+            return location.side, slot, stack
         end
     end
 
@@ -2607,19 +2593,31 @@ function loadMutatron(parent1, parent2)
     end
 
     -- Find princess and drone across all inventories
-    local princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*(princess|queen)")
-    local drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
+    local princess_side, princess_slot = findBeeAnyInventory(parent1, "princess")
 
     if not princess_slot then
         handleError("Could not find " .. parent1 .. " princess/queen in any inventory!",
                    function() return validateBeeAvailability(parent1, "princess") end)
         if control_state.abort_requested then return false, "Aborted" end
+
+        -- The user just fixed the shortage, so the slot has to be located again
+        princess_side, princess_slot = findBeeAnyInventory(parent1, "princess")
+        if not princess_slot then
+            return false, "Could not find " .. parent1 .. " princess/queen in any inventory!"
+        end
     end
+
+    local drone_side, drone_slot = findBeeAnyInventory(parent2, "drone")
 
     if not drone_slot then
         handleError("Could not find " .. parent2 .. " drone in any inventory!",
                    function() return validateBeeAvailability(parent2, "drone") end)
         if control_state.abort_requested then return false, "Aborted" end
+
+        drone_side, drone_slot = findBeeAnyInventory(parent2, "drone")
+        if not drone_slot then
+            return false, "Could not find " .. parent2 .. " drone in any inventory!"
+        end
     end
 
     -- Move items to mutatron
@@ -2748,33 +2746,51 @@ function checkGendustryAPI()
 end
 
 -- Try to use Gendustry API for breeding
+--- Try to start a mutation through the Gendustry component API
+--- Returning true means "the machine was actually started". Anything else has
+--- to return false so executeSingleBreedingStep falls back to the redstone
+--- pulse - claiming success without triggering the machine leaves the Mutatron
+--- idle and the breeding step waits for a queen that never comes.
+--- @param parent1 string Princess species (informational, for logging)
+--- @param parent2 string Drone species (informational, for logging)
+--- @param target string Target species (informational, for logging)
+--- @return boolean started True only if an activation method ran successfully
 function useGendustryAPI(parent1, parent2, target)
     for name, comp in pairs(gendustry) do
         if name:find("mutatron") then
-            print("Attempting to use " .. name .. " for breeding...")
+            print("Attempting to use " .. name .. " for breeding " .. tostring(target) .. "...")
 
-            -- Try common method names that might exist
-            local methods = getComponentMethods(comp)
+            -- Diagnostics: harmless read-only calls, they never start the machine
+            if type(comp.getWorkProgress) == "function" then
+                local ok, progress = pcall(comp.getWorkProgress)
+                if ok then print("Mutatron work progress: " .. tostring(progress) .. "%") end
+            end
 
-            -- Look for likely method names
-            for _, method in ipairs(methods) do
-                if method:find("breed") or method:find("mutate") or method:find("process") then
-                    print("Found potential breeding method: " .. method)
+            if type(comp.isWorking) == "function" then
+                local ok, working = pcall(comp.isWorking)
+                if ok then print("Mutatron working: " .. tostring(working)) end
+            end
+
+            -- Gendustry exposes no documented breeding call, so probe for one
+            for _, method in ipairs(getComponentMethods(comp)) do
+                local lowered = method:lower()
+                local is_activation = lowered:find("breed") or lowered:find("mutate")
+                    or lowered:find("process") or lowered:find("start")
+                    or lowered:find("activate") or lowered:find("work")
+
+                -- getWorkProgress/isWorking style getters must not be called here
+                if is_activation and not lowered:find("^get") and not lowered:find("^is") then
+                    print("Trying activation method: " .. method)
+                    local ok, result = pcall(comp[method], parent1, parent2)
+
+                    if ok and result ~= false then
+                        print("Mutatron started through " .. name .. "." .. method)
+                        return true
+                    end
                 end
             end
 
-            -- Attempt basic operations (these would need to be adjusted based on actual API)
-            if comp.getWorkProgress then
-                local progress = comp.getWorkProgress()
-                print("Mutatron work progress: " .. progress .. "%")
-            end
-
-            if comp.isWorking then
-                local working = comp.isWorking()
-                print("Mutatron working: " .. tostring(working))
-            end
-
-            return true
+            print("No usable activation method on " .. name .. " - falling back to redstone")
         end
     end
 
@@ -2807,6 +2823,40 @@ function displayBreedingPlan(target, breeding_plan)
             local status = hasSpeciesPrincess(princess) and " ✓" or " ✗"
             print(string.format("%d. %s%s", i, princess, status))
         end
+        print()
+    end
+
+    -- Display base species shopping list (what has to be brought in by hand)
+    if breeding_plan.base_requirements and next(breeding_plan.base_requirements) then
+        print("=== BASE SPECIES REQUIRED ===")
+        local species_names = {}
+        for species, _ in pairs(breeding_plan.base_requirements) do
+            table.insert(species_names, species)
+        end
+        table.sort(species_names)
+
+        for _, species in ipairs(species_names) do
+            local req = breeding_plan.base_requirements[species]
+            local short = ""
+            if req.princesses_short > 0 or req.drones_short > 0 then
+                local parts = {}
+                if req.princesses_short > 0 then
+                    table.insert(parts, "+" .. req.princesses_short .. "P")
+                end
+                if req.drones_short > 0 then
+                    table.insert(parts, "+" .. req.drones_short .. "D")
+                end
+                short = "  ✗ missing " .. table.concat(parts, " ")
+            else
+                short = "  ✓"
+            end
+            print(string.format("%s: %d/%d princesses, %d/%d drones%s",
+                  species,
+                  req.princesses_available, req.princesses_required,
+                  req.drones_available, req.drones_required,
+                  short))
+        end
+        print("Note: drones can be regrown with accumulation cycles, princesses cannot.")
         print()
     end
 
@@ -2905,13 +2955,34 @@ function getConfirmation()
     return tonumber(choice) or 0
 end
 
+--- List of mods that actually appear in the loaded bee list
+--- @return string[] mods Mod names, alphabetically sorted
+function getAvailableMods()
+    local seen = {}
+
+    for _, species in ipairs(available_bees) do
+        local mod = mutations[species] and mutations[species].mod
+        if mod then seen[mod] = true end
+    end
+
+    local mods = {}
+    for mod, _ in pairs(seen) do
+        table.insert(mods, mod)
+    end
+    table.sort(mods)
+
+    return mods
+end
+
 -- Enhanced target selection with mod filtering
 function selectTarget()
-    local mods = config.mod_list or {}
+    -- config.mod_list never existed, so the filter menu was always empty
+    local mods = getAvailableMods()
     local current_filter = nil
+    local search_results = nil
     local filtered_bees = available_bees
 
-    mod_counts = {}
+    local mod_counts = {}
     for _, mod in ipairs(mods) do
         mod_counts[mod] = 0
     end
@@ -2922,6 +2993,10 @@ function selectTarget()
             mod_counts[mod] = mod_counts[mod] + 1
         end
     end
+
+    -- Page state lives outside the loop, otherwise "n" is undone on every redraw
+    local page_size = 15
+    local current_page = 1
 
     while true do
         setupDisplay()
@@ -2940,7 +3015,10 @@ function selectTarget()
         end
         print()
 
-        if current_filter then
+        if search_results then
+            filtered_bees = search_results
+            print("Showing search results:")
+        elseif current_filter then
             filtered_bees = getBeesByMod(current_filter)
             print("Showing " .. current_filter .. " bees:")
         else
@@ -2949,9 +3027,8 @@ function selectTarget()
         end
 
         -- Show bees with pagination
-        local page_size = 15
-        local total_pages = math.ceil(#filtered_bees / page_size)
-        local current_page = 1
+        local total_pages = math.max(1, math.ceil(#filtered_bees / page_size))
+        if current_page > total_pages then current_page = total_pages end
 
         local function showPage(page)
             local start_idx = (page - 1) * page_size + 1
@@ -2968,8 +3045,8 @@ function selectTarget()
             if total_pages > 1 then
                 print()
                 print("Page " .. page .. " of " .. total_pages)
-                print("Commands: n=next page, p=prev page, f=filter, s=search")
             end
+            print("Commands: n=next page, p=prev page, f=filter, s=search, c=clear, 0=quit")
         end
 
         showPage(current_page)
@@ -2978,10 +3055,20 @@ function selectTarget()
         io.write("Choice (number/command): ")
         local input = io.read()
 
+        if input == nil then
+            return nil
+        end
+
+        input = input:lower()
+
         if input == "n" and current_page < total_pages then
             current_page = current_page + 1
         elseif input == "p" and current_page > 1 then
             current_page = current_page - 1
+        elseif input == "c" then
+            current_filter = nil
+            search_results = nil
+            current_page = 1
         elseif input == "f" then
             print("Select mod filter (0-" .. #mods .. "): ")
 
@@ -2993,22 +3080,25 @@ function selectTarget()
                 current_filter = mods[filter_choice]
             end
 
+            search_results = nil
             current_page = 1
         elseif input == "s" then
             print("Enter search term: ")
 
-            local search = io.read():lower()
-            local search_results = {}
+            local search = (io.read() or ""):lower()
+            local matches = {}
 
             for _, species in ipairs(available_bees) do
-                if species:lower():find(search) then
-                    table.insert(search_results, species)
+                if species:lower():find(search, 1, true) then
+                    table.insert(matches, species)
                 end
             end
 
-            if #search_results > 0 then
-                filtered_bees = search_results
-                current_filter = "Search: " .. search
+            if #matches > 0 then
+                -- Held in its own variable: the next redraw would otherwise rebuild
+                -- filtered_bees from the mod filter and drop the results
+                search_results = matches
+                current_filter = nil
                 current_page = 1
             else
                 print("No matches found. Press anything...")
@@ -3028,28 +3118,6 @@ function selectTarget()
         end
     end
 end
-
--- GUI state variables
-local gui_state = {
-    target = "",
-    current_species = "",
-    step_type = "", -- "breeding", "accumulation", "complete"
-    current_step = 0,
-    total_steps = 0,
-    inventory_status = "",
-    errors = "",
-    status = "Running", -- "Running", "Paused", "Error", "Complete"
-    progress = ""
-}
-
--- Error handling and control state
-local control_state = {
-    paused = false,
-    error_state = false,
-    last_error = "",
-    abort_requested = false,
-    validation_required = false
-}
 
 --- Helper function for concise GUI updates
 --- @param progress string|nil Progress description text
@@ -3089,6 +3157,18 @@ function handleError(error_message, validation_func)
     waitForUserAction(validation_func)
 end
 
+--- Convert a key_down character code into a lowercase letter
+--- Non-character keys report 0 and unicode keys can exceed the byte range, so
+--- string.char() must not be called blindly - it raises "value out of range".
+--- @param char number|nil Character code from the key_down event
+--- @return string|nil key Lowercase single character, or nil when not printable
+function keyFromChar(char)
+    if type(char) ~= "number" then return nil end
+    if char < 32 or char > 126 then return nil end
+
+    return string.char(char):lower()
+end
+
 --- Wait for user to resume or abort after error/pause
 --- @param validation_func function|nil Function to validate fix before resuming
 function waitForUserAction(validation_func)
@@ -3099,7 +3179,7 @@ function waitForUserAction(validation_func)
         local eventType, address, char, code = event.pull(0.1, "key_down")
 
         if eventType then
-            local key = string.char(char):lower()
+            local key = keyFromChar(char) or ""
 
             if key == 'r' then
                 -- Resume request
@@ -3120,8 +3200,16 @@ function waitForUserAction(validation_func)
                         os.sleep(1)
                         break
                     else
-                        -- Issue not fixed, stay paused
-                        handleError(error_msg or control_state.last_error, validation_func)
+                        -- Issue not fixed, stay paused. Report it in place instead of
+                        -- calling handleError again: that would re-enter this loop and
+                        -- grow the stack on every failed retry.
+                        local message = error_msg or control_state.last_error
+                        control_state.last_error = message
+                        gui_state.errors = message
+                        gui_state.status = "Error"
+                        drawGUI({progress = "Still blocked - press [R] to retry", errors = message, status = "Error"})
+                        updateStatusIndicators("error", "ERROR: " .. message, gui_state.current_species)
+                        computer.beep(1000, 0.3)
                     end
                 else
                     -- Simple resume (no validation required)
@@ -3175,7 +3263,7 @@ function checkContinue()
     -- Check for manual pause/abort keypress (non-blocking)
     local eventType, address, char, code = event.pull(0, "key_down")
     if eventType then
-        local key = string.char(char):lower()
+        local key = keyFromChar(char) or ""
         if key == 'p' then
             control_state.paused = true
             waitForUserAction()
@@ -3210,8 +3298,10 @@ end
 --- @return boolean success True if bee is found
 --- @return string|nil errorMessage Error message if validation failed
 function validateBeeAvailability(species, bee_type)
-    local location = findBeeInInventory(species, bee_type)
-    if location then
+    -- findBeeInInventory only ever existed in the test mocks, so this validation
+    -- crashed in game exactly when the player was fixing a missing-bee error.
+    local side = findBeeAnyInventory(species, bee_type)
+    if side then
         return true, nil
     else
         return false, "Could not find " .. species .. " " .. bee_type .. " in any inventory"
@@ -3219,7 +3309,7 @@ function validateBeeAvailability(species, bee_type)
 end
 
 function validateMutatronOutput()
-    local stack = inventory_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+    local stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
     if stack then
         return true, nil
     else
@@ -3228,7 +3318,7 @@ function validateMutatronOutput()
 end
 
 function validateApiarySpace()
-    local stack = inventory_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
+    local stack = inv_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
     if not stack then
         return true, nil
     else
@@ -3259,17 +3349,6 @@ function sendChatNotification(message, player)
         notification_interface.notify(title, description, icon, iconMeta)
     end
 end
-
--- Status indicator color scheme
-local status_colors = {
-    idle = 0xFFFFFF,      -- White - idle/ready
-    working = 0x00FF00,   -- Green - working normally
-    waiting = 0xFFFF00,   -- Yellow - waiting for resources
-    error = 0xFF0000,     -- Red - error state
-    paused = 0xFF8800,    -- Orange - paused
-    complete = 0x0000FF,  -- Blue - task complete
-    aborted = 0x800080    -- Purple - aborted
-}
 
 --- Update status indicators based on current state
 --- @param state string Status state key (idle, working, waiting, error, paused, complete, aborted)
@@ -3936,10 +4015,17 @@ end
 function executeAccumulationCycle(species)
     drawGUI({current_species = species, step_type = "Accumulation", progress = "Running accumulation cycle", status = "Working"})
 
-    -- Find existing queen of this species across all inventories
-    local queen_side, queen_slot, queen_stack = findItemAnyInventory(species .. ".*queen")
+    -- Find an existing queen of this species, or a princess to mate in the apiary
+    local needs_drone = false
+    local queen_side, queen_slot = findBeeAnyInventory(species, "queen")
+
     if not queen_slot then
-        drawGUI({progress = "Accumulation failed", errors = "No " .. species .. " queen found", status = "Error"})
+        queen_side, queen_slot = findBeeAnyInventory(species, "princess")
+        needs_drone = queen_slot ~= nil
+    end
+
+    if not queen_slot then
+        drawGUI({progress = "Accumulation failed", errors = "No " .. species .. " queen or princess found", status = "Error"})
         return false
     end
 
@@ -3948,6 +4034,22 @@ function executeAccumulationCycle(species)
     if not success then
         drawGUI({progress = "Move failed", errors = "Failed to move queen to apiary", status = "Error"})
         return false
+    end
+
+    -- A princess only becomes a queen once a drone of the same species joins her
+    if needs_drone then
+        local drone_side, drone_slot = findBeeAnyInventory(species, "drone")
+
+        if not drone_slot then
+            drawGUI({progress = "Accumulation failed", errors = "No " .. species .. " drone to mate the princess", status = "Error"})
+            return false
+        end
+
+        -- No target slot: let the inventory controller pick the free drone slot
+        if not moveItem(drone_side, drone_slot, config.apiary_side, nil, 1) then
+            drawGUI({progress = "Move failed", errors = "Failed to move " .. species .. " drone to apiary", status = "Error"})
+            return false
+        end
     end
 
     -- Activate apiary
@@ -4018,6 +4120,12 @@ function main()
     end
 end
 
+-- Run the interactive program when launched directly (`lua main.lua`)
+-- Tests require this file as a module and drive the functions themselves.
+if not MODULE_NAME then
+    main()
+end
+
 -- Always export module functions (tests import this module)
 return {
     -- Planning functions
@@ -4025,6 +4133,7 @@ return {
     buildBreedingTree = buildBreedingTree,
     findStartingPrincesses = findStartingPrincesses,
     calculateDroneRequirements = calculateDroneRequirements,
+    calculateBaseRequirements = calculateBaseRequirements,
     displayTree = displayTree,
 
     -- Execution functions
@@ -4036,6 +4145,13 @@ return {
     getSideName = getSideName,
     hasSpeciesPrincess = hasSpeciesPrincess,
     hasSpeciesDrone = hasSpeciesDrone,
+    countAvailablePrincesses = countAvailablePrincesses,
+    countAvailableDrones = countAvailableDrones,
+    extractSpecies = extractSpecies,
+    identifyBee = identifyBee,
+    getItemName = getItemName,
+    keyFromChar = keyFromChar,
+    useGendustryAPI = useGendustryAPI,
 
     -- Status functions (for integration tests)
     updateStatusIndicators = updateStatusIndicators,
@@ -4043,5 +4159,8 @@ return {
 
     -- Data
     mutations = mutations,
-    config = config
+    config = config,
+    known_species = known_species,
+    inventory = inventory,      -- shared table: tests populate it to simulate stock
+    scanInventory = scanInventory
 }

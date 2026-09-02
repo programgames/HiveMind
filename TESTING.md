@@ -53,11 +53,12 @@ git commit --no-verify -m "Emergency fix"
 
 ### ✅ **Every Commit** (automatic):
 1. **Lua Syntax Check** - Validates all `.lua` files compile correctly
-2. **Planning Tests** - Tests breeding path calculation for 15+ species
-3. **Execution Tests** - Tests executeBreedingTree with mock functions
-4. **Error Handling** - Tests failure scenarios and recovery
-5. **Example Usage** - Validates `test_example.lua` works correctly
-6. **File Quality** - Trailing whitespace, file endings, YAML validation
+2. **Item Detection Tests** - Species extraction from item labels, stack sizes, key codes
+3. **Planning Tests** - Tests breeding path calculation for 15+ species
+4. **Execution Tests** - Tests executeBreedingTree with mock functions
+5. **Error Handling** - Tests failure scenarios and recovery
+6. **Example Usage** - Validates `test_example.lua` works correctly
+7. **File Quality** - Trailing whitespace, file endings, YAML validation
 
 ### ⚡ **Manual Stage** (run with `--hook-stage manual`):
 7. **Performance Tests** - Timing analysis for complex breeding chains
@@ -98,6 +99,7 @@ pre-commit autoupdate
 ### Run Specific Hook:
 ```bash
 pre-commit run lua-syntax-check
+pre-commit run hivemind-detection-tests
 pre-commit run hivemind-planning-tests
 ```
 

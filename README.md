@@ -108,8 +108,10 @@ Tip: Use enabled_mods to restrict which mods’ species are considered when plan
 ### Operation
 1. The program scans all connected inventories for available bees
 2. Select target bee species from the menu (supports filtering by mod)
+   - Menu commands: `n`/`p` to page, `f` to filter by mod, `s` to search, `c` to clear the filter, `0` to quit
 3. Review the generated breeding strategy showing:
    - Golden path (main princess lineage)
+   - Base species the plan consumes, princesses and drones counted separately
    - Required drone paths
    - Accumulation cycles needed
 4. Confirm execution to start automated breeding
@@ -119,6 +121,26 @@ The program uses a three-phase approach:
 1. Breed required drone species first
 2. Run accumulation cycles to build drone reserves
 3. Execute golden path using accumulated resources
+
+### Base Species You Have to Supply
+Species with no mutation in the database are the raw material: the program can
+never produce them, it only consumes them. The plan lists them before execution,
+for example:
+
+```
+=== BASE SPECIES REQUIRED ===
+Forest: 1/1 princesses, 0/1 drones  ✗ missing +1D
+Meadows: 1/3 princesses, 4/2 drones  ✗ missing +2P
+Note: drones can be regrown with accumulation cycles, princesses cannot.
+```
+
+The princess/drone split matters. Every breeding step consumes one princess of
+the left parent and one drone of the right parent, and an apiary cycle always
+yields exactly one princess back — so a princess stock never grows on its own.
+Each princess lineage that starts on a base species needs its own princess,
+taken from a wild hive or produced by a Gendustry Replicator. Drones are the
+renewable half: accumulation cycles regrow them, at the cost of one apiary
+cycle each.
 
 ### Status Indicators
 

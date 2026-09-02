@@ -16,6 +16,15 @@ repos:
         files: '\.lua$'
         pass_filenames: false
 
+      # Item detection tests (labels, stack sizes, key codes)
+      - id: hivemind-detection-tests
+        name: HiveMind Item Detection Tests
+        entry: lua
+        args: ['-e', 'package.path = package.path .. ";./?.lua"; local test_planning = require("test_planning"); print("Running HiveMind item detection tests..."); local success = test_planning.testItemDetection(); if not success then print("❌ Item detection tests failed"); os.exit(1); else print("✅ Item detection tests passed"); end']
+        language: system
+        files: '(main|test_planning)\.lua$'
+        pass_filenames: false
+
       # Core planning tests
       - id: hivemind-planning-tests
         name: HiveMind Planning Tests
