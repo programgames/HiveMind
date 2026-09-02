@@ -80,6 +80,8 @@ jobs:
         lua test_state.lua
         lua test_species.lua
         lua test_jobs.lua
+        lua test_transport.lua
+        lua test_machines.lua
         echo "::endgroup::"
 
     - name: Test Suite - Genome Layer

@@ -1,0 +1,204 @@
+-- HiveMind configuration
+--
+-- Describes YOUR installation. Nothing here is guessed by the program: it moves
+-- items exactly where this file says, so a wrong side means items going into the
+-- wrong slot, not a crash.
+--
+-- Topology, in one paragraph. Machines are reached by Transposers. A Transposer
+-- moves items between the inventories it physically touches, so every link below
+-- names three things: which transposer, the side where the machine sits, and the
+-- side where the items come from (the ME Interface, or a buffer chest). Machines
+-- driven through The Apiarist Terminal (Mutatron, Industrial Apiary) also have a
+-- component name, which is how the program reads their state.
+--
+-- Sides are OpenComputers side numbers, seen FROM THE TRANSPOSER, not from you.
+
+local config = {}
+
+-- Sides are resolved lazily: this module is loaded by desktop tests too, where
+-- the OpenComputers libraries do not exist.
+local sides = nil
+do
+    local ok, library = pcall(require, "sides")
+    if ok and type(library) == "table" then
+        sides = library
+    else
+        -- Same numbering as OpenComputers, so the defaults below stay meaningful
+        sides = {
+            bottom = 0, top = 1, back = 2, front = 3, right = 4, left = 5,
+            down = 0, up = 1, north = 2, south = 3, west = 4, east = 5,
+        }
+    end
+end
+
+config.sides = sides
+
+-- ---------------------------------------------------------------------------
+-- Storage
+-- ---------------------------------------------------------------------------
+
+config.state_directory = "/home/hivemind/state"
+
+-- Templates never enter the ME network: they all share one item id and one
+-- label, so AE2 could not tell them apart and we could never pull a specific
+-- one back out. They live in a dedicated chest, one per slot, tracked on disk
+-- and verified by fingerprint. Do not reorganize this chest by hand.
+config.template_chest = {
+    transposer = 1,
+    side = sides.up,
+    slots = 27,
+}
+
+-- ---------------------------------------------------------------------------
+-- Machine links
+-- ---------------------------------------------------------------------------
+
+--- @class MachineLink
+--- @field component string|nil OpenComputers component type, when the machine has a driver
+--- @field transposer number Index into config.transposers
+--- @field machine number Side where the machine sits, seen from the transposer
+--- @field source number Side where items come from (ME Interface or buffer)
+
+-- Transposer component addresses, in order. A single-transposer setup leaves
+-- this empty and the primary transposer is used everywhere.
+config.transposers = {}
+
+config.machines = {
+    -- Driven through The Apiarist Terminal
+    mutatron = {
+        component = "advmutatron",
+        transposer = 1,
+        machine = sides.north,
+        source = sides.south,
+        -- Slot layout reported by listSlots(); kept here as a fallback only,
+        -- the driver asks the machine at runtime.
+        slots = {in1 = 0, in2 = 1, output = 2, labware = 3},
+    },
+
+    breeding_apiary = {
+        component = "industrial_apiary",
+        transposer = 1,
+        machine = sides.east,
+        source = sides.south,
+        slots = {queen = 0, drone = 1, outputs = {6, 7, 8, 9, 10, 11, 12, 13, 14}},
+        -- MUST NOT carry an Automation upgrade: waitForPrincess() is documented
+        -- to fail when one is present, and that call is what replaces the
+        -- beebee gun and the fixed 30 second sleep.
+        automated = false,
+    },
+
+    -- Runs on its own with an Automation upgrade, feeding drones to the DNA
+    -- Extractor and the Sampler. Optional.
+    production_apiary = {
+        component = nil,
+        transposer = 1,
+        machine = sides.west,
+        source = sides.south,
+        automated = true,
+        enabled = false,
+    },
+
+    -- Item-only machines: no driver, the program watches their slots
+    sampler = {
+        transposer = 1, machine = sides.down, source = sides.south,
+        slots = {input = 1, blank = 2, labware = 3, output = 4},
+    },
+    genetic_transposer = {
+        transposer = 1, machine = sides.up, source = sides.south,
+        slots = {source = 1, destination = 2, labware = 3, output = 4},
+    },
+    imprinter = {
+        transposer = 2, machine = sides.north, source = sides.south,
+        slots = {bee = 1, template = 2, labware = 3, output = 4},
+    },
+    replicator = {
+        transposer = 2, machine = sides.east, source = sides.south,
+        slots = {template = 1, output = 2},
+    },
+    dna_extractor = {
+        transposer = 2, machine = sides.west, source = sides.south,
+        slots = {input = 1, labware = 2},
+    },
+    protein_liquifier = {
+        transposer = 2, machine = sides.down, source = sides.south,
+        slots = {input = 1},
+    },
+    mutagen_producer = {
+        transposer = 2, machine = sides.up, source = sides.south,
+        slots = {input = 1},
+    },
+}
+
+-- ---------------------------------------------------------------------------
+-- Behaviour
+-- ---------------------------------------------------------------------------
+
+config.energy = {
+    -- No active power management, as decided: the program waits. It only
+    -- reports when the wait gets long enough to be worth your attention.
+    complain_after_seconds = 60,
+    -- A machine is considered unable to work below this share of its buffer
+    minimum_ratio = 0.05,
+}
+
+config.transport = {
+    -- The ME Interface has nine configuration slots, used as loading docks.
+    -- Reserving them all would starve any other interface user.
+    docks = {1, 2, 3, 4, 5, 6},
+    -- How long to wait for AE2 to physically stock a requested item
+    stock_timeout_seconds = 20,
+    poll_interval_seconds = 0.5,
+}
+
+config.library = {
+    -- Never consume the last copy of a gene. Below this count the program
+    -- duplicates through the Genetic Transposer before using one.
+    minimum_copies = 2,
+    -- Copies above this are not worth the labware
+    target_copies = 3,
+}
+
+config.breeding = {
+    -- Extra drones to accumulate beyond the strict requirement
+    spare_drones = 1,
+    -- Replicated bees are always Ignoble Stock, and the Imprinter sometimes
+    -- kills those. Princess lineages therefore come from natural breeding, and
+    -- replication is reserved for drones, which are consumables.
+    replicate_princesses = false,
+}
+
+config.ui = {
+    use_status_lamp = true,
+    use_chat_notifications = true,
+    chat_player_name = nil,   -- nil broadcasts to everyone
+}
+
+-- ---------------------------------------------------------------------------
+
+--- Look up a machine link, with a clear error rather than a nil index later
+--- @param name string Machine key
+--- @return table|nil link
+--- @return string|nil error
+function config.machine(name)
+    local link = config.machines[name]
+    if not link then
+        return nil, "machine inconnue dans la configuration: " .. tostring(name)
+    end
+    if link.enabled == false then
+        return nil, "machine desactivee dans la configuration: " .. name
+    end
+    return link
+end
+
+--- Machines that are declared and enabled
+--- @return string[] names
+function config.enabledMachines()
+    local names = {}
+    for name, link in pairs(config.machines) do
+        if link.enabled ~= false then table.insert(names, name) end
+    end
+    table.sort(names)
+    return names
+end
+
+return config
