@@ -260,6 +260,81 @@ local function sectionApiary()
 end
 
 -- ---------------------------------------------------------------------------
+-- Section 2b: the live breeding database
+-- ---------------------------------------------------------------------------
+
+--- Capture the mutation data the game itself holds
+--- The driver exposes listAllSpecies / getBeeParents / getBeeBreedingData, which
+--- would make the hardcoded 304-entry table redundant: no drift with the pack,
+--- no duplicate keys, and alternative mutation paths become visible. Their exact
+--- shape decides whether the planner can be fed from the game.
+local function sectionBreedingData()
+    header("2b. BASE DE MUTATIONS VIVANTE")
+
+    local apiary = firstAvailable("industrial_apiary")
+    if not apiary then
+        say("  Pas d'industrial_apiary, section ignoree.")
+        return
+    end
+
+    -- These can be very large; report the size and a readable sample
+    local function sample(method, limit, ...)
+        local ok, result = call(apiary, method, ...)
+
+        if not ok then
+            say("  " .. method .. " -> indisponible: " .. tostring(result))
+            record("  " .. method .. " -> indisponible: " .. tostring(result))
+            return nil
+        end
+
+        if type(result) ~= "table" then
+            say("  " .. method .. " = " .. tostring(result))
+            record("  " .. method .. " = " .. dump(result, "  "))
+            return result
+        end
+
+        local count = 0
+        for _ in pairs(result) do count = count + 1 end
+        say("  " .. method .. " : " .. count .. " entree(s)")
+
+        record("")
+        record("  --- " .. method .. " (" .. count .. " entrees, " .. limit .. " montrees) ---")
+
+        local shown = 0
+        for key, value in pairs(result) do
+            if shown >= limit then break end
+            shown = shown + 1
+            record("  [" .. tostring(key) .. "] = " .. dump(value, "  "))
+        end
+        record("  --- fin ---")
+
+        return result
+    end
+
+    local species = sample("listAllSpecies", 8)
+    sample("getBeeBreedingData", 3)
+    probe(apiary, "canBreed")
+
+    -- getBeeParents needs a species name; take one from the live list
+    local subject = nil
+    if type(species) == "table" then
+        for _, value in pairs(species) do
+            if type(value) == "string" then
+                subject = value
+                break
+            elseif type(value) == "table" then
+                subject = value.name or value.uid or value.species or value.label
+                if subject then break end
+            end
+        end
+    end
+
+    subject = subject or "forestry.speciesCultivated"
+    say("  getBeeParents teste avec: " .. tostring(subject))
+    sample("getBeeParents", 6, subject)
+end
+
+-- ---------------------------------------------------------------------------
 -- Section 3: Advanced Mutatron
 -- ---------------------------------------------------------------------------
 
@@ -347,8 +422,10 @@ local function sectionNetwork()
         say("  c'est lui qui verrouille le parseur 'Chromosome: Allele'.")
     end
 
-    -- The interface config slots are our loading docks
-    probe(me, "getInterfaceConfiguration")
+    -- The interface config slots are our loading docks: called bare it answers
+    -- nil, so ask for a specific slot
+    probe(me, "getInterfaceConfiguration", 1)
+    probe(me, "isNetworkPowered")
 end
 
 -- ---------------------------------------------------------------------------
@@ -561,7 +638,7 @@ local function main(args)
     say("=========================================")
 
     local sections = {
-        sectionComponents, sectionApiary, sectionMutatron,
+        sectionComponents, sectionApiary, sectionBreedingData, sectionMutatron,
         sectionNetwork, sectionInventories, sectionDatabase,
         function() sectionFingerprint(test_db) end,
         sectionEnvironment
