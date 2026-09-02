@@ -576,14 +576,28 @@ local function sectionFingerprint(enabled)
     local stored_ok, stored = call(transposer, "store",
         found_template.side, found_template.slot, db.address, DB_SLOT)
 
-    if not stored_ok or not stored then
+    if not stored_ok then
         say("  ECHEC store(): " .. tostring(stored))
         say("  -> l'empreinte de template n'est pas disponible, a signaler.")
         return
     end
 
-    say("  store() OK.")
-    probe(db, "get", DB_SLOT)
+    -- store() reports whether the destination slot was ALREADY occupied, not
+    -- whether the write worked: InventoryAnalytics.storeInternal always writes
+    -- and returns the previous occupancy. So false is the normal answer on an
+    -- empty database. Success is checked by reading the entry back.
+    say("  store() appele (slot deja occupe avant: " .. tostring(stored) .. ")")
+
+    local read_ok, entry = call(db, "get", DB_SLOT)
+    record("  get(" .. DB_SLOT .. ") = " .. dump(entry, "  "))
+
+    if not read_ok or type(entry) ~= "table" then
+        say("  Le slot " .. DB_SLOT .. " est vide apres store() -> ECHEC reel.")
+        say("  Verifie le tier de la Database Upgrade: le slot demande existe-t-il ?")
+        return
+    end
+
+    say("  Entree ecrite: " .. tostring(entry.label or entry.name or "?"))
 
     local hash_ok, hash = call(db, "computeHash", DB_SLOT)
     if hash_ok and hash then
