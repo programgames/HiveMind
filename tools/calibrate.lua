@@ -101,15 +101,22 @@ local function dump(value, indent, depth, seen)
 end
 
 --- Call a component method defensively
+--- Component methods are NOT functions: machine.lua builds them as
+---   proxy[method] = setmetatable({address=..., name=...}, componentCallback)
+--- so they are tables carrying a __call metamethod. Testing for "function"
+--- rejects every method of every component, so only nil is checked here and the
+--- call itself is left to decide.
 --- @param proxy table|nil Component proxy
 --- @param method string Method name
 --- @return boolean ok
 --- @return any result First return value, or the error message
 local function call(proxy, method, ...)
     if not proxy then return false, "no component" end
-    if type(proxy[method]) ~= "function" then return false, "method absent" end
 
-    local ok, result = pcall(proxy[method], ...)
+    local target = proxy[method]
+    if target == nil then return false, "method absent" end
+
+    local ok, result = pcall(target, ...)
     return ok, result
 end
 
@@ -175,17 +182,31 @@ local function sectionComponents()
     for _, kind in ipairs({"advmutatron", "industrial_apiary", "me_interface",
                            "me_controller", "database", "transposer"}) do
         if component.isAvailable(kind) then
-            local address = component.getPrimary(kind).address
+            local proxy = component.getPrimary(kind)
+            local address = proxy.address
             record("")
             record("-- " .. kind .. " --")
 
-            local methods = {}
-            for name, value in pairs(component.getPrimary(kind)) do
-                if type(value) == "function" then table.insert(methods, name) end
-            end
-            table.sort(methods)
+            -- component.methods() is authoritative; walking the proxy is the
+            -- fallback, skipping the plain data fields it also carries.
+            local names = {}
+            local listed, methods = pcall(component.methods, address)
 
-            for _, name in ipairs(methods) do
+            if listed and type(methods) == "table" then
+                for name in pairs(methods) do
+                    table.insert(names, name)
+                end
+            else
+                local skip = {address = true, type = true, slot = true, fields = true}
+                for name in pairs(proxy) do
+                    if not skip[name] then table.insert(names, name) end
+                end
+            end
+
+            table.sort(names)
+            say("  " .. kind .. ": " .. #names .. " methode(s)")
+
+            for _, name in ipairs(names) do
                 local ok, doc = pcall(component.doc, address, name)
                 record("  " .. name .. (ok and doc and ("  --  " .. doc) or ""))
             end
