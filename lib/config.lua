@@ -45,8 +45,14 @@ config.state_directory = "/home/hivemind/state"
 -- and verified by fingerprint. Do not reorganize this chest by hand.
 config.template_chest = {
     transposer = 1,
-    side = sides.up,
+    side = 4,        -- west/right, found by tools/discover.lua
     slots = 27,
+}
+
+-- Transposer component addresses, in the order the machine links index them.
+-- Filled in from tools/discover.lua; the bootstrap resolves them to proxies.
+config.transposers = {
+    "95625858-b606-4eb0-89cb-4f3b467c0c06",
 }
 
 -- ---------------------------------------------------------------------------
@@ -59,17 +65,21 @@ config.template_chest = {
 --- @field machine number Side where the machine sits, seen from the transposer
 --- @field source number Side where items come from (ME Interface or buffer)
 
--- Transposer component addresses, in order. A single-transposer setup leaves
--- this empty and the primary transposer is used everywhere.
-config.transposers = {}
-
+-- Sides below are the real installation, found by tools/discover.lua:
+--   transposer 1, north/back (2) = ME Interface, the source for everything
+--                 south/front (3) = Industrial Apiary
+--                 east/left (5)   = Advanced Mutatron
+--                 west/right (4)  = template chest
+--
+-- Machines that are not built yet are declared with enabled = false: they keep
+-- their slot layout ready, and rerunning discover fills in their real sides.
 config.machines = {
     -- Driven through The Apiarist Terminal
     mutatron = {
         component = "advmutatron",
         transposer = 1,
-        machine = sides.north,
-        source = sides.south,
+        machine = 5,      -- east/left
+        source = 2,       -- north/back, the ME Interface
         -- Slot layout reported by listSlots(); kept here as a fallback only,
         -- the driver asks the machine at runtime.
         slots = {in1 = 0, in2 = 1, output = 2, labware = 3},
@@ -78,8 +88,8 @@ config.machines = {
     breeding_apiary = {
         component = "industrial_apiary",
         transposer = 1,
-        machine = sides.east,
-        source = sides.south,
+        machine = 3,      -- south/front
+        source = 2,
         slots = {queen = 0, drone = 1, outputs = {6, 7, 8, 9, 10, 11, 12, 13, 14}},
         -- MUST NOT carry an Automation upgrade: waitForPrincess() is documented
         -- to fail when one is present, and that call is what replaces the
@@ -88,43 +98,44 @@ config.machines = {
     },
 
     -- Runs on its own with an Automation upgrade, feeding drones to the DNA
-    -- Extractor and the Sampler. Optional.
+    -- Extractor and the Sampler. Optional, not built yet.
     production_apiary = {
         component = nil,
         transposer = 1,
-        machine = sides.west,
-        source = sides.south,
+        machine = nil,
+        source = 2,
         automated = true,
         enabled = false,
     },
 
-    -- Item-only machines: no driver, the program watches their slots
+    -- Item-only machines: no driver, the program watches their slots.
+    -- None of these is installed yet; sides are filled in by discover.
     sampler = {
-        transposer = 1, machine = sides.down, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {input = 1, blank = 2, labware = 3, output = 4},
     },
     genetic_transposer = {
-        transposer = 1, machine = sides.up, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {source = 1, destination = 2, labware = 3, output = 4},
     },
     imprinter = {
-        transposer = 2, machine = sides.north, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {bee = 1, template = 2, labware = 3, output = 4},
     },
     replicator = {
-        transposer = 2, machine = sides.east, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {template = 1, output = 2},
     },
     dna_extractor = {
-        transposer = 2, machine = sides.west, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {input = 1, labware = 2},
     },
     protein_liquifier = {
-        transposer = 2, machine = sides.down, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {input = 1},
     },
     mutagen_producer = {
-        transposer = 2, machine = sides.up, source = sides.south,
+        transposer = 2, machine = nil, source = nil, enabled = false,
         slots = {input = 1},
     },
 }

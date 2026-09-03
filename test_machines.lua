@@ -292,13 +292,23 @@ local built, missing = machines.all({
     clock = function() ticks = ticks + 1 return ticks end,
 })
 
+-- The configuration now describes the real installation: only the Mutatron and
+-- the breeding apiary are built, the genetics machines are declared but
+-- disabled until they exist in the world.
 checkTruthy("mutatron construit", built.mutatron)
-checkTruthy("sampler construit", built.sampler)
+checkTruthy("apiary construit", built.breeding_apiary)
+check("sampler pas encore installe", built.sampler, nil)
 check("machine desactivee ignoree", built.production_apiary, nil)
 -- A missing component must not prevent item moves on that machine
-checkTruthy("apiary construit malgre son composant absent", built.breeding_apiary)
 check("composant manquant signale", missing[1], "breeding_apiary")
 check("le mutatron a bien le bon driver", built.mutatron:tank(), 8000)
+
+-- The real topology, as discovered in game
+check("mutatron sur la face est/gauche", config.machines.mutatron.machine, 5)
+check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3)
+check("source commune = ME Interface", config.machines.mutatron.source, 2)
+check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
+check("un transposer declare", #config.transposers, 1)
 
 print("")
 print("=== Resultats ===")

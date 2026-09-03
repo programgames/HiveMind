@@ -27,6 +27,8 @@ local SIDE_NAMES = {
 -- Ordered from most specific to least: "industrial_apiary" must be tested
 -- before "apiary", and the Gendustry "transposer" before anything generic.
 local SIGNATURES = {
+    -- Exact names seen in game come first
+    {pattern = "mutatron_advanced",   machine = "mutatron"},
     {pattern = "advanced_mutatron",   machine = "mutatron"},
     {pattern = "mutatron",            machine = "mutatron"},
     {pattern = "industrial_apiary",   machine = "breeding_apiary"},
