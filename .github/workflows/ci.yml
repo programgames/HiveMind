@@ -40,7 +40,7 @@ jobs:
           'lib/data/mutations.lua',
           'test_genome.lua', 'test_state.lua', 'test_species.lua', 'test_jobs.lua',
           'test_transport.lua', 'test_machines.lua', 'test_library.lua',
-          'tools/calibrate.lua', 'tools/upload.lua', 'tools/discover.lua',
+          'tools/calibrate.lua', 'tools/upload.lua', 'tools/discover.lua', 'tools/autoreport.lua',
           'lib/breeding.lua', 'test_breeding.lua', 'hivemind.lua',
           'lib/planner.lua', 'test_planner.lua'
         }
