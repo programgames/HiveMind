@@ -94,10 +94,18 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 Deux transposers depuis que le banc de génétique existe. **L'ordre compte** :
 les machines nomment un transposer par son index.
 
-| Transposer | Index | Machines |
+| Transposer | ME Interface | Machines |
 |---|---|---|
-| `65d3da44` | 1 | Sampler (5), Genetic Transposer (3), Imprinter (2), ME Interface (4) |
-| `95625858` | 2 | Mutatron (5), Apiary (3), coffre à templates (4), ME Interface (2) |
+| `65d3da44` | `983cd2bd` | Sampler (5), Genetic Transposer (3), Imprinter (2), interface (4) |
+| `95625858` | `4c447a5c` | Mutatron (5), Apiary (3), coffre à templates (4), interface (2) |
+
+**Jamais d'index de position en config** : ajouter un transposer au réseau les
+renumérote tous et chaque machine pointe alors vers le mauvais voisin, sans
+aucune erreur. Tout se désigne par préfixe d'adresse.
+
+**Adapter ≠ Transposer.** Le transposer déplace des objets ; l'Adapter rend un
+bloc adressable comme composant. Une ME Interface sans Adapter est invisible, et
+chaque livraison échoue en donnant l'impression que la machine refuse l'objet.
 
 **Une ME Interface par banc, et chacune doit avoir un Adapter.** Approvisionner
 un quai ne marche que sur l'interface à laquelle ce quai appartient : configurer

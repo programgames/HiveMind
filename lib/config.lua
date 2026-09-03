@@ -69,7 +69,11 @@ config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b4
 -- A prefix is enough, and is all a component listing shows.
 config.interfaces = {
     [BREEDING] = "4c447a5c",   -- Mutatron and apiary
-    -- [GENETICS] = "...",     -- the three genetics machines: needs an Adapter
+    -- Appeared the moment an Adapter was placed against the second interface,
+    -- while 4c447a5c had been there all along: that is what identifies it.
+    -- If it turns out to be the wrong way round, staging fails with a clear
+    -- reason rather than silently, so the mistake is cheap.
+    [GENETICS] = "983cd2bd",   -- sampler, genetic transposer, imprinter
 }
 
 config.template_chest = {
@@ -84,7 +88,6 @@ config.template_chest = {
 -- transposer to the network renumbered every other one and silently aimed each
 -- machine at the wrong neighbour. A prefix is enough.
 config.transposers = {
-    "04bac23d-d8eb-42e8-8847-91acb8ce2bee",   -- spare, touches only the imprinter
     "65d3da44-cb90-4812-a6fa-d28128c9a988",   -- sampler, transposer, imprinter
     "95625858-b606-4eb0-89cb-4f3b467c0c06",   -- mutatron, apiary, templates
 }
