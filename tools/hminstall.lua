@@ -177,6 +177,21 @@ local function write(path, body)
     file:write(body)
     file:close()
 
+    -- Read it back. hivemind.lua and autoreport.lua were updating while
+    -- lib/genetics.lua stayed at an older revision, and a write that silently
+    -- does nothing is indistinguishable from one that worked.
+    local check = io.open(path, "r")
+    if not check then
+        return false, "ecrit puis introuvable"
+    end
+
+    local written = check:read("*all") or ""
+    check:close()
+
+    if #written ~= #body then
+        return false, string.format("ecrit %d octets, relu %d", #body, #written)
+    end
+
     return true
 end
 

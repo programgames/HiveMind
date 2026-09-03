@@ -76,12 +76,29 @@ package.loaded["shell"] = {
 local real_open, real_print = io.open, print
 local out = {}
 
+-- What a write actually put on disk, so a read-back can be answered. The
+-- installer verifies its own writes now: hivemind.lua kept updating while
+-- lib/genetics.lua stayed behind, and a write that silently does nothing looks
+-- exactly like one that worked.
+local contents = {}
+
 local function capture()
     io.open = function(path, m)
         if m == "w" then
-            return {write = function(_, body) table.insert(written, path .. "=" .. #body) end,
-                    close = function() end}
+            return {
+                write = function(_, body)
+                    table.insert(written, path .. "=" .. #body)
+                    contents[path] = body
+                end,
+                close = function() end,
+            }
         end
+
+        if contents[path] then
+            local body = contents[path]
+            return {read = function() return body end, close = function() end}
+        end
+
         return real_open(path, m)
     end
     io.write = function() end
@@ -213,6 +230,7 @@ local body = real_open("tools/hminstall.lua"):read("*all")
 
 for _, prefix in ipairs({"=", "@"}) do
     requested, written, out = {}, {}, {}
+    for path in pairs(contents) do contents[path] = nil end
     local elsewhere = assert(load(body, prefix .. "/home/hminstall.lua"))
 
     capture()
@@ -304,5 +322,43 @@ check("le reseau est explicitement disculpe",
 check("aucune accusation de carte Internet",
       text:find("Verifie la carte Internet", 1, true) == nil)
 check("une solution concrete est donnee", text:find("mkdir /home/", 1, true) ~= nil)
+
+-- A write that silently does nothing looks exactly like one that worked, and
+-- that is how lib/genetics.lua stayed at an older revision while every other
+-- file updated around it.
+requested, written, out = {}, {}, {}
+for path in pairs(contents) do contents[path] = nil end
+
+-- The disk-full case above left a filesystem that refuses every directory, and
+-- with it every write fails long before the read-back is reached
+package.loaded["filesystem"] = {
+    remove = function() return true end,
+    exists = function() return true end,
+    makeDirectory = function() return true end,
+}
+
+local real_capture = capture
+capture = function()
+    real_capture()
+    local honest = io.open
+    io.open = function(path, m)
+        -- One file that accepts the write and keeps nothing
+        if m == "w" and path:find("genetics", 1, true) then
+            return {write = function() end, close = function() end}
+        end
+        return honest(path, m)
+    end
+end
+
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+capture = real_capture
+
+text = table.concat(out, " ")
+check("une ecriture sans effet est detectee",
+      text:find("octets, relu", 1, true) ~= nil)
+check("et comptee comme un echec d'ecriture",
+      text:find("Ecritures echouees", 1, true) ~= nil)
 
 os.exit(failed and 1 or 0)
