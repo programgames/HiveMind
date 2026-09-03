@@ -38,7 +38,7 @@ Recalculer avec `lua progress.lua`.
 
 - [x] Module bibliothèque de gènes écrit et testé
 - [x] Parseur d'étiquettes de samples
-- [ ] Genetic Sampler piloté
+- [x] Genetic Sampler piloté
 - [ ] Genetic Transposer piloté (duplication des samples)
 - [ ] Imprinter piloté
 - [ ] Replicator piloté

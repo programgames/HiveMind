@@ -58,6 +58,7 @@ local species = need("lib.species")
 local jobs = need("lib.jobs")
 local breeding = need("lib.breeding")
 local multiply = need("lib.multiply")
+local genetics = need("lib.genetics")
 local planner = need("lib.planner")
 local genome = need("lib.genome")
 
@@ -67,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.37.0"
+hivemind.VERSION = "0.38.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -222,7 +223,8 @@ function hivemind.bootstrap(options)
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
         handlers = {breed = breeding.handler(),
-                    multiply = multiply.handler()},
+                    multiply = multiply.handler(),
+                    sample = genetics.sampleHandler()},
     })
 
     return {
@@ -1156,6 +1158,62 @@ function hivemind.accumulateDrones(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue one gene extraction
+--- The Sampler destroys the bee and draws one chromosome out of thirteen, so
+--- this is a lottery ticket, not an order. Saying so before the confirmation
+--- is the difference between a tool and a trap.
+--- @param context table
+function hivemind.sampleGene(context)
+    print("")
+    print("=== EXTRAIRE UN GENE ===")
+    print("Le Sampler detruit l'abeille et tire UN chromosome au hasard sur 13.")
+    print("Viser un gene precis coute donc une treizaine d'abeilles en moyenne,")
+    print("mais les tirages 'rates' remplissent quand meme la bibliotheque.")
+    print("")
+
+    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+    if not beeSpec then print("Annule.") return end
+
+    local blanks = 0
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:gene_sample_blank"}) or {}) do
+        blanks = blanks + (tonumber(item.size) or 0)
+    end
+
+    print("")
+    print("  " .. beeSpec.label .. " -> un gene au hasard")
+    print("  samples vierges en stock : " .. blanks)
+
+    if blanks == 0 then
+        print("")
+        print("Sans Blank Gene Sample, le Sampler ne peut rien produire.")
+        print("Mets-en en autocraft AE2: il en faut des centaines.")
+        return
+    end
+
+    io.write("Confirmer ? (o/N): ")
+    local answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local params, err = genetics.sampleParams({bee = beeSpec})
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("sample", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
+end
+
 --- What the operator should probably do next
 --- The menu used to be nine equal choices with no hint which one mattered. Most
 --- of the time the world has already decided: a full apiary output blocks
@@ -1259,6 +1317,8 @@ local ENTRIES = {
      hint = "un seul croisement A + B -> C", action = "submitBreeding"},
     {key = "5", label = "Viser une espece",
      hint = "chaine complete calculee toute seule", action = "planChain"},
+    {key = "a", label = "Extraire un gene",
+     hint = "une abeille -> un chromosome au hasard", action = "sampleGene"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",

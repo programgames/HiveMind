@@ -33,7 +33,7 @@ print("-- entrees du menu --")
 
 local actions, keys, labels = {}, {}, {}
 for key, label, action in text:gmatch(
-        'key%s*=%s*"(%d)"%s*,%s*label%s*=%s*"([^"]*)"[^}]-action%s*=%s*"([%w_]+)"') do
+        'key%s*=%s*"(%w)"%s*,%s*label%s*=%s*"([^"]*)"[^}]-action%s*=%s*"([%w_]+)"') do
     table.insert(actions, action)
     table.insert(labels, label)
     keys[key] = (keys[key] or 0) + 1
@@ -48,6 +48,14 @@ end
 check("aucune touche en double", duplicated == nil, duplicated)
 
 check("la touche 0 n'est pas reutilisee", keys["0"] == nil)
+
+-- The dispatch lowercases the answer, so an uppercase key could never be typed
+local unreachable = {}
+for key in pairs(keys) do
+    if key ~= key:lower() then table.insert(unreachable, key) end
+end
+check("aucune touche impossible a taper", #unreachable == 0,
+      table.concat(unreachable, ", "))
 
 -- ---------------------------------------------------------------------------
 
@@ -75,6 +83,7 @@ for _, action in ipairs(actions) do wired[action] = true end
 check("la recolte est atteignable depuis le menu", wired.harvestApiary == true)
 check("l'accumulation est atteignable depuis le menu",
       wired.accumulateDrones == true)
+check("l'extraction de gene est atteignable", wired.sampleGene == true)
 
 -- ---------------------------------------------------------------------------
 
@@ -100,6 +109,9 @@ local loaded = {}
 for name in text:gmatch('need%("lib%.([%w_]+)"%)') do loaded[name] = true end
 
 check("multiply est charge", loaded.multiply == true)
+check("genetics est charge", loaded.genetics == true)
+check("son gestionnaire de sampling est enregistre",
+      text:find("sample = genetics.sampleHandler()", 1, true) ~= nil)
 check("son gestionnaire est enregistre",
       text:find("multiply = multiply.handler()", 1, true) ~= nil)
 

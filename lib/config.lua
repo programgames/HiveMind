@@ -249,6 +249,13 @@ config.library = {
     target_copies = 3,
 }
 
+-- The genetics machines give no progress reading, so a wait is a poll on their
+-- output slot. Generous, because they are slow and a job that gives up simply
+-- comes back on the next pass.
+config.genetics = {
+    sample_timeout_seconds = 120,
+}
+
 config.breeding = {
     -- Extra drones to accumulate beyond the strict requirement
     spare_drones = 1,
