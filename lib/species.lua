@@ -332,8 +332,10 @@ function Registry:constrainedPaths(uid)
 end
 
 --- Species behind a bee item label
---- "Meadows Princess" names the species Meadows; the role suffix is not part of
---- it and would defeat every lookup.
+--- "Meadows Princess" names the species Meadows. An exact match after stripping
+--- the role is not enough: display names do not always equal the word used in
+--- the item label, so the label is also matched against every known species
+--- name, longest first so "Light Gray" wins over "Gray".
 --- @param label string
 --- @return table|nil entry
 function Registry:fromBeeLabel(label)
@@ -344,7 +346,48 @@ function Registry:fromBeeLabel(label)
         base = base:gsub(suffix .. "$", "")
     end
 
-    return self:resolve(base)
+    local exact = self:resolve(base)
+    if exact then return exact end
+
+    -- Fall back to matching species names inside the label
+    local lowered = label:lower()
+    local best = nil
+
+    for _, entry in pairs(self:list()) do
+        local name = entry.name
+        if type(name) == "string" and name ~= "" then
+            local needle = name:lower()
+            local start_pos, end_pos = lowered:find(needle, 1, true)
+
+            if start_pos then
+                local before = start_pos > 1 and lowered:sub(start_pos - 1, start_pos - 1) or " "
+                local after = end_pos < #lowered and lowered:sub(end_pos + 1, end_pos + 1) or " "
+
+                if not before:match("%a") and not after:match("%a") then
+                    if not best or #name > #best.name then best = entry end
+                end
+            end
+        end
+    end
+
+    return best
+end
+
+--- A few species names, to show what the registry actually holds
+--- Printed when a lookup fails: the shape of the real names is the one thing
+--- that cannot be guessed from outside the game.
+--- @param count number|nil
+--- @return string[] samples
+function Registry:sampleNames(count)
+    local samples = {}
+
+    for uid, entry in pairs(self:list()) do
+        table.insert(samples, tostring(entry.name) .. "  (" .. tostring(uid) .. ")")
+        if #samples >= (count or 5) then break end
+    end
+
+    table.sort(samples)
+    return samples
 end
 
 --- Find a species by uid or by display name

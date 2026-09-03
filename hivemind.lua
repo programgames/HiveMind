@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.10.1"
+hivemind.VERSION = "0.10.2"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -369,16 +369,22 @@ local function chooseFromParents(context, princessLabel, droneLabel)
     local drone = registry:fromBeeLabel(droneLabel)
 
     -- Falling back without a word is how a whole feature goes unnoticed
-    if not princess then
-        print("")
-        print("Espece introuvable pour '" .. tostring(princessLabel) .. "'.")
-        print("Lance l'option 2 si la liste des especes est vide.")
-        return nil, false
-    end
+    if not (princess and drone) then
+        local missing = not princess and princessLabel or droneLabel
 
-    if not drone then
         print("")
-        print("Espece introuvable pour '" .. tostring(droneLabel) .. "'.")
+        print("Espece introuvable pour '" .. tostring(missing) .. "'.")
+
+        -- The shape of the real names cannot be guessed from outside the game,
+        -- so show what the registry actually holds
+        if registry.sampleNames then
+            print("Le registre contient par exemple :")
+            for _, sample in ipairs(registry:sampleNames(5)) do
+                print("  " .. sample)
+            end
+        end
+
+        print("Lance l'option 2 si la liste des especes est vide.")
         return nil, false
     end
 

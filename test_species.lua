@@ -218,6 +218,25 @@ check("reine", registry:fromBeeLabel("Nickel Queen").uid, "magicbees.speciesNick
 check("etiquette inconnue", registry:fromBeeLabel("Cobblestone"), nil)
 check("etiquette nil", registry:fromBeeLabel(nil), nil)
 
+-- Display names do not always equal the word used in the item label, so the
+-- species name is also looked for inside the label
+local extra = species.new({apiary = nil, cachePath = TMP .. "/hivemind-labels.lua"})
+extra.cache.species = {
+    ["forestry.speciesMeadows"] = {uid = "forestry.speciesMeadows", name = "Meadows Bee"},
+    ["x.gray"] = {uid = "x.gray", name = "Gray"},
+    ["x.lightgray"] = {uid = "x.lightgray", name = "Light Gray"},
+}
+extra.loaded = true
+
+check("nom present dans l'etiquette",
+      extra:fromBeeLabel("Meadows Bee Princess").uid, "forestry.speciesMeadows")
+-- Longest wins, or every Light Gray bee reads as Gray
+check("le nom le plus long l'emporte",
+      extra:fromBeeLabel("Light Gray Drone").uid, "x.lightgray")
+check("aucune correspondance partielle abusive", extra:fromBeeLabel("Grayscale Drone"), nil)
+
+checkTruthy("echantillon de noms disponible", #extra:sampleNames(2) > 0)
+
 print("")
 print("-- resolution par nom --")
 
