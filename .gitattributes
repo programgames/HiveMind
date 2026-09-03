@@ -1,0 +1,6 @@
+# Keep line endings consistent in the repository.
+#
+# Without this, editing a file with a tool that writes LF rewrote every line of
+# a CRLF file, turning a one-word change into a 680-line diff that hid what
+# actually changed.
+* text=auto eol=lf
