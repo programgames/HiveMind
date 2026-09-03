@@ -134,17 +134,25 @@ config.machines = {
     -- index 0 on the sampler. Nothing should act on these numbers until the
     -- slot diagnostic has confirmed them with a bee, a template and a sample
     -- placed by hand.
+    -- Observed, not documented: all three hold exactly FOUR slots, driver 0 to
+    -- 3, and labware sits at 1 on every one of them. The documentation said 3,
+    -- and an output at 4 -- a slot that does not exist, so every delivery there
+    -- would have gone nowhere with no error at all.
+    --
+    -- The remaining names are still hypotheses. tools/probe settles them by
+    -- offering a known item to each slot and seeing what stays.
     sampler = {
         transposer = 1, machine = 5, source = 4,
-        slots = {input = 1, blank = 2, labware = 3, output = 4},
+        -- driver 0 accepted a Blank Gene Sample when placed by hand
+        slots = {blank = 0, labware = 1, input = 2, output = 3},
     },
     genetic_transposer = {
         transposer = 1, machine = 3, source = 4,
-        slots = {source = 1, destination = 2, labware = 3, output = 4},
+        slots = {source = 0, labware = 1, destination = 2, output = 3},
     },
     imprinter = {
         transposer = 1, machine = 2, source = 4,
-        slots = {bee = 1, template = 2, labware = 3, output = 4},
+        slots = {bee = 0, labware = 1, template = 2, output = 3},
     },
     replicator = {
         transposer = 2, machine = nil, source = nil, enabled = false,

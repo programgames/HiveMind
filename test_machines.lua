@@ -388,6 +388,19 @@ check("le mutatron est passe au second", config.machines.mutatron.transposer, 2)
 check("le coffre a templates suit l'apiary", config.template_chest.transposer, 2)
 check("la source du banc de genetique", config.machines.imprinter.source, 4)
 
+-- The genetics machines hold four slots, driver 0 to 3. The documentation put
+-- labware at 3 and an output at 4: a slot that does not exist, where every
+-- delivery would have vanished without an error.
+for _, name in ipairs({"sampler", "genetic_transposer", "imprinter"}) do
+    local slots = config.machines[name].slots
+    local worst = -1
+    for _, index in pairs(slots) do
+        if type(index) == "number" and index > worst then worst = index end
+    end
+    checkTruthy(name .. ": aucun slot hors de l'inventaire", worst <= 3)
+    checkTruthy(name .. ": labware au driver 1", slots.labware == 1)
+end
+
 print("")
 print("-- la fleur exigee par l'abeille chargee --")
 
