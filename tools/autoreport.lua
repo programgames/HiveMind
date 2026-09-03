@@ -14,6 +14,9 @@
 --   autoreport --budget 900    total seconds of queue work before publishing
 --   autoreport --upload        publish the report: fixed mailbox, then a URL
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
+--   autoreport --secure       copy every gene held below the safe number
+--   autoreport --genes "Forest Drone:Species:13"
+--                             hunt a chromosome (repeatable)
 --   autoreport --multiply Common:32
 --                             queue a drone campaign (repeatable)
 --   autoreport --run --upload  both
@@ -112,6 +115,7 @@ end
 local function main(args)
     local doRun, doUpload, toCancel, campaigns = false, false, {}, {}
     local passes, budget = 1, 600
+    local doSecure, geneRuns = false, {}
     for index, arg in ipairs(args) do
         if arg == "--run" then doRun = true end
         if arg == "--upload" then doUpload = true end
@@ -130,6 +134,25 @@ local function main(args)
         -- that would say so never arrives.
         if arg == "--budget" then
             budget = math.max(30, tonumber(args[index + 1]) or 600)
+        end
+
+        -- Copy every gene held below the safe number. Nothing to choose, so
+        -- nothing to type: the library already knows which are short.
+        if arg == "--secure" then doSecure = true end
+
+        -- --genes "Forest Drone:Species:13" hunts a chromosome without the menu
+        if arg == "--genes" then
+            local value = args[index + 1]
+            if value then
+                local bee, chromosome, count = value:match("^([^:]+):?([^:]*):?(%d*)$")
+                if bee and bee ~= "" then
+                    table.insert(geneRuns, {
+                        bee = bee,
+                        chromosome = (chromosome ~= "" and chromosome or nil),
+                        bees = tonumber(count),
+                    })
+                end
+            end
         end
 
         if arg == "--multiply" then
@@ -197,6 +220,9 @@ local function main(args)
     -- Loaded the same way hivemind loads it, from the install directory
     local has_multiply, multiply = pcall(require, "lib.multiply")
     if not has_multiply then multiply = nil end
+
+    local has_genetics, genetics = pcall(require, "lib.genetics")
+    if not has_genetics then genetics = nil end
 
     say("HiveMind - rapport automatique")
     say("version " .. tostring(hivemind.VERSION))
@@ -362,6 +388,61 @@ local function main(args)
         for _, id in ipairs(toCancel) do
             local cancelled = context.queue:cancel(id)
             say("  #" .. id .. " : " .. (cancelled and "annulee" or "introuvable"))
+        end
+    end
+
+    if doSecure then
+        section("MISE A L'ABRI DE LA BIBLIOTHEQUE")
+
+        local already = {}
+        for _, job in ipairs(context.queue:list()) do
+            if job.kind == "duplicate" and job.status ~= "complete"
+               and job.status ~= "cancelled" and job.params and job.params.sample then
+                already[job.params.sample.label] = true
+            end
+        end
+
+        local created = 0
+        for _, shortage in ipairs(context.library:shortages() or {}) do
+            if already[shortage.label] then
+                say("  " .. shortage.label .. " : deja en file")
+            elseif genetics then
+                local params = genetics.duplicateParams({sample = {label = shortage.label}})
+                local id = params and context.queue:submit("duplicate", params)
+                if id then
+                    created = created + 1
+                    say("  " .. shortage.label .. " -> tache #" .. id)
+                end
+            else
+                say("  lib/genetics.lua absent: relance hminstall")
+            end
+        end
+
+        say("  " .. created .. " copie(s) mise(s) en file")
+    end
+
+    if #geneRuns > 0 then
+        section("CAMPAGNES DE GENES")
+        for _, run in ipairs(geneRuns) do
+            local params, err
+            if genetics then
+                params, err = genetics.campaignParams({
+                    bee = {label = run.bee},
+                    chromosome = run.chromosome,
+                    bees = run.bees,
+                })
+            else
+                err = "lib/genetics.lua absent: relance hminstall"
+            end
+
+            if not params then
+                say("  " .. run.bee .. " : refuse (" .. tostring(err) .. ")")
+            else
+                local id, submit_err = context.queue:submit("campaign", params)
+                say("  " .. run.bee .. " x" .. params.budget
+                    .. (run.chromosome and (" -> " .. run.chromosome) or " -> tout")
+                    .. " : " .. (id and ("tache #" .. id) or tostring(submit_err)))
+            end
         end
     end
 

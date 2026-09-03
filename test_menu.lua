@@ -187,6 +187,16 @@ check("il nomme les chromosomes plutot que leur numero",
 check("il signale ce qui est sous le seuil",
       toolText:find("sous le seuil de securite", 1, true) ~= nil)
 
+-- The whole point of this tool is that a session fits in one command with no
+-- menu: a feature reachable only from the menu is a feature we cannot test
+-- together without a screenshot round trip.
+check("la mise a l'abri est pilotable sans menu",
+      toolText:find('arg == "--secure"', 1, true) ~= nil)
+check("les campagnes de genes aussi",
+      toolText:find('arg == "--genes"', 1, true) ~= nil)
+check("une campagne deja en file n'est pas recreee",
+      toolText:find("deja en file", 1, true) ~= nil)
+
 -- ---------------------------------------------------------------------------
 
 print("")
