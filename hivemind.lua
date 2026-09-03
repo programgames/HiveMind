@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.10.2"
+hivemind.VERSION = "0.11.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -348,6 +348,76 @@ local function chooseBee(context, itemName, role)
     return {name = chosen.name, label = chosen.label}
 end
 
+--- Ask the Mutatron itself what these two parents can produce
+--- Authoritative, and free of every guess about names: the parents are loaded
+--- and listMutations() answers with the full genome of each result, so the
+--- species uid is read rather than inferred. Loading them costs nothing - no
+--- mutagen is spent - and the breeding job will find them already in place.
+--- @param context table
+--- @param princessSpec table
+--- @param droneSpec table
+--- @return string|nil uid
+--- @return boolean handled
+local function chooseFromMutatron(context, princessSpec, droneSpec)
+    local mutatron = context.machines and context.machines.mutatron
+    if not mutatron or not mutatron.mutations then return nil, false end
+
+    local slots = mutatron:slots()
+
+    print("")
+    print("Chargement des parents dans le Mutatron pour l'interroger...")
+
+    -- A queen left in the output hides the mutation list
+    if mutatron:slot(slots.output) then mutatron:unload(slots.output) end
+
+    local function ensure(spec, slot, role)
+        local present = mutatron:slot(slot)
+        if present and present.label == spec.label then return true end
+
+        if present then mutatron:unload(slot) end
+
+        local ok, err = mutatron:load(spec, slot, 1)
+        if not ok then
+            print("  " .. role .. " : " .. tostring(err))
+            return false
+        end
+        return true
+    end
+
+    if not ensure(princessSpec, slots.in1, "princesse") then return nil, false end
+    if not ensure(droneSpec, slots.in2, "drone") then return nil, false end
+
+    local mutations = mutatron:mutations()
+
+    if #mutations == 0 then
+        print("Le Mutatron ne propose aucune mutation avec ces deux parents.")
+        print("Choisis un autre couple, ou vise une espece par recherche.")
+        return nil, false
+    end
+
+    local entries = {}
+    for _, mutation in ipairs(mutations) do
+        table.insert(entries, {
+            uid = mutation.genome and genome.species(mutation.genome) or nil,
+            name = mutation.label or mutation.name or "?",
+        })
+    end
+
+    print("")
+    print("Le Mutatron propose :")
+
+    local chosen = pick(entries,
+        function(entry) return string.format("%-28s %s", entry.name, entry.uid or "?") end,
+        "Espece visee")
+
+    if chosen and chosen.uid then return chosen.uid, true end
+    if chosen then
+        print("Cette mutation ne rapporte pas d'identifiant d'espece exploitable.")
+    end
+
+    return nil, true
+end
+
 --- Offer the species those two parents can actually produce
 --- Far better than searching 329 entries for one that may not even be reachable
 --- from the chosen pair. Needs the reverse index, which is built once and kept.
@@ -502,9 +572,14 @@ function hivemind.submitBreeding(context)
     local droneSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
     if not droneSpec then print("Annule.") return end
 
-    -- Ask what these two parents can actually make before falling back to a
-    -- search over every species in the pack
-    local target, handled = chooseFromParents(context, princessSpec.label, droneSpec.label)
+    -- The machine is asked first: it answers with genomes, so nothing has to be
+    -- guessed from names. The index and the search are fallbacks for when the
+    -- Mutatron is unreachable.
+    local target, handled = chooseFromMutatron(context, princessSpec, droneSpec)
+
+    if not target and not handled then
+        target, handled = chooseFromParents(context, princessSpec.label, droneSpec.label)
+    end
 
     if not target and not handled then
         target = chooseSpecies(context)
