@@ -84,6 +84,30 @@ check("la recolte est atteignable depuis le menu", wired.harvestApiary == true)
 check("l'accumulation est atteignable depuis le menu",
       wired.accumulateDrones == true)
 check("l'extraction de gene est atteignable", wired.sampleGene == true)
+check("la duplication est atteignable", wired.duplicateGene == true)
+check("la mise a l'abri est atteignable", wired.secureLibrary == true)
+
+-- A cross needs a princess of one species and a DRONE of the other. Treating
+-- "we have some Water bees" as "we can cross with Water" left a plan stuck on
+-- "Water Drone introuvable" with three Water princesses in store.
+check("la disponibilite distingue les roles",
+      text:find("local function rolesFrom", 1, true) ~= nil)
+check("le planificateur programme l'accumulation manquante",
+      text:find("accumulation programmee pour", 1, true) ~= nil)
+check("et il la met en file avant le croisement",
+      (function()
+          local from = text:find("function hivemind.planChain", 1, true)
+          if not from then return false end
+
+          -- Up to the next top-level "end", so the two submits compared are
+          -- both this function's and not another's
+          local stop = text:find("\nend\n", from, true) or #text
+          local body = text:sub(from, stop)
+          local accumulate = body:find('queue:submit("multiply"', 1, true)
+          local breed = body:find('queue:submit("breed"', 1, true)
+
+          return accumulate ~= nil and breed ~= nil and accumulate < breed
+      end)())
 
 -- ---------------------------------------------------------------------------
 

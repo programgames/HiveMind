@@ -30,7 +30,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Installeur qui se met à jour lui-même
 - [x] Rapport automatique non interactif
 - [x] Un croisement complet réussi en jeu, de bout en bout, sans intervention
-- [ ] Le planificateur programme lui-même l'accumulation de drones manquants
+- [x] Le planificateur programme lui-même l'accumulation de drones manquants
 - [x] Annonce de la fleur requise (chromosome 9) avant chaque croisement
 - [ ] Couche d'exécution morte de `main.lua` supprimée
 

@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.43.0"
+hivemind.VERSION = "0.44.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -804,6 +804,42 @@ end
 --- @param context table
 --- @param registry table
 --- @return function available
+--- Which roles of a species the network actually holds
+--- A cross needs a princess of one species and a DRONE of the other. Treating
+--- "we have some Water bees" as "we can cross with Water" is what left a plan
+--- stuck on "Water Drone introuvable" with three Water princesses in store.
+--- @param context table
+--- @param registry table
+--- @return function(uid) -> table {princess, drone}
+local function rolesFrom(context, registry)
+    local byRole = {princess = {}, drone = {}}
+
+    for role, itemName in pairs({princess = "forestry:bee_princess_ge",
+                                 drone = "forestry:bee_drone_ge"}) do
+        for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
+            table.insert(byRole[role], tostring(item.label or ""):lower())
+        end
+    end
+
+    local all = registry:list()
+
+    return function(uid)
+        local entry = all[uid]
+        local needle = tostring(entry and entry.name or uid):lower()
+        if needle == "" then return {princess = false, drone = false} end
+
+        local held = {}
+        for role, labels in pairs(byRole) do
+            held[role] = false
+            for _, label in ipairs(labels) do
+                if label:find(needle, 1, true) then held[role] = true break end
+            end
+        end
+
+        return held
+    end
+end
+
 local function availabilityFrom(context, registry)
     local labels = {}
 
@@ -972,9 +1008,39 @@ function hivemind.planChain(context)
         return
     end
 
-    local queued = 0
+    local queued, accumulations = 0, 0
+    local roles = rolesFrom(context, registry)
+    local scheduled = {}
 
     for _, step in ipairs(plan.steps) do
+        -- The drone parent is the one that runs out. A species we hold only as
+        -- princesses cannot be crossed at all, and the plan called it available
+        -- because it looked only at "do we have this species".
+        --
+        -- Later steps are fine: a cross ends by returning its princess and its
+        -- drones to the network, so a species this plan breeds will have both.
+        local droneUid = step.drone.uid
+        local held = roles(droneUid)
+
+        if held.princess and not held.drone and not scheduled[droneUid] then
+            scheduled[droneUid] = true
+
+            local species = naming(droneUid)
+            local params = multiply.params({
+                species = species,
+                target = (config.breeding.spare_drones or 1) + 1,
+            })
+
+            if params then
+                local id = context.queue:submit("multiply", params)
+                if id then
+                    accumulations = accumulations + 1
+                    print("  accumulation programmee pour " .. species
+                        .. " (princesse en stock, aucun drone)")
+                end
+            end
+        end
+
         local params, params_err = breeding.params({
             target = step.target,
             princess = {name = "forestry:bee_princess_ge",
@@ -995,7 +1061,11 @@ function hivemind.planChain(context)
         end
     end
 
-    print(queued .. " tache(s) creee(s). Lance l'option 4 pour les executer.")
+    if accumulations > 0 then
+        print(accumulations .. " accumulation(s) de drones ajoutee(s) avant les croisements.")
+    end
+
+    print(queued .. " croisement(s) en file. Choisis 6 pour les executer.")
 end
 
 --- Cancel a job or clear out the finished ones
