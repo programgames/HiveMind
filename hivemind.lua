@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.62.0"
+hivemind.VERSION = "0.63.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1454,24 +1454,16 @@ function hivemind.imprintBee(context)
     print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
 end
 
---- Explain how a template is actually built, and what is available for one
+--- Show what each genetic profile still needs, and how a template is built
 --- Templates are not made in a machine. The mod's own text says so: "Genetic
---- Samples can be added to a Template. Combine them in any crafting table.
---- Multiple samples can be added at once." No slot of any machine accepts a
---- Genetic Template, which is exactly what the probe found.
----
---- So this lists what a template could be built from rather than pretending to
---- build one. Everything it needs is a crafting table, or an AE2 pattern.
+--- Samples can be added to a Template. Combine them in any crafting table."
+--- So this says what to gather rather than pretending to build one.
 --- @param context table
 function hivemind.templateHelp(context)
     print("")
     print("=== CONSTRUIRE UN TEMPLATE ===")
-    print("Les templates ne se font pas dans une machine. Le mod le dit:")
-    print("  'Genetic Samples can be added to a Template. Combine them in any")
-    print("   crafting table. Multiple samples can be added at once.'")
-    print("")
     print("Table de craft: un Genetic Template + tes Gene Samples, ensemble.")
-    print("Plusieurs samples d'un coup. En AE2, un motif de craft fait pareil.")
+    print("Plusieurs samples d un coup. En AE2, un motif de craft fait pareil.")
     print("")
 
     local templates = 0
@@ -1481,56 +1473,58 @@ function hivemind.templateHelp(context)
     end
 
     print("Genetic Template en stock : " .. templates)
-    print("")
 
     context.library:scan()
-    local genes = context.library:allGenes()
 
-    local lines = {}
-    for slot, chromosome in pairs(genes) do
-        for allele, entry in pairs(chromosome) do
-            table.insert(lines, {
-                slot = slot,
-                text = string.format("  %-22s %-24s x%d",
-                    tostring(genome.labelForSlot(slot) or slot),
-                    tostring(allele), tonumber(entry.count) or 0),
-            })
-        end
-    end
+    local profiles = config.profiles or {}
+    local names = {}
+    for name in pairs(profiles) do table.insert(names, name) end
+    table.sort(names)
 
-    table.sort(lines, function(a, b) return a.slot < b.slot end)
-
-    if #lines == 0 then
-        print("Aucun gene en bibliotheque. Utilise l'option d pour en recolter.")
+    if #names == 0 then
+        print("Aucun profil declare dans lib/config.lua.")
         return
     end
 
-    print("Genes disponibles pour un template :")
-    for _, line in ipairs(lines) do print(line.text) end
+    for _, name in ipairs(names) do
+        local profile = profiles[name]
+        local missing, complete = context.library:missingForProfile(profile)
 
-    -- Thirteen chromosomes exist; a template carrying all of them is the one
-    -- that makes any bee perfect in a single imprint
-    local held = {}
-    for slot in pairs(genes) do held[slot] = true end
+        local total = 0
+        for _ in pairs(profile) do total = total + 1 end
 
-    local missing = {}
-    for slot = 0, 12 do
-        if not held[slot] then
-            table.insert(missing, tostring(genome.labelForSlot(slot) or slot))
+        print("")
+        print("-- profil " .. name .. " : " .. (total - #missing) .. "/" .. total
+            .. " gene(s) en bibliotheque --")
+
+        if complete then
+            print("  Complet. Assemble ces samples avec un template:")
+
+            local slots = {}
+            for slot in pairs(profile) do table.insert(slots, slot) end
+            table.sort(slots)
+
+            for _, slot in ipairs(slots) do
+                print(string.format("    %-22s %s",
+                    tostring(genome.labelForSlot(slot) or slot), profile[slot]))
+            end
+        else
+            -- What to hunt next is the only thing worth printing here
+            for _, entry in ipairs(missing) do
+                print(string.format("  manque  %-22s %s",
+                    tostring(entry.chromosome or entry.slot), entry.allele))
+            end
         end
     end
 
     print("")
-    if #missing == 0 then
-        print("Les treize chromosomes sont couverts.")
-    else
-        print(#missing .. " chromosome(s) encore absent(s) :")
-        print("  " .. table.concat(missing, ", "))
-    end
-
+    print("Species est volontairement absent des deux profils: c est ce qui")
+    print("permet d appliquer un template a n importe quelle espece sans la")
+    print("changer. Cave dwelling l est aussi, l abeille garde le sien.")
     print("")
-    print("Note: l'Imprinter refuse un template vide. Il faut y mettre au moins")
-    print("un gene avant qu'il l'accepte, ce qui expliquera son slot template.")
+    print("Un allele qui n existe pas sous ce nom apparaitra toujours comme")
+    print("manquant: compare avec l etiquette d un vrai sample si un gene")
+    print("resiste alors que tu es sur de l avoir.")
 end
 
 --- Queue a run of extractions until a gene comes up
@@ -1804,7 +1798,7 @@ local ENTRIES = {
     {key = "d", label = "Campagne de genes",
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
     {key = "e", label = "Construire un template",
-     hint = "ce qui manque, et comment le faire", action = "templateHelp"},
+     hint = "ce qui manque pour chaque profil", action = "templateHelp"},
     {key = "f", label = "Imprimer une abeille",
      hint = "applique le template pose dans la machine", action = "imprintBee"},
 

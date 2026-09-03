@@ -148,6 +148,25 @@ check("un module trop ancien est signale, pas fatal",
 -- Templates share one id and one label, so AE2 cannot tell two apart and one
 -- that enters the network is lost. They can only move between a chest and a
 -- machine on the same transposer.
+-- The two templates come from a guide for this exact modpack. Three of their
+-- values contradict "maximum everywhere" on purpose, so they must not be
+-- quietly normalised away.
+local settings = assert(io.open("lib/config.lua", "r"))
+local settingsText = settings:read("*all")
+settings:close()
+
+check("les deux profils sont declares",
+      settingsText:find("config.profiles", 1, true) ~= nil
+      and settingsText:find("breeding = {", 1, true) ~= nil
+      and settingsText:find("production = {", 1, true) ~= nil)
+
+-- Species blank is what lets one template serve every species
+check("Species reste hors des profils",
+      settingsText:find("%[0%]%s*=%s*\"") == nil)
+
+check("l aide compare la bibliotheque aux profils",
+      text:find("missingForProfile", 1, true) ~= nil)
+
 check("le coffre a templates est verifie au demarrage",
       text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)
 

@@ -254,7 +254,20 @@ file **continue avec les suivantes**. Seule une panne définitive arrête la pas
 | Énergie | Pas de gestion active : on attend, on signale si c'est long |
 | Matériel | Tier max, autant d'apiaries et d'upgrades que nécessaire |
 
-Restent à trancher : **Lifespan**, **Flower Provider**, **Effect**.
+Tranché par le guide du pack
+(https://gist.github.com/mathisto/5cd71747d14432896007a01450ae48ff), encodé
+dans `config.profiles` : **Lifespan** Shortest en élevage / Immortal en
+production, **Flowers** = `Flowers`, **Effect** = `None`.
+
+Trois valeurs y contredisent « le maximum partout », volontairement :
+Flowering **Slow** (un Industrial Apiary se moque de la pollinisation, et plus
+lent = moins de mises à jour de blocs), Territory **Average** (le territoire ne
+fait rien dans un apiary), tolérances **Both 3** (Both 5 existe mais coûte
+beaucoup pour une amplitude dont rien n'a besoin ici).
+
+**Species reste vide** dans les deux profils : c'est ce qui permet d'appliquer
+un template à n'importe quelle espèce sans l'écraser. Cave dwelling est absent
+du guide aussi ; l'abeille garde le sien.
 
 ---
 

@@ -251,6 +251,59 @@ config.library = {
 -- The genetics machines give no progress reading, so a wait is a poll on their
 -- output slot. Generous, because they are slow and a job that gives up simply
 -- comes back on the next pass.
+-- The two genetic templates, from Pyro's bee guide for this modpack:
+-- https://gist.github.com/mathisto/5cd71747d14432896007a01450ae48ff
+--
+-- Community guidance rather than mod source, so the allele spellings are worth
+-- checking against a real sample label the first time each one turns up. A
+-- value that does not match simply reports as missing, which is harmless.
+--
+-- Three of these contradict "maximum everywhere", and each for a reason:
+--
+--   Flowering Slow      an Industrial Apiary does not care how fast a bee
+--                       pollinates, and slower means fewer block updates
+--   Territory Average   territory does nothing inside an apiary
+--   Tolerance Both 3    Both 5 exists but costs far more breeding for a range
+--                       nothing in the pack actually needs
+--
+-- Slot 0 (Species) is deliberately blank: that is what makes one template work
+-- on every species instead of overwriting it. Slot 8 (Cave dwelling) is absent
+-- from the guide as well, so an imprinted bee keeps whatever it had -- Rocky
+-- bees carry it if it ever matters.
+config.profiles = {
+    -- Fertility 4 and the shortest life: a queen that dies quickly and leaves
+    -- many drones is what a breeding line wants.
+    breeding = {
+        [1]  = "Fast",      -- Speed
+        [2]  = "Shortest",  -- Lifespan
+        [3]  = "4",         -- Fertility
+        [4]  = "Both 3",    -- Temperature tolerance
+        [5]  = "True",      -- Nocturnal, "Never Sleeps" in the guide
+        [6]  = "Both 3",    -- Humidity tolerance
+        [7]  = "True",      -- Tolerant flyer, "Tolerates Rain" in the guide
+        [9]  = "Flowers",   -- Flowers
+        [10] = "Slow",      -- Flowering
+        [11] = "Average",   -- Territory
+        [12] = "None",      -- Effect
+    },
+
+    -- The opposite trade: a queen that never dies and barely reproduces, so a
+    -- production line is never re-queened and never floods with drones.
+    production = {
+        [1]  = "Robotic",   -- Speed
+        [2]  = "Immortal",  -- Lifespan
+        [3]  = "1",         -- Fertility
+        [4]  = "Both 3",    -- Temperature tolerance
+        [5]  = "True",      -- Nocturnal
+        [6]  = "Both 3",    -- Humidity tolerance
+        [7]  = "True",      -- Tolerant flyer
+        [9]  = "Flowers",   -- Flowers
+        [10] = "Slow",      -- Flowering
+        [11] = "Average",   -- Territory
+        [12] = "None",      -- Effect
+    },
+}
+
 config.genetics = {
     sample_timeout_seconds = 120,
 }

@@ -55,7 +55,7 @@ Recalculer avec `lua progress.lua`.
 - [ ] Campagne « obtenir le gène Species de toutes les espèces »
 - [ ] Analyse d'écart sur les profils optimaux
 - [ ] Base de mutations complétée pour les feuilles actuelles
-- [ ] Les deux profils génétiques tranchés avec le joueur
+- [x] Les deux profils génétiques tranchés avec le joueur
 
 ## Fait en jeu
 
