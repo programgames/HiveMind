@@ -134,10 +134,16 @@ for name in text:gmatch('need%("lib%.([%w_]+)"%)') do loaded[name] = true end
 
 check("multiply est charge", loaded.multiply == true)
 check("genetics est charge", loaded.genetics == true)
-check("son gestionnaire de sampling est enregistre",
-      text:find("sample = genetics.sampleHandler()", 1, true) ~= nil)
-check("son gestionnaire est enregistre",
-      text:find("multiply = multiply.handler()", 1, true) ~= nil)
+for _, kind in ipairs({"breed", "multiply", "sample", "duplicate", "campaign"}) do
+    check("la tache '" .. kind .. "' est enregistree",
+          text:find('register("' .. kind .. '"', 1, true) ~= nil)
+end
+
+-- A module older than this file has none of the newer factories, and calling
+-- one produced a stack trace naming machine.lua, which says nothing about the
+-- actual fix
+check("un module trop ancien est signale, pas fatal",
+      text:find("est plus ancien que le programme", 1, true) ~= nil)
 
 -- Templates share one id and one label, so AE2 cannot tell two apart and one
 -- that enters the network is lost. They can only move between a chest and a

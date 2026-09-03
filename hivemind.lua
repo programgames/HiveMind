@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.48.0"
+hivemind.VERSION = "0.49.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -239,13 +239,41 @@ function hivemind.bootstrap(options)
             "  coffre contre le transposer des machines de genetique.")
     end
 
+    -- A module older than this file has none of the newer factories, and
+    -- calling one produced a stack trace naming machine.lua -- which tells the
+    -- reader nothing about the actual fix, "run hminstall again". Missing work
+    -- is a startup problem to report, not a crash.
+    local handlers = {}
+
+    local function register(kind, module, factoryName, moduleName)
+        local factory = module and module[factoryName]
+
+        if type(factory) ~= "function" then
+            table.insert(problems, "tache '" .. kind .. "' indisponible: "
+                .. moduleName .. " est plus ancien que le programme."
+                .. " Relance hminstall.")
+            return
+        end
+
+        local ok, handler = pcall(factory)
+        if not ok or type(handler) ~= "table" then
+            table.insert(problems, "tache '" .. kind .. "' illisible dans "
+                .. moduleName .. ": " .. tostring(handler))
+            return
+        end
+
+        handlers[kind] = handler
+    end
+
+    register("breed",     breeding, "handler",          "lib/breeding.lua")
+    register("multiply",  multiply, "handler",          "lib/multiply.lua")
+    register("sample",    genetics, "sampleHandler",    "lib/genetics.lua")
+    register("duplicate", genetics, "duplicateHandler", "lib/genetics.lua")
+    register("campaign",  genetics, "campaignHandler",  "lib/genetics.lua")
+
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
-        handlers = {breed = breeding.handler(),
-                    multiply = multiply.handler(),
-                    sample = genetics.sampleHandler(),
-                    duplicate = genetics.duplicateHandler(),
-                    campaign = genetics.campaignHandler()},
+        handlers = handlers,
     })
 
     return {
