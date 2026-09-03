@@ -113,7 +113,19 @@ l'une en surveillant le quai de l'autre fait que l'objet n'arrive jamais, et
 l'échec se lit comme « la machine refuse cet objet ». `config.interfaces`
 associe un index de transposer à une adresse (un préfixe suffit).
 
-Les correspondances de slots du banc de génétique viennent de la documentation
+**Les trois machines de génétique ont la même forme, mesurée par `tools/probe`** :
+
+| driver | rôle |
+|---|---|
+| 0 | ce dans quoi on écrit (sample vierge, template) |
+| 1 | labware |
+| 2 | ce dont on lit (abeille, sample source) |
+| 3 | sortie |
+
+La documentation Gendustry disait labware en 3 et sortie en 4 — un slot qui
+n'existe pas dans un inventaire de quatre. Ne jamais s'y fier.
+
+Ancien paragraphe conservé pour mémoire : les correspondances venaient de la documentation
 Gendustry et **la première lecture réelle les a démenties**. Rien ne doit s'y
 fier avant confirmation par le diagnostic.
 

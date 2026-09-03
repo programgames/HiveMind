@@ -214,6 +214,34 @@ local function main(args)
         end
     end
 
+    -- The machines kept what was handed to them: a Genetic Transposer given a
+    -- blank and a source went ahead and did the job, leaving its output behind.
+    -- Anything left in a machine is invisible to the ME network, which is how a
+    -- bee reported as missing ends up sitting two blocks away.
+    say("")
+    say("=== RANGEMENT ===")
+
+    for _, name in ipairs(targets) do
+        local machine = context.machines[name]
+        local link = machine.link
+        local size = transport:inventorySize(link) or 0
+        local returned = 0
+
+        for raw = 1, size do
+            if transport:inspect(link, raw) then
+                returned = returned + (transport:retrieve(link, raw, 64) or 0)
+            end
+        end
+
+        local left = 0
+        for raw = 1, size do
+            if transport:inspect(link, raw) then left = left + 1 end
+        end
+
+        say(string.format("  %-20s %d item(s) rendu(s), %d slot(s) encore occupe(s)",
+            name, returned, left))
+    end
+
     say("")
     say("Reporte ces indices dans config.machines.<machine>.slots.")
 

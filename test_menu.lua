@@ -181,6 +181,15 @@ check("le marqueur revient au quai entre deux slots",
 check("un marqueur jamais arrive est distingue d'un refus",
       probeText:find("jamais arrive au quai", 1, true) ~= nil)
 
+-- A Genetic Transposer handed a blank and a source simply did the job and kept
+-- the result. Anything left in a machine is invisible to the ME network, which
+-- is how a bee reported as missing ends up sitting two blocks away.
+check("le sondage range les machines a la fin",
+      probeText:find("RANGEMENT", 1, true) ~= nil
+      and probeText:find("transport:retrieve(link, raw, 64)", 1, true) ~= nil)
+check("et dit ce qui resiste",
+      probeText:find("slot(s) encore occupe(s)", 1, true) ~= nil)
+
 print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)

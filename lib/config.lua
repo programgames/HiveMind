@@ -165,9 +165,13 @@ config.machines = {
     --
     -- The remaining names are still hypotheses. tools/probe settles them by
     -- offering a known item to each slot and seeing what stays.
+    -- Measured by tools/probe, and the three machines share one shape:
+    -- 0 is what the work is written into, 1 is labware, 2 is what it is read
+    -- from, 3 is the output. The documentation had labware at 3 and an output
+    -- at 4, which does not exist in a four-slot inventory.
     sampler = {
         transposer = GENETICS, machine = 5, source = 4,
-        -- driver 0 accepted a Blank Gene Sample when placed by hand
+        -- 0 took a blank sample, 2 took a bee, 3 refused everything
         slots = {blank = 0, labware = 1, input = 2, output = 3},
     },
     genetic_transposer = {
@@ -180,7 +184,12 @@ config.machines = {
     },
     imprinter = {
         transposer = GENETICS, machine = 2, source = 4,
-        slots = {bee = 0, labware = 1, template = 2, output = 3},
+        -- Measured: 1 is labware, 2 takes the bee. Slots 0 and 3 refused every
+        -- marker, including the one template we own -- which had been consumed
+        -- by the time the imprinter was probed, so that test proved nothing.
+        -- Read as template/output by symmetry with the other two machines;
+        -- confirm with a spare template before acting on it.
+        slots = {template = 0, labware = 1, bee = 2, output = 3},
     },
     replicator = {
         transposer = 2, machine = nil, source = nil, enabled = false,
