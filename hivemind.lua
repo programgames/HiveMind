@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.26.0"
+hivemind.VERSION = "0.27.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1059,6 +1059,10 @@ function hivemind.accumulateDrones(context)
         return
     end
 
+    print("")
+    print("2 ou 3 suffisent pour une espece de passage: un croisement depense")
+    print("un seul drone. Vise ~16 pour une espece dont tu voudras le gene:")
+    print("le Sampler detruit un drone par echantillon et tire au hasard.")
     io.write("Objectif (nombre de drones a atteindre) [32]: ")
     local answer = io.read()
     local target = tonumber(answer and answer:gsub("%s+", "")) or 32

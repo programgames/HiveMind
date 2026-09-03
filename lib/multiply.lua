@@ -75,6 +75,12 @@ function multiply.params(options)
     local drone = options.drone
         or {name = "forestry:bee_drone_ge", label = species .. " Drone"}
 
+    -- 32 is not a magic number, it is two budgets stacked:
+    --   * a cross spends exactly one drone, so a few cover the breeding plan;
+    --   * the Genetic Sampler destroys a drone per sample and draws one
+    --     chromosome at random out of 13, so pulling one specific gene costs
+    --     ~13 drones on average, and the failed draws still enrich the library.
+    -- A species you only pass through on the way to another needs 2 or 3.
     local target = tonumber(options.target) or 32
     if target < 1 then return nil, "objectif invalide: " .. tostring(options.target) end
 

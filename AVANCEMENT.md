@@ -29,7 +29,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Menu groupé, expliqué, avec suggestion contextuelle
 - [x] Installeur qui se met à jour lui-même
 - [x] Rapport automatique non interactif
-- [ ] Un croisement complet réussi en jeu, de bout en bout, sans intervention
+- [x] Un croisement complet réussi en jeu, de bout en bout, sans intervention
 - [ ] Le planificateur programme lui-même l'accumulation de drones manquants
 - [x] Annonce de la fleur requise (chromosome 9) avant chaque croisement
 - [ ] Couche d'exécution morte de `main.lua` supprimée
@@ -57,7 +57,9 @@ Recalculer avec `lua progress.lua`.
 - [ ] Base de mutations complétée pour les feuilles actuelles
 - [ ] Les deux profils génétiques tranchés avec le joueur
 
-## Bloqué maintenant
+## Fait en jeu
 
-- Une Embittered Princess est coincée dans l'entrée du Mutatron. Gendustry
-  refuse l'extraction automatisée : **retrait à la main obligatoire**.
+- `Mystical + Common → Cultivated` : les sept étapes enchaînées seules
+  (tâche #4, `complete etape 8/7`).
+- Campagne d'accumulation : dix cycles d'affilée, comptage juste, reprise entre
+  les passes. Rendement observé : **un drone par cycle**, pas trois.
