@@ -66,7 +66,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.12.2"
+hivemind.VERSION = "0.12.3"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -804,6 +804,39 @@ function hivemind.planChain(context)
     if plan.held then return end
 
     if not plan.reachable then
+        -- "Absent" can mean three very different things: unknown to the
+        -- registry, known but named differently from the item label, or simply
+        -- not in the network. Each needs a different fix, so say which.
+        print("")
+        print("Detail des especes manquantes :")
+
+        local labels = {}
+        for _, itemName in ipairs({"forestry:bee_princess_ge", "forestry:bee_drone_ge"}) do
+            for _, item in ipairs(context.transport:findAll({name = itemName})) do
+                table.insert(labels, tostring(item.label or ""))
+            end
+        end
+
+        for _, entry in ipairs(plan.missing) do
+            local known = all[entry.uid]
+            local name = known and known.name or nil
+
+            local matches = {}
+            if name then
+                local needle = name:lower()
+                for _, label in ipairs(labels) do
+                    if label:lower():find(needle, 1, true) then
+                        table.insert(matches, label)
+                    end
+                end
+            end
+
+            print("  " .. entry.uid)
+            print("     nom au registre : " .. (name or "INCONNU DU REGISTRE"))
+            print("     dans le reseau  : "
+                .. (#matches > 0 and table.concat(matches, ", ") or "rien de correspondant"))
+        end
+
         print("")
         print("Fournis les especes manquantes puis relance cette option.")
         return
