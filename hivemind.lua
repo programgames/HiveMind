@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.47.0"
+hivemind.VERSION = "0.48.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -219,6 +219,25 @@ function hivemind.bootstrap(options)
         path = stateDirectory .. "/library.lua",
         config = config,
     })
+
+    -- Templates share one item id and one label and differ only by NBT, so AE2
+    -- cannot tell two of them apart and a template that enters the network is
+    -- lost among its kind. They can therefore only ever move between a chest
+    -- and a machine on the SAME transposer -- anything else would have to route
+    -- through the network. Saying so now beats discovering it mid-imprint.
+    local imprinter = config.machines.imprinter
+    if imprinter and imprinter.enabled ~= false
+       and config.template_chest.transposer ~= imprinter.transposer then
+        table.insert(problems,
+            "le coffre a templates est sur le transposer "
+            .. tostring(config.template_chest.transposer)
+            .. " et l'imprinter sur " .. tostring(imprinter.transposer)
+            .. " : un template ne peut pas passer de l'un a l'autre sans")
+        table.insert(problems,
+            "  traverser le reseau ME, ou il devient indiscernable. Deplace le")
+        table.insert(problems,
+            "  coffre contre le transposer des machines de genetique.")
+    end
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",

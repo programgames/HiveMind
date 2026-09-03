@@ -139,6 +139,12 @@ check("son gestionnaire de sampling est enregistre",
 check("son gestionnaire est enregistre",
       text:find("multiply = multiply.handler()", 1, true) ~= nil)
 
+-- Templates share one id and one label, so AE2 cannot tell two apart and one
+-- that enters the network is lost. They can only move between a chest and a
+-- machine on the same transposer.
+check("le coffre a templates est verifie au demarrage",
+      text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)
+
 -- ---------------------------------------------------------------------------
 
 print("")
