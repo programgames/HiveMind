@@ -96,6 +96,18 @@ check("elle refuse de lire si une princesse peut declencher un cycle",
 check("elle compare le genome aux profils",
       text:find("context.library:has(slot, allele)", 1, true) ~= nil)
 
+-- floweringSlowest answered for Slow, which is the opposite value. A suffix
+-- test refuses that; a substring one cannot.
+check("la comparaison d allele est un suffixe, pas un substring",
+      text:find("flat:sub(-#target) == target", 1, true) ~= nil)
+check("un chromosome dont l uid ne suit pas l etiquette est signale",
+      text:find("ne nomment pas leur allele", 1, true) ~= nil)
+
+-- The menu redraws straight after an action and pushes its output off the top
+check("chaque action laisse le temps de lire",
+      text:find("Entree pour revenir au menu", 1, true) ~= nil)
+
+
 check("la duplication est atteignable", wired.duplicateGene == true)
 check("la mise a l'abri est atteignable", wired.secureLibrary == true)
 

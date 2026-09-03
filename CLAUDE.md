@@ -65,6 +65,14 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 - **Génome** : 13 chromosomes, `Slot` 0..12, `UID0` actif / `UID1` récessif,
   bloc `Mate` sur les reines. Lisible même avec `IsAnalyzed:0b` — aucun
   Beealyzer nécessaire. Chromosome 9 = `FLOWER_PROVIDER`, affiché « Flowers ».
+- **Le génome donne des UID, les samples donnent des noms d'affichage.**
+  `forestry.toleranceUp1` dans le génome, `Temperature tolerance: Up 1` sur
+  l'étiquette. Comparer les deux exige un test de **suffixe** : en sous-chaîne,
+  `floweringSlowest` répond pour `Slow`, soit la valeur opposée. Et tous les
+  chromosomes ne suivent pas cette règle (Fertility affiche `2`, son UID dit
+  autre chose) — ne jamais conclure sans le dire.
+- **L'apiary ne rend pas son slot drone.** Une abeille posée pour lecture y
+  reste jusqu'à un retrait manuel ou le prochain cycle.
 - **Étiquette d'un Gene Sample** : `Bee Sample - <Chromosome>: <Allèle>`.
   Séparateur ` - `, pas `: `.
 - **Les Genetic Templates sont opaques** : même id, même étiquette, ne diffèrent

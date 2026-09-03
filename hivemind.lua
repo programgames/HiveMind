@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.66.0"
+hivemind.VERSION = "0.67.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1466,7 +1466,9 @@ end
 function hivemind.analyseBee(context)
     print("")
     print("=== LIRE LE GENOME D UNE ABEILLE ===")
-    print("Aucune abeille n est detruite: elle est posee, lue, puis rendue.")
+    print("Aucune abeille n est detruite. En revanche l apiary ne rend pas")
+    print("toujours son slot drone: si elle y reste, retire-la a la main ou")
+    print("laisse le prochain cycle la consommer.")
     print("")
 
     local apiary = context.machines and context.machines.breeding_apiary
@@ -1539,16 +1541,42 @@ function hivemind.analyseBee(context)
     end
 
     -- The whole point: which of these are worth spending bees on
-    local wanted = {}
+    --- Does a raw allele uid correspond to a profile's display name
+    --- The genome gives uids like "forestry.floweringSlowest" while a profile
+    --- names alleles as their sample labels do, "Slow". A substring test made
+    --- Slowest answer for Slow, which is the opposite value.
+    --- @param uid string|nil
+    --- @param allele string
+    --- @return boolean
+    local function corresponds(uid, allele)
+        if not uid then return false end
+
+        local function flatten(text)
+            return tostring(text):lower():gsub("[^%w]", "")
+        end
+
+        local flat, target = flatten(uid), flatten(allele)
+        if target == "" then return false end
+
+        return flat:sub(-#target) == target
+    end
+
+    local wanted, uncertain = {}, false
+
     for name, profile in pairs(config.profiles or {}) do
         for slot, allele in pairs(profile) do
             local active, inactive = genome.alleles(parsed, slot)
-            local carries = (active and tostring(active):find(allele, 1, true))
-                or (inactive and tostring(inactive):find(allele, 1, true))
 
-            if carries and not context.library:has(slot, allele) then
-                table.insert(wanted, string.format("  %-22s %-12s (profil %s)",
-                    tostring(genome.labelForSlot(slot) or slot), allele, name))
+            if corresponds(active, allele) or corresponds(inactive, allele) then
+                if not context.library:has(slot, allele) then
+                    table.insert(wanted, string.format("  %-22s %-12s (profil %s)",
+                        tostring(genome.labelForSlot(slot) or slot), allele, name))
+                end
+            elseif active and not context.library:has(slot, allele) then
+                -- Not every chromosome names its uid after its label: Fertility
+                -- shows "2" on a sample and something else entirely in the
+                -- genome. Saying so beats a confident wrong answer.
+                uncertain = true
             end
         end
     end
@@ -1561,8 +1589,14 @@ function hivemind.analyseBee(context)
         print("")
         print("Une campagne sur cette espece vaut donc le coup.")
     else
-        print("Rien ici que tes profils veuillent et que tu n aies pas deja.")
-        print("Inutile d y depenser des abeilles: cherche une autre espece.")
+        print("Rien de sur ici que tes profils veuillent et que tu n aies pas.")
+    end
+
+    if uncertain then
+        print("")
+        print("Certains chromosomes ne nomment pas leur allele comme l etiquette")
+        print("d un sample: compare la liste ci-dessus avec ce que veut le profil")
+        print("(option e) avant de conclure.")
     end
 
     apiary:unload(slots.drone)
@@ -2004,6 +2038,13 @@ local function menu(context)
 
         if matched then
             hivemind[matched.action](context)
+
+            -- The menu redraws straight after and pushes everything off the
+            -- top of the screen. A genome read is thirteen lines nobody gets
+            -- to see if the next thing printed is a menu.
+            print("")
+            io.write("-- Entree pour revenir au menu --")
+            io.read()
         else
             print("Choix invalide: tape un chiffre de 0 a 9.")
         end
