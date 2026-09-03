@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.42.0"
+hivemind.VERSION = "0.43.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1273,6 +1273,93 @@ function hivemind.duplicateGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue a copy of every gene held below the safe number
+--- Picking genes off a list one at a time is fine for two of them and hopeless
+--- for sixty. The library already knows which are short; this turns that into
+--- work. The source survives every copy, so this can only ever add.
+--- @param context table
+function hivemind.secureLibrary(context)
+    print("")
+    print("=== METTRE LA BIBLIOTHEQUE A L'ABRI ===")
+
+    context.library:scan()
+    local shortages = context.library:shortages()
+
+    if #shortages == 0 then
+        print("Chaque gene connu est deja en assez d'exemplaires.")
+        return
+    end
+
+    print(#shortages .. " gene(s) sous le seuil de securite :")
+    print("")
+
+    -- Already queued work must not be queued again: running the same command
+    -- twice would spend a labware and a blank sample for nothing
+    local queued = {}
+    for _, job in ipairs(context.queue:list()) do
+        if job.kind == "duplicate" and job.status ~= "complete"
+           and job.status ~= "cancelled" and job.params and job.params.sample then
+            queued[job.params.sample.label] = true
+        end
+    end
+
+    local plan = {}
+    for _, shortage in ipairs(shortages) do
+        if queued[shortage.label] then
+            print(string.format("  %-44s deja en file", shortage.label))
+        else
+            print(string.format("  %-44s %d copie(s), il en faut %d",
+                shortage.label, shortage.count, shortage.needed))
+            table.insert(plan, shortage)
+        end
+    end
+
+    if #plan == 0 then
+        print("")
+        print("Tout est deja en file. Choisis 6 pour les faire tourner.")
+        return
+    end
+
+    local blanks, labware = 0, 0
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:gene_sample_blank"}) or {}) do
+        blanks = blanks + (tonumber(item.size) or 0)
+    end
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:labware"}) or {}) do
+        labware = labware + (tonumber(item.size) or 0)
+    end
+
+    -- Each copy eats one of each. Saying so before the confirmation beats
+    -- discovering it halfway through a queue that then stalls.
+    print("")
+    print("  " .. #plan .. " copie(s) a faire")
+    print("  samples vierges : " .. blanks .. "   labware : " .. labware)
+
+    if blanks < #plan or labware < #plan then
+        print("  ATTENTION: pas de quoi tout faire, la file s'arretera en route.")
+    end
+
+    io.write("Confirmer ? (o/N): ")
+    local answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local created = 0
+    for _, shortage in ipairs(plan) do
+        local params = genetics.duplicateParams({sample = {label = shortage.label}})
+        if params then
+            local id = context.queue:submit("duplicate", params)
+            if id then created = created + 1 end
+        end
+    end
+
+    print(created .. " tache(s) creee(s). Choisis 6 pour les faire tourner.")
+end
+
 --- What the operator should probably do next
 --- The menu used to be nine equal choices with no hint which one mattered. Most
 --- of the time the world has already decided: a full apiary output blocks
@@ -1380,6 +1467,8 @@ local ENTRIES = {
      hint = "une abeille -> un chromosome au hasard", action = "sampleGene"},
     {key = "b", label = "Dupliquer un gene",
      hint = "une copie de plus, la source survit", action = "duplicateGene"},
+    {key = "c", label = "Mettre la bibliotheque a l abri",
+     hint = "copie tout ce qui est en un seul exemplaire", action = "secureLibrary"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",
