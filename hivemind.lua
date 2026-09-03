@@ -30,15 +30,35 @@ end
 
 local component = require("component")
 
-local config = require("lib.config")
-local transport = require("lib.transport")
-local machines = require("lib.machines")
-local library = require("lib.library")
-local species = require("lib.species")
-local jobs = require("lib.jobs")
-local breeding = require("lib.breeding")
-local planner = require("lib.planner")
-local genome = require("lib.genome")
+--- Load a module, saying which one is missing rather than dying on a bare colon
+--- A module added to the program but forgotten in the installer's file list
+--- produced an empty error and a stack trace pointing at package.lua, which
+--- names neither the module nor the fix.
+--- @param name string
+--- @return table module
+local function need(name)
+    local ok, module = pcall(require, name)
+
+    if not ok or type(module) ~= "table" then
+        print("Module manquant ou illisible : " .. name)
+        print("Detail : " .. tostring(module))
+        print("")
+        print("Lance 'hminstall' pour (re)telecharger les fichiers du programme.")
+        error("module " .. name .. " indisponible", 0)
+    end
+
+    return module
+end
+
+local config = need("lib.config")
+local transport = need("lib.transport")
+local machines = need("lib.machines")
+local library = need("lib.library")
+local species = need("lib.species")
+local jobs = need("lib.jobs")
+local breeding = need("lib.breeding")
+local planner = need("lib.planner")
+local genome = need("lib.genome")
 
 local hivemind = {}
 
@@ -46,7 +66,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.12.0"
+hivemind.VERSION = "0.12.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string

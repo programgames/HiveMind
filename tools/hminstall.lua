@@ -32,6 +32,7 @@ local FILES = {
     "lib/machines.lua",
     "lib/library.lua",
     "lib/breeding.lua",
+    "lib/planner.lua",
     "lib/data/mutations.lua",
     "tools/calibrate.lua",
     "tools/discover.lua",
