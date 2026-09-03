@@ -247,13 +247,20 @@ genetics.SAMPLE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    -- The previous step exists to make this impossible; if it
-                    -- still happens, something is stuck in a way no machine
-                    -- cycle clears
+                    -- A job already past the clearing step never goes back to
+                    -- it, and another job's leftover can land here in between.
+                    -- Trying the extraction costs one call and is what the
+                    -- clearing step would have done.
+                    sampler:unload(entry.slot)
+                    occupant = sampler:slot(entry.slot)
+                end
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
                     return jobs.RETRY, entry.role .. ": le sampler tient encore "
                         .. tostring(occupant.label) .. " dans le slot "
                         .. sampler:resolveSlot(entry.slot)
-                        .. ", que la machine ne consomme pas. Retire-le a la main."
+                        .. ", et ne le rend pas. Retire-le a la main."
                 end
             end
 
@@ -431,14 +438,20 @@ genetics.DUPLICATE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    -- The previous step exists to make this impossible; if it
-                    -- still happens, something is stuck in a way no machine
-                    -- cycle clears
+                    -- A job already past the clearing step never goes back to
+                    -- it, and another job's leftover can land here in between.
+                    -- The transposer does release its source, so asking works.
+                    machine:unload(entry.slot)
+                    occupant = machine:slot(entry.slot)
+                end
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
                     return jobs.RETRY, entry.role
                         .. ": le transposer tient encore "
                         .. tostring(occupant.label) .. " dans le slot "
                         .. machine:resolveSlot(entry.slot)
-                        .. ", que la machine ne consomme pas. Retire-le a la main."
+                        .. ", et ne le rend pas. Retire-le a la main."
                 end
             end
 

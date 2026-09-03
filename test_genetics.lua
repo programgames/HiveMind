@@ -632,6 +632,40 @@ check("budget par defaut", campaignDefaults.budget, 13)
 check("aucune cible par defaut", campaignDefaults.chromosome, nil)
 
 print("")
+print("-- un intrus arrive APRES l'etape de deblocage --")
+
+-- Seen in game: job #13 sat at the loading step while another job left its
+-- sample in the source slot. It never goes back to the clearing step, so it
+-- reported "retire-le a la main" while the job right behind it freed the very
+-- same slot without trouble.
+os.remove(QUEUE)
+reset()
+world.transposerReleasesInputs = true
+table.insert(world.network, {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Fertility: 2", size = 1})
+
+queue, context = buildStack()
+local jobId = queue:submit("duplicate", genetics.duplicateParams(
+    {sample = {label = "Bee Sample - Fertility: 2"}}))
+
+-- Past the clearing step, with the source slot still empty
+queue:step(queue:get(jobId), context)
+queue:step(queue:get(jobId), context)
+check("la tache est bien a l'etape de chargement", queue:get(jobId).step, 3)
+
+-- Now someone else's sample lands in it
+world.gtransposer[oc(2)] = {name = "gendustry:gene_sample",
+                            label = "Bee Sample - Territory: Average", size = 1}
+
+queue:run(context, {maxSteps = 60})
+
+check("la tache aboutit quand meme", queue:get(jobId).status, jobs.COMPLETE)
+check("et copie bien ce qu'on lui demandait",
+      queue:get(jobId).params.copied, "Bee Sample - Fertility: 2")
+checkTruthy("l'intrus est rendu au reseau",
+            table.concat(world.collected, ","):find("Territory: Average", 1, true))
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
