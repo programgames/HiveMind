@@ -178,6 +178,21 @@ local function main(args)
     print("")
     print(installed .. "/" .. #FILES .. " fichier(s) installe(s).")
 
+    -- A directory named like the program shadows it: typing "hivemind" then
+    -- answers "is a directory". An old state directory left over from before
+    -- the rename does exactly that.
+    local ok, filesystem = pcall(require, "filesystem")
+    if ok and filesystem and filesystem.isDirectory then
+        for _, stray in ipairs({"/home/hivemind", "hivemind"}) do
+            local resolved = absolute(stray)
+            if filesystem.isDirectory(resolved) then
+                print("")
+                print("ATTENTION: " .. resolved .. " est un repertoire et masque le")
+                print("programme du meme nom. Supprime-le :  rm -r " .. resolved)
+            end
+        end
+    end
+
     -- Two very different problems: blaming the network for a directory that
     -- could not be created sends the reader hunting in the wrong place.
     if #downloadFailures > 0 then

@@ -37,7 +37,9 @@ config.sides = sides
 -- Storage
 -- ---------------------------------------------------------------------------
 
-config.state_directory = "/home/hivemind/state"
+-- Deliberately NOT /home/hivemind: that directory would shadow the hivemind
+-- program itself, and typing "hivemind" answers "is a directory".
+config.state_directory = "/home/hivemind-state"
 
 -- Templates never enter the ME network: they all share one item id and one
 -- label, so AE2 could not tell them apart and we could never pull a specific
