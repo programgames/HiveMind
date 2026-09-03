@@ -131,6 +131,48 @@ function Transport:find(spec)
     return nil, "introuvable dans le reseau: " .. (spec.label or spec.name or "?")
 end
 
+--- Every network item matching a specification
+--- Used to offer the player a list instead of a blank field: nobody should have
+--- to remember the exact label of a bee to breed it.
+--- @param spec table {name = ..., labelContains = ...}
+--- @return table[] entries Sorted by label
+function Transport:findAll(spec)
+    spec = spec or {}
+
+    local filter = {}
+    if spec.name then filter.name = spec.name end
+
+    local ok, items = invoke(self.me, "getItemsInNetwork", filter)
+    if not ok then
+        ok, items = invoke(self.me, "getItemsInNetwork")
+    end
+
+    if not ok or type(items) ~= "table" then return {} end
+
+    local matching = {}
+
+    for _, item in pairs(items) do
+        if type(item) == "table" and (tonumber(item.size) or 0) > 0 then
+            local name_ok = not spec.name or item.name == spec.name
+            local label_ok = true
+
+            if spec.labelContains and item.label then
+                label_ok = item.label:lower():find(spec.labelContains:lower(), 1, true) ~= nil
+            elseif spec.labelContains then
+                label_ok = false
+            end
+
+            if name_ok and label_ok then table.insert(matching, item) end
+        end
+    end
+
+    table.sort(matching, function(a, b)
+        return tostring(a.label or a.name) < tostring(b.label or b.name)
+    end)
+
+    return matching
+end
+
 --- Reserve a loading dock
 --- @return number|nil dock
 --- @return string|nil error

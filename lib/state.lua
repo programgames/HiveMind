@@ -53,15 +53,36 @@ local function renameFile(from, to)
     return ok == true, err
 end
 
---- Create a directory and its parents when the platform can
+--- Create a directory and every parent it needs
+--- The state directory is two levels deep (/home/hivemind/state), and creating
+--- only the last segment leaves the write failing on a path that does not
+--- exist. Segments are built one at a time rather than trusting the platform to
+--- create parents.
 --- @param path string
+--- @return boolean ok
+--- @return string|nil error
 local function ensureDirectory(path)
-    if not path or path == "" then return end
+    if not path or path == "" or path == "/" then return true end
 
-    if fs and fs.makeDirectory then
-        pcall(fs.makeDirectory, path)
+    -- Desktop test runs have no filesystem library and use existing directories
+    if not (fs and fs.makeDirectory) then return true end
+
+    local absolute = path:sub(1, 1) == "/"
+    local built = absolute and "" or "."
+
+    for segment in path:gmatch("[^/\\]+") do
+        built = built .. "/" .. segment
+
+        local exists = fs.exists and fs.exists(built)
+        if not exists then
+            local ok, err = pcall(fs.makeDirectory, built)
+            if not ok then
+                return false, "creation de " .. built .. " impossible: " .. tostring(err)
+            end
+        end
     end
-    -- Desktop test runs use directories that already exist
+
+    return true
 end
 
 --- Escape a table key for use in generated Lua source
@@ -203,11 +224,15 @@ function state.save(path, value)
     local source, err = state.serialize(value)
     if not source then return false, err end
 
-    ensureDirectory(path:match("^(.*)[/\\][^/\\]*$"))
+    local made, directory_err = ensureDirectory(path:match("^(.*)[/\\][^/\\]*$"))
+    if not made then return false, directory_err end
 
     local temporary = path .. ".tmp"
     local file, open_err = io.open(temporary, "w")
-    if not file then return false, "ecriture impossible: " .. tostring(open_err) end
+    if not file then
+        return false, "ecriture impossible: " .. tostring(open_err)
+            .. " (le repertoire existe-t-il ?)"
+    end
 
     local written = file:write(source)
     file:close()

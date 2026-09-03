@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.5.0"
+hivemind.VERSION = "0.6.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -89,9 +89,12 @@ local function resolveTransposers()
 end
 
 --- Build everything and report what is missing
+--- @param options table|nil {stateDirectory} Overrides, used by the tests
 --- @return table context
 --- @return string[] problems
-function hivemind.bootstrap()
+function hivemind.bootstrap(options)
+    options = options or {}
+    local stateDirectory = options.stateDirectory or config.state_directory
     local problems = {}
 
     local transposers, transposerProblems = resolveTransposers()
@@ -132,7 +135,7 @@ function hivemind.bootstrap()
 
     local registry = species.new({
         apiary = components.industrial_apiary,
-        cachePath = config.state_directory .. "/species.lua",
+        cachePath = stateDirectory .. "/species.lua",
     })
 
     local genes = library.new({
@@ -142,12 +145,12 @@ function hivemind.bootstrap()
             machine = config.template_chest.side,
             source = config.machines.mutatron.source,
         },
-        path = config.state_directory .. "/library.lua",
+        path = stateDirectory .. "/library.lua",
         config = config,
     })
 
     local queue = jobs.new({
-        path = config.state_directory .. "/jobs.lua",
+        path = stateDirectory .. "/jobs.lua",
         handlers = {breed = breeding.handler()},
     })
 
@@ -246,29 +249,155 @@ function hivemind.refreshSpecies(context)
     print(count .. " especes apprises et mises en cache.")
 end
 
+--- Show a numbered list and read a choice
+--- Long lists are paged rather than truncated: a species hidden past the cutoff
+--- is a species the player cannot ask for.
+--- @param entries table[] Items to choose from
+--- @param render function Turns an entry into a line
+--- @param prompt string
+--- @return table|nil chosen
+local function pick(entries, render, prompt)
+    local PAGE = 12
+    local page = 1
+    local pages = math.max(1, math.ceil(#entries / PAGE))
+
+    while true do
+        local first = (page - 1) * PAGE + 1
+        local last = math.min(page * PAGE, #entries)
+
+        print("")
+        for index = first, last do
+            print(string.format("%3d. %s", index, render(entries[index])))
+        end
+
+        if pages > 1 then
+            print(string.format("     page %d/%d  (s = suivante, p = precedente)", page, pages))
+        end
+
+        io.write(prompt .. " (numero, ou vide pour annuler): ")
+        local answer = io.read()
+
+        if not answer or answer == "" then return nil end
+        answer = answer:gsub("%s+", "")
+
+        if answer == "s" and page < pages then
+            page = page + 1
+        elseif answer == "p" and page > 1 then
+            page = page - 1
+        else
+            local index = tonumber(answer)
+            if index and entries[index] then return entries[index] end
+            print("Choix invalide.")
+        end
+    end
+end
+
+--- Let the player choose a bee actually present in the ME network
+--- @param context table
+--- @param itemName string Registry name to filter on
+--- @param role string Shown in the prompt
+--- @return table|nil spec {name, label}
+local function chooseBee(context, itemName, role)
+    local entries = context.transport:findAll({name = itemName})
+
+    if #entries == 0 then
+        print("Aucun item '" .. itemName .. "' visible dans le reseau ME.")
+        io.write("Etiquette exacte a la main (vide pour annuler): ")
+        local typed = io.read()
+        if not typed or typed == "" then return nil end
+        return {name = itemName, label = typed}
+    end
+
+    local chosen = pick(entries,
+        function(entry) return string.format("%-32s x%d", entry.label or "?", entry.size or 0) end,
+        "Choisis la " .. role)
+
+    if not chosen then return nil end
+
+    return {name = chosen.name, label = chosen.label}
+end
+
+--- Let the player choose a target species by searching the registry
+--- @param context table
+--- @return string|nil uid
+local function chooseSpecies(context)
+    local known = context.species:list()
+
+    local all = {}
+    for _, entry in pairs(known) do table.insert(all, entry) end
+    table.sort(all, function(a, b) return tostring(a.name) < tostring(b.name) end)
+
+    if #all == 0 then
+        print("Aucune espece connue. Lance d'abord l'option 2 pour les charger.")
+        io.write("Identifiant a la main (vide pour annuler): ")
+        local typed = io.read()
+        if typed == "" then return nil end
+        return typed
+    end
+
+    while true do
+        io.write("Recherche d'espece (nom ou fragment, vide = tout): ")
+        local term = io.read()
+        if not term then return nil end
+
+        local matching = {}
+        if term == "" then
+            matching = all
+        else
+            local needle = term:lower()
+            for _, entry in ipairs(all) do
+                if tostring(entry.name):lower():find(needle, 1, true)
+                    or tostring(entry.uid):lower():find(needle, 1, true) then
+                    table.insert(matching, entry)
+                end
+            end
+        end
+
+        if #matching == 0 then
+            print("Aucune espece ne correspond a '" .. term .. "'.")
+        else
+            local chosen = pick(matching,
+                function(entry)
+                    return string.format("%-28s %s", entry.name or "?", entry.uid or "?")
+                end,
+                "Espece visee")
+
+            if chosen then return chosen.uid end
+            return nil
+        end
+    end
+end
+
 --- Queue one breeding cycle
 --- @param context table
 function hivemind.submitBreeding(context)
-    io.write("Etiquette de la princesse (ex: Forest Princess): ")
-    local princess = io.read()
-    io.write("Etiquette du drone (ex: Meadows Drone): ")
-    local drone = io.read()
-    io.write("Espece visee (uid, ex: forestry.speciesCommon): ")
-    local target = io.read()
+    local princessSpec = chooseBee(context, "forestry:bee_princess_ge", "princesse")
+    if not princessSpec then print("Annule.") return end
 
-    if not (princess and drone and target) then
-        print("Annule.")
-        return
-    end
+    local droneSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+    if not droneSpec then print("Annule.") return end
+
+    local target = chooseSpecies(context)
+    if not target then print("Annule.") return end
 
     local params, err = breeding.params({
         target = target,
-        princess = {name = "forestry:bee_princess_ge", label = princess},
-        drone = {name = "forestry:bee_drone_ge", label = drone},
+        princess = princessSpec,
+        drone = droneSpec,
     })
 
     if not params then
         print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    print("")
+    print("  " .. princessSpec.label .. "  +  " .. droneSpec.label .. "  ->  " .. target)
+    io.write("Confirmer ? (o/N): ")
+
+    local answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o" or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
         return
     end
 
