@@ -503,6 +503,103 @@ function genetics.duplicateHandler()
     return {steps = genetics.DUPLICATE_STEPS}
 end
 
+--- Build and check the parameters of a gene campaign
+--- One extraction is a lottery ticket. Getting a particular gene means buying
+--- tickets until it comes up, and that is a loop, not a job an operator should
+--- have to restart thirteen times.
+--- @param options table {bee, chromosome, bees}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.campaignParams(options)
+    options = options or {}
+
+    local bee = options.bee
+    if type(bee) ~= "table" or not bee.label then
+        return nil, "abeille manquante ou sans etiquette"
+    end
+
+    -- Without a target chromosome the campaign simply harvests: every draw is
+    -- a gene the library did not have, which is worth doing on its own
+    local chromosome = options.chromosome
+    if chromosome ~= nil and type(chromosome) ~= "string" then
+        return nil, "chromosome vise invalide"
+    end
+
+    local budget = tonumber(options.bees) or 13
+    if budget < 1 then return nil, "budget invalide: " .. tostring(options.bees) end
+
+    return {
+        bee = {name = bee.name or "forestry:bee_drone_ge", label = bee.label},
+        blank = options.blank or {name = "gendustry:gene_sample_blank"},
+        labware = options.labware or {name = "gendustry:labware"},
+        chromosome = chromosome,
+        budget = budget,
+        spent = 0,
+        obtainedList = {},
+        timeout = options.timeout,
+    }
+end
+
+--- The campaign is the sample cycle plus a decision at the end
+--- Rewinding job.step is how the accumulation campaign loops, and the queue
+--- increments after a DONE, so zero restarts at step one with the counters kept
+--- on disk: a reboot mid-campaign resumes where it stopped.
+genetics.CAMPAIGN_STEPS = {}
+
+for _, step in ipairs(genetics.SAMPLE_STEPS) do
+    table.insert(genetics.CAMPAIGN_STEPS, step)
+end
+
+table.insert(genetics.CAMPAIGN_STEPS, {
+    name = "compter-et-recommencer",
+    -- No verify: this step is the loop, and skipping it ends the campaign after
+    -- a single draw
+    run = function(job, context)
+        job.params.spent = (job.params.spent or 0) + 1
+
+        local drawn = job.params.obtained
+        if drawn and drawn.chromosome then
+            table.insert(job.params.obtainedList, drawn.chromosome .. " = "
+                .. tostring(drawn.allele))
+        end
+
+        local wanted = job.params.chromosome
+        local hit = drawn and wanted and drawn.chromosome == wanted
+
+        report(context, job.params.bee.label .. ": " .. job.params.spent .. "/"
+            .. job.params.budget .. " abeille(s), dernier tirage "
+            .. ((drawn and drawn.chromosome) or "?"))
+
+        if hit then
+            return jobs.DONE, wanted .. " obtenu apres "
+                .. job.params.spent .. " abeille(s)"
+        end
+
+        if job.params.spent >= job.params.budget then
+            if wanted then
+                -- Not a failure: thirteen genes went into the library and the
+                -- draw simply did not come up. Saying "failed" would hide that.
+                return jobs.DONE, "budget epuise sans " .. wanted
+                    .. "; " .. #job.params.obtainedList .. " gene(s) recoltes"
+            end
+
+            return jobs.DONE, #job.params.obtainedList .. " gene(s) recoltes"
+        end
+
+        -- The queue adds one after a DONE, so zero restarts at step one
+        job.params.obtained = nil
+        job.step = 0
+
+        return jobs.DONE, job.params.spent .. "/" .. job.params.budget
+    end,
+})
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.campaignHandler()
+    return {steps = genetics.CAMPAIGN_STEPS}
+end
+
 --- The handler to register with the job queue
 --- @return table handler
 function genetics.sampleHandler()

@@ -93,11 +93,21 @@ local function tickSampler()
     if world.sampler[oc(3)] then return end          -- output not collected yet
     if not world.starts then return end
 
+
+
     local blank = world.sampler[oc(0)]
     local labware = world.sampler[oc(1)]
     local bee = world.sampler[oc(2)]
 
     if not (blank and labware and bee) then return end
+
+    -- A campaign hunting one chromosome depends on the draw changing, and it
+    -- must change once per CYCLE. Advancing it on every slot read -- which is
+    -- what the program does while it waits -- burned the whole list in one go.
+    if world.draws then
+        world.drawIndex = (world.drawIndex or 0) + 1
+        world.draw = world.draws[math.min(world.drawIndex, #world.draws)]
+    end
 
     world.runs = world.runs + 1
     world.sampler[oc(0)] = nil
@@ -268,7 +278,8 @@ local function buildStack()
     local queue = jobs.new({
         path = QUEUE,
         handlers = {sample = genetics.sampleHandler(),
-                    duplicate = genetics.duplicateHandler()},
+                    duplicate = genetics.duplicateHandler(),
+                    campaign = genetics.campaignHandler()},
         clock = function() ticks = ticks + 1 return ticks end,
         maxAttempts = 2,
     })
@@ -517,6 +528,69 @@ check("la copie demandee est la bonne",
       queue:get(1).params.copied, "Bee Sample - Fertility: 2")
 checkTruthy("l'intrus est copie au passage, pas jete",
             table.concat(world.collected, ","):find("Flowering: Slower", 1, true))
+
+print("")
+print("-- une campagne s'arrete des que le gene vise sort --")
+
+os.remove(QUEUE)
+reset()
+world.draws = {"Speed: Slowest", "Fertility: 3", "Species: Meadows", "Speed: Fast"}
+
+queue, context = buildStack()
+queue:submit("campaign", genetics.campaignParams({
+    bee = {label = "Meadows Drone"}, chromosome = "Species", bees = 10}))
+queue:run(context, {maxSteps = 200})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("trois abeilles depensees", queue:get(1).params.spent, 3)
+check("la machine a tourne trois fois", world.runs, 3)
+check("les tirages rates sont gardes", #queue:get(1).params.obtainedList, 3)
+checkTruthy("le gene vise est bien le dernier",
+            queue:get(1).params.obtainedList[3]:find("Species", 1, true))
+
+print("")
+print("-- un budget epuise n'est pas un echec --")
+
+os.remove(QUEUE)
+reset()
+world.draws = {"Speed: Slowest", "Speed: Slower", "Speed: Slow"}
+
+queue, context = buildStack()
+queue:submit("campaign", genetics.campaignParams({
+    bee = {label = "Meadows Drone"}, chromosome = "Species", bees = 3}))
+queue:run(context, {maxSteps = 200})
+
+-- Three genes went into the library; calling that a failure would hide it
+check("tache terminee, pas en erreur", queue:get(1).status, jobs.COMPLETE)
+check("le budget est respecte", queue:get(1).params.spent, 3)
+check("trois genes recoltes quand meme", #queue:get(1).params.obtainedList, 3)
+
+print("")
+print("-- sans cible, la campagne recolte jusqu'au budget --")
+
+os.remove(QUEUE)
+reset()
+world.draws = {"Speed: Fast", "Fertility: 4", "Territory: Large"}
+
+queue, context = buildStack()
+queue:submit("campaign", genetics.campaignParams({
+    bee = {label = "Meadows Drone"}, bees = 3}))
+queue:run(context, {maxSteps = 200})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("trois abeilles depensees", queue:get(1).params.spent, 3)
+check("trois genes differents", #queue:get(1).params.obtainedList, 3)
+
+print("")
+print("-- parametres de campagne --")
+
+check("abeille manquante refusee", (genetics.campaignParams({})), nil)
+check("budget nul refuse",
+      (genetics.campaignParams({bee = {label = "X Drone"}, bees = 0})), nil)
+
+local campaignDefaults = genetics.campaignParams({bee = {label = "X Drone"}})
+check("budget par defaut", campaignDefaults.budget, 13)
+check("aucune cible par defaut", campaignDefaults.chromosome, nil)
 
 print("")
 print("=== Resultats ===")

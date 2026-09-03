@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.44.0"
+hivemind.VERSION = "0.45.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -225,7 +225,8 @@ function hivemind.bootstrap(options)
         handlers = {breed = breeding.handler(),
                     multiply = multiply.handler(),
                     sample = genetics.sampleHandler(),
-                    duplicate = genetics.duplicateHandler()},
+                    duplicate = genetics.duplicateHandler(),
+                    campaign = genetics.campaignHandler()},
     })
 
     return {
@@ -1343,6 +1344,78 @@ function hivemind.duplicateGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue a run of extractions until a gene comes up
+--- One draw is a lottery ticket; getting a particular chromosome means buying
+--- tickets until it comes up. Nobody should restart that thirteen times by hand.
+--- @param context table
+function hivemind.geneCampaign(context)
+    print("")
+    print("=== CAMPAGNE DE GENES ===")
+    print("Extrait des genes d'une meme espece jusqu'a obtenir celui vise,")
+    print("ou jusqu'a epuisement du budget d'abeilles. Chaque tirage rate")
+    print("enrichit quand meme la bibliotheque.")
+    print("")
+
+    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+    if not beeSpec then print("Annule.") return end
+
+    print("")
+    print("Chromosome vise (vide = tout prendre, sans cible) :")
+    for slot = 0, 12 do
+        local chromosome = genome.CHROMOSOMES[slot]
+        if chromosome then
+            io.write(string.format("  %-16s", chromosome.label))
+            if slot % 3 == 2 then print("") end
+        end
+    end
+    print("")
+
+    io.write("Chromosome (nom exact, ou vide): ")
+    local wanted = io.read()
+    wanted = wanted and wanted:gsub("^%s+", ""):gsub("%s+$", "")
+    if wanted == "" then wanted = nil end
+
+    if wanted and not genome.slotForLabel(wanted) then
+        print("Chromosome inconnu: " .. wanted)
+        print("Reprends un nom de la liste ci-dessus, tel quel.")
+        return
+    end
+
+    io.write("Combien d'abeilles au maximum ? [13]: ")
+    local answer = io.read()
+    local budget = tonumber(answer and answer:gsub("%s+", "")) or 13
+
+    local params, err = genetics.campaignParams({
+        bee = beeSpec, chromosome = wanted, bees = budget,
+    })
+
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    print("")
+    print("  " .. beeSpec.label .. " x" .. budget
+        .. (wanted and (" -> vise " .. wanted) or " -> tout prendre"))
+    print("  Le Sampler detruit chaque abeille.")
+    io.write("Confirmer ? (o/N): ")
+
+    answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local id, submit_err = context.queue:submit("campaign", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+end
+
 --- Queue a copy of every gene held below the safe number
 --- Picking genes off a list one at a time is fine for two of them and hopeless
 --- for sixty. The library already knows which are short; this turns that into
@@ -1539,6 +1612,8 @@ local ENTRIES = {
      hint = "une copie de plus, la source survit", action = "duplicateGene"},
     {key = "c", label = "Mettre la bibliotheque a l abri",
      hint = "copie tout ce qui est en un seul exemplaire", action = "secureLibrary"},
+    {key = "d", label = "Campagne de genes",
+     hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",
