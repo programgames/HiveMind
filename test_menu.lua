@@ -103,6 +103,38 @@ check("multiply est charge", loaded.multiply == true)
 check("son gestionnaire est enregistre",
       text:find("multiply = multiply.handler()", 1, true) ~= nil)
 
+-- ---------------------------------------------------------------------------
+
+print("")
+print("-- autoreport --")
+
+local tool = assert(io.open("tools/autoreport.lua", "r"))
+local toolText = tool:read("*all")
+tool:close()
+
+-- The cache purge has to happen before the require, or it purges nothing
+local purge = toolText:find("package.loaded[name] = nil", 1, true)
+local require_at = toolText:find('pcall(require, "hivemind")', 1, true)
+
+check("autoreport vide le cache des modules", purge ~= nil)
+check("il le fait avant de charger hivemind",
+      purge ~= nil and require_at ~= nil and purge < require_at)
+check("il verifie que le programme est assez recent",
+      toolText:find("plus ancien que cet outil", 1, true) ~= nil)
+check("un appel impossible est signale",
+      toolText:find("fonction absente de cette version", 1, true) ~= nil)
+
+-- Every hivemind function autoreport calls must exist, same trap as the menu
+local called = {}
+for name in toolText:gmatch("hivemind%.([%w_]+)%s*[(,)]") do called[name] = true end
+
+local absent = {}
+for name in pairs(called) do
+    if name ~= "VERSION" and not defined[name] then table.insert(absent, name) end
+end
+check("autoreport n'appelle que des fonctions reelles", #absent == 0,
+      table.concat(absent, ", "))
+
 print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)

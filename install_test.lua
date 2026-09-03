@@ -87,10 +87,20 @@ local function check(label, condition)
     if not condition then failed = true end
 end
 
+-- OpenOS keeps required modules for the whole shell session, so files just
+-- written are ignored until something drops them. Leaving "hivemind" cached is
+-- how a tool once reported version 0.14.1 with 0.17.0 on disk.
+package.loaded["hivemind"] = {stale = true}
+package.loaded["lib.multiply"] = {stale = true}
+
 -- Nominal install
 capture()
 local ok = pcall(assert(loadfile("tools/hminstall.lua")))
 release()
+
+check("hivemind est vide du cache", package.loaded["hivemind"] == nil)
+check("les modules lib sont vides du cache",
+      package.loaded["lib.multiply"] == nil)
 
 check("installation sans exception", ok)
 

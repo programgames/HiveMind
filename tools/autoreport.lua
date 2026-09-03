@@ -123,6 +123,17 @@ local function main(args)
         end
     end
 
+    -- OpenOS keeps required modules in package.loaded for the whole shell
+    -- session, so a second run gets the copy loaded before the update rather
+    -- than the file just written. That is how this tool once reported version
+    -- 0.14.1 with 0.17.0 sitting on disk.
+    for name in pairs(package.loaded) do
+        if type(name) == "string"
+           and (name == "hivemind" or name:match("^lib%.")) then
+            package.loaded[name] = nil
+        end
+    end
+
     -- Loaded as a module, never as a program: hivemind starts its menu unless it
     -- receives a module name, and a menu is the one thing this tool must avoid.
     --
@@ -174,9 +185,10 @@ local function main(args)
         say("")
         say("ATTENTION: hivemind.lua est plus ancien que cet outil.")
         say("  manquant: " .. table.concat(absent, ", "))
-        say("  Relance hminstall: le cache de GitHub a servi une vieille copie.")
+        say("  Relance hminstall, puis redemarre l'ordinateur si cela persiste:")
+        say("  OpenOS garde les modules en cache pour toute la session.")
         print("hivemind.lua est trop ancien (" .. table.concat(absent, ", ") .. ").")
-        print("Relance hminstall, puis recommence.")
+        print("Relance hminstall; si le message revient, redemarre l'ordinateur.")
     end
 
     section("COMPOSANTS")

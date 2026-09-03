@@ -286,7 +286,8 @@ local function main(args)
     -- loaded by another program in this session.
     local dropped = 0
     for name in pairs(package.loaded) do
-        if type(name) == "string" and name:match("^lib%.") then
+        if type(name) == "string"
+           and (name == "hivemind" or name:match("^lib%.")) then
             package.loaded[name] = nil
             dropped = dropped + 1
         end
