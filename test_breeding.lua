@@ -166,7 +166,17 @@ local transposerComponent = {
             -- Anything pushed into the interface leaves for the network
             table.insert(world.collected, stack.label)
         else
-            to[toSlot] = stack
+            -- A real transposer cannot merge two different items into one
+            -- slot. Overwriting here made the mock more forgiving than the
+            -- game and hid a leftover parent blocking every later delivery.
+            local occupant = to[toSlot]
+            if occupant and occupant.label ~= stack.label then return false end
+
+            if occupant then
+                occupant.size = (occupant.size or 1) + (stack.size or 1)
+            else
+                to[toSlot] = stack
+            end
         end
 
         from[fromSlot] = nil
@@ -425,6 +435,32 @@ checkTruthy("la raison nomme la cible",
 checkTruthy("les mutations proposees sont listees",
             queue:get(1).error and queue:get(1).error:find("Common Queen"))
 check("aucun mutagene gaspille", world.mutagen, 8000)
+
+-- ---------------------------------------------------------------------------
+-- A parent left behind by an earlier job
+-- ---------------------------------------------------------------------------
+-- Seen in game: job #3 stalled after loading its princess, and job #4 then
+-- reported "princesse indisponible" for a bee the network held in stock. Two
+-- different bees do not stack, so the delivery moved nothing at all.
+
+print("")
+print("-- slot in1 occupe par la princesse d'une tache precedente --")
+
+os.remove(QUEUE)
+reset()
+world.mutatron[oc(0)] = {name = "forestry:bee_princess_ge",
+                         label = "Embittered Princess", size = 1}
+
+local queue, context = buildStack()
+queue:submit("breed", PARAMS)
+
+local report = queue:run(context, {maxSteps = 40})
+
+check("tache terminee malgre l'intrus", queue:get(1).status, jobs.COMPLETE)
+check("le Mutatron a tourne une fois", world.produceCalls, 1)
+
+checkTruthy("l'intruse est rendue au reseau",
+            table.concat(world.collected, ","):find("Embittered Princess", 1, true))
 
 os.remove(QUEUE)
 

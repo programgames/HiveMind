@@ -125,19 +125,35 @@ breeding.STEPS = {
 
             local slots = mutatron:slots()
 
-            if labelInSlot(mutatron, slots.in1) ~= job.params.princess.label then
-                local ok, reason = mutatron:load(job.params.princess, slots.in1, 1)
-                if not ok then
-                    return jobs.RETRY, "princesse indisponible: " .. tostring(reason)
+            -- A previous job that stalled here leaves its own parent behind.
+            -- Two different bees do not stack, so the delivery silently moves
+            -- nothing and the failure is reported as "indisponible" for a bee
+            -- that is sitting in the network all along. Clear the slot first.
+            local function place(spec, slot, role)
+                local occupant = labelInSlot(mutatron, slot)
+                if occupant == spec.label then return true end
+
+                if occupant then
+                    mutatron:unload(slot)
+                    if labelInSlot(mutatron, slot) then
+                        return false, role .. ": impossible de retirer "
+                            .. tostring(occupant) .. " du slot " .. tostring(slot)
+                    end
                 end
+
+                local ok, reason = mutatron:load(spec, slot, 1)
+                if not ok then
+                    return false, role .. " indisponible: " .. tostring(reason)
+                end
+
+                return true
             end
 
-            if labelInSlot(mutatron, slots.in2) ~= job.params.drone.label then
-                local ok, reason = mutatron:load(job.params.drone, slots.in2, 1)
-                if not ok then
-                    return jobs.RETRY, "drone indisponible: " .. tostring(reason)
-                end
-            end
+            local placed, why = place(job.params.princess, slots.in1, "princesse")
+            if not placed then return jobs.RETRY, why end
+
+            placed, why = place(job.params.drone, slots.in2, "drone")
+            if not placed then return jobs.RETRY, why end
 
             return jobs.DONE
         end,
