@@ -142,7 +142,7 @@ breeding.STEPS = {
                         return false, role .. ": le Mutatron refuse de rendre le slot "
                             .. mutatron:resolveSlot(slot) .. ", qui contient "
                             .. tostring(occupant)
-                            .. ". Retire-la a la main puis relance." .. " du slot " .. tostring(slot)
+                            .. ". Retire-la a la main puis relance."
                     end
                 end
 

@@ -228,8 +228,20 @@ check("role absent", apiary:speciesIn("princess"), nil)
 check("une sortie non vide", #apiary:outputs(), 1)
 check("slot de sortie", apiary:outputs()[1].slot, 6)
 
-checkTruthy("attente de la princesse", apiary:awaitPrincess(10))
-check("waitForPrincess appele", state.princessWaited, true)
+-- The queen slot emptying is what ends a cycle. Polling it ourselves is the
+-- only thing that works: OpenComputers aborts a component call that blocks, so
+-- the driver's own waitForPrincess answered "timeout" within seconds however
+-- long a delay it was given, and a campaign never got past its first cycle.
+state.slots[0] = nil
+checkTruthy("cycle fini quand le slot reine se vide", apiary:awaitPrincess(10))
+check("le driver n'est plus sollicite", state.princessWaited, false)
+
+state.slots[0] = {label = "Wintry Queen", size = 1}
+local stillAlive, aliveReason = apiary:awaitPrincess(5)
+check("reine vivante: attente refusee", stillAlive, false)
+checkTruthy("la raison dit qu'elle vit encore",
+            aliveReason and aliveReason:find("vit encore"))
+state.slots[0] = nil
 
 print("")
 print("-- Apiary en erreur --")
@@ -269,16 +281,20 @@ check("le vrai probleme est retenu", mixed_status, machines.ERROR)
 check("seul le vrai probleme est cite", mixed_detail, "forestry:no_sky")
 
 print("")
-print("-- l'upgrade Automation casse waitForPrincess --")
+print("-- l'upgrade Automation --")
 
 reset()
 state.automated = true
 apiary = build(apiary_component, config.machines.breeding_apiary)
 
 check("automation detectee", apiary:isAutomated(), true)
-local waited, wait_err = apiary:awaitPrincess(5)
-check("attente refusee", waited, false)
-checkTruthy("raison rapportee", wait_err and wait_err:find("Automation"))
+
+-- The upgrade is what broke the driver's waitForPrincess, and the warning in
+-- the status screen exists for it. Polling the slot no longer goes through that
+-- call, so the wait itself works; the warning stays, because automation also
+-- empties the outputs before the harvest step can read them.
+state.slots[0] = nil
+checkTruthy("l'attente ne depend plus du driver", apiary:awaitPrincess(5))
 
 print("")
 print("-- energie --")
@@ -353,6 +369,36 @@ check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3
 check("source commune = ME Interface", config.machines.mutatron.source, 2)
 check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
 check("un transposer declare", #config.transposers, 1)
+
+print("")
+print("-- aucun appel de driver ne bloque le serveur --")
+
+-- A component call does not block this computer, it blocks the SERVER: the
+-- world stops until it returns. Handing waitForPrincess a 900 s budget froze
+-- the host until the watchdog killed it and Julien had to restart the machine.
+-- Both waiting calls now take a short fixed budget and the result is polled.
+local source = assert(io.open("lib/machines.lua", "r"))
+local machineText = source:read("*all")
+source:close()
+
+local blocking = {}
+for call, argument in machineText:gmatch('"(waitForPrincess)"%s*,%s*([%w_%.]+)') do
+    table.insert(blocking, call .. " <- " .. argument)
+end
+for call, argument in machineText:gmatch('"(selectAndProduce)"[^)]-,%s*([%w_%.]+)%s*%)') do
+    local budget = tonumber(argument)
+    if budget == nil or budget > 5 then
+        table.insert(blocking, call .. " <- " .. argument)
+    end
+end
+
+check("aucun appel bloquant a delai long", #blocking, 0)
+if #blocking > 0 then print("         " .. table.concat(blocking, ", ")) end
+
+checkTruthy("l'attente de la reine sonde le slot",
+            machineText:find("self:slot(slots.queen)", 1, true))
+checkTruthy("la production sonde la sortie",
+            machineText:find("local produced = self:output()", 1, true))
 
 print("")
 print("=== Resultats ===")

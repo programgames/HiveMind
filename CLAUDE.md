@@ -53,6 +53,7 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 | Le shell n'a ni boucle `for` ni `&&` | D'où l'installeur en Lua |
 | `filesystem.makeDirectory` exige un chemin **absolu** et ne crée pas les parents | Résoudre via `shell.resolve` |
 | `install` est une commande OpenOS existante | Notre installeur s'appelle `hminstall` |
+| **Un appel de composant bloque le SERVEUR, pas seulement l'ordinateur** | Ne jamais passer un long délai à `waitForPrincess` ou `selectAndProduce` : le monde s'arrête, le watchdog tue l'hôte. Démarrer, puis **sonder** |
 | Un répertoire du même nom masque un programme | L'état va dans `/home/hivemind-state`, pas `/home/hivemind` |
 | Le CDN de GitHub sert des fichiers périmés plusieurs minutes, **par fichier** | Chaque téléchargement porte `?nocache=<jeton unique>` |
 

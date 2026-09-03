@@ -332,19 +332,42 @@ end
 --- @param timeout number|nil
 --- @return table|nil stack Produced stack
 --- @return string|nil error
-function Mutatron:produce(index, timeout)
-    local ok, result, detail = invoke(self.component, "selectAndProduce", index, timeout or 60)
+function Mutatron:produce(index, timeout, interval)
+    timeout = timeout or 180
+    interval = interval or 2
+
+    -- A driver call that blocks blocks the SERVER, not just this computer: the
+    -- world stops until it returns, and a long enough one trips the watchdog and
+    -- takes the whole server down. So the machine is asked to start the
+    -- mutation with the shortest wait it accepts, and the result is picked up by
+    -- polling, which yields between reads.
+    local ok, result, detail = invoke(self.component, "selectAndProduce", index, 1)
 
     if not ok then return nil, "appel impossible: " .. tostring(result) end
-    if result == false then return nil, tostring(detail or "production refusee") end
 
-    -- selectAndProduce answers true plus the stack, or just the stack
+    -- It may already answer with the stack when the mutation is instant
     local stack = (type(result) == "table") and result or detail
-    if type(stack) ~= "table" then
-        return nil, "aucune sortie rapportee par la machine"
+    if type(stack) == "table" then return stack end
+
+    -- A refusal is final; a one-second wait running out is not
+    if result == false and detail and not tostring(detail):find("time") then
+        return nil, tostring(detail)
     end
 
-    return stack
+    local started = self.clock()
+
+    while true do
+        local produced = self:output()
+        if produced then return produced end
+
+        local elapsed = self.clock() - started
+        if elapsed >= timeout then
+            return nil, string.format(
+                "rien produit apres %d s", math.floor(elapsed))
+        end
+
+        self.sleep(interval)
+    end
 end
 
 --- Current output slot content
@@ -429,13 +452,40 @@ end
 --- @param timeout number|nil
 --- @return boolean ok
 --- @return string|nil reason
-function Apiary:awaitPrincess(timeout)
-    local ok, done, reason = invoke(self.component, "waitForPrincess", timeout or 180)
+function Apiary:awaitPrincess(timeout, interval)
+    timeout = timeout or 300
+    interval = interval or 5
 
-    if not ok then return false, "appel impossible: " .. tostring(done) end
-    if done == false then return false, tostring(reason or "delai depasse") end
+    -- The driver's own waitForPrincess cannot hold for long: OpenComputers
+    -- aborts a component call that blocks, so asking it for 900 s came straight
+    -- back with "timeout" and a whole campaign never got past its first cycle.
+    -- The deadline belongs here, where we control it, and the queen slot
+    -- emptying is the same signal the verify steps already trust.
+    local slots = self:slots()
+    local started = self.clock()
+    local complained = false
 
-    return true
+    while true do
+        if self:slot(slots.queen) == nil then return true end
+
+        local elapsed = self.clock() - started
+
+        if elapsed >= timeout then
+            return false, string.format(
+                "la reine vit encore apres %d s", math.floor(elapsed))
+        end
+
+        -- One line after the first minute, so a long wait does not look like a
+        -- hang, and no line at all for a cycle that finishes quickly
+        if not complained and elapsed >= (self.complainAfter or 60) then
+            complained = true
+            if self.onWait then
+                pcall(self.onWait, self.name, "cycle en cours", elapsed)
+            end
+        end
+
+        self.sleep(interval)
+    end
 end
 
 --- Errors reported by Forestry and Gendustry

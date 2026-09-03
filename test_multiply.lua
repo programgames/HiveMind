@@ -104,6 +104,38 @@ local function inventoryFor(side)
     return nil
 end
 
+-- The queen dies after a few reads of her slot, which is how a cycle really
+-- ends. OpenComputers aborts a component call that blocks, so nothing can wait
+-- inside waitForPrincess: the program polls, and the world has to move between
+-- polls or the poll loop tests nothing.
+local READS_BEFORE_DEATH = 3
+
+local function tickQueen()
+    local queen = world.apiary[oc(0)]
+    if not queen then return end
+
+    world.queenReads = (world.queenReads or 0) + 1
+    if world.queenReads < READS_BEFORE_DEATH then return end
+
+    world.queenReads = 0
+    world.cycleRuns = world.cycleRuns + 1
+
+    local species = (queen.label or ""):gsub("%s+%a+$", "")
+    world.apiary[oc(0)] = nil
+    world.apiary[oc(1)] = nil
+
+    world.apiary[oc(6)] = {name = "forestry:bee_princess_ge",
+                           label = species .. " Princess", size = 1}
+
+    local produced = world.dronesPerCycle
+    if produced == nil then produced = 3 end
+
+    if produced > 0 then
+        world.apiary[oc(7)] = {name = "forestry:bee_drone_ge",
+                               label = species .. " Drone", size = produced}
+    end
+end
+
 local me = {
     getItemsInNetwork = callable(function(filter)
         if filter and filter.name then
@@ -150,10 +182,15 @@ local transposerComponent = {
     end),
     getSlotStackSize = callable(function(side, slot)
         local inventory = inventoryFor(side)
+        
         local stack = inventory and inventory[slot]
         return stack and (stack.size or 1) or 0
     end),
     getStackInSlot = callable(function(side, slot)
+        -- Reading the queen slot is what the program does while it waits, so
+        -- that read is where the simulated cycle advances
+        if side == SIDE_APIARY and slot == oc(0) then tickQueen() end
+
         local inventory = inventoryFor(side)
         return inventory and inventory[slot] or nil
     end),

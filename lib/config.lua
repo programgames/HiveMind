@@ -194,11 +194,10 @@ config.library = {
 config.breeding = {
     -- Extra drones to accumulate beyond the strict requirement
     spare_drones = 1,
-    -- How long to sit on one apiary cycle before reporting a wait. An
-    -- Industrial Apiary without speed upgrades takes several real minutes, and
-    -- 300 s meant the job parked on a timeout every single pass: the work still
-    -- resumed, but each attempt cost a whole command.
-    cycle_timeout_seconds = 900,
+    -- How long THIS computer waits on one apiary cycle before parking the job
+    -- and letting the queue move on. It no longer holds a driver call open --
+    -- that froze the server -- so this only decides when a pass reports back.
+    cycle_timeout_seconds = 240,
     -- Replicated bees are always Ignoble Stock, and the Imprinter sometimes
     -- kills those. Princess lineages therefore come from natural breeding, and
     -- replication is reserved for drones, which are consumables.
