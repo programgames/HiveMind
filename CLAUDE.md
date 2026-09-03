@@ -99,6 +99,12 @@ les machines nomment un transposer par son index.
 | `65d3da44` | 1 | Sampler (5), Genetic Transposer (3), Imprinter (2), ME Interface (4) |
 | `95625858` | 2 | Mutatron (5), Apiary (3), coffre à templates (4), ME Interface (2) |
 
+**Une ME Interface par banc, et chacune doit avoir un Adapter.** Approvisionner
+un quai ne marche que sur l'interface à laquelle ce quai appartient : configurer
+l'une en surveillant le quai de l'autre fait que l'objet n'arrive jamais, et
+l'échec se lit comme « la machine refuse cet objet ». `config.interfaces`
+associe un index de transposer à une adresse (un préfixe suffit).
+
 Les correspondances de slots du banc de génétique viennent de la documentation
 Gendustry et **la première lecture réelle les a démenties**. Rien ne doit s'y
 fier avant confirmation par le diagnostic.

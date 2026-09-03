@@ -54,6 +54,18 @@ config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b4
 -- label, so AE2 could not tell them apart and we could never pull a specific
 -- one back out. They live in a dedicated chest, one per slot, tracked on disk
 -- and verified by fingerprint. Do not reorganize this chest by hand.
+-- One ME Interface per bench, keyed by transposer index. Both benches have an
+-- interface block, but only one is an OpenComputers component: a bench whose
+-- interface has no Adapter against it cannot be supplied at all, and every
+-- delivery there fails in a way that reads as "the machine refused the item".
+--
+-- Fill in an address once tools/discover reports it.
+-- A prefix is enough, and is all a component listing shows.
+config.interfaces = {
+    [2] = "4c447a5c",   -- breeding bench
+    -- [1] = "...",     -- genetics bench: needs an Adapter against its interface
+}
+
 config.template_chest = {
     transposer = 2,
     side = 4,        -- west/right, found by tools/discover.lua

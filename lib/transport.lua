@@ -54,6 +54,11 @@ function transport.new(options)
 
     return setmetatable({
         me = options.me,
+        -- One ME Interface per bench, keyed by transposer index. Two benches
+        -- means two interface blocks, and configuring one while watching the
+        -- other's dock means the item never arrives -- which is exactly what a
+        -- whole probe run reported, fifteen times over.
+        interfaces = options.interfaces or {},
         database = options.database,
         transposers = options.transposers or {},
         docks = settings.docks or {1, 2, 3, 4, 5, 6},
@@ -193,10 +198,29 @@ end
 --- Reserve a loading dock
 --- @return number|nil dock
 --- @return string|nil error
-function Transport:reserveDock()
+--- The ME Interface that serves a machine
+--- Item lookups and power readings work from any interface on the network, but
+--- stocking a dock only works on the interface that dock belongs to.
+--- @param link table|nil
+--- @return table|nil proxy
+function Transport:interfaceFor(link)
+    local index = link and link.transposer
+    return (index and self.interfaces[index]) or self.me
+end
+
+--- Docks are per interface: two benches both have a dock 1
+--- @param link table|nil
+--- @param dock number
+--- @return string
+local function dockKey(link, dock)
+    return tostring(link and link.transposer or 0) .. "/" .. tostring(dock)
+end
+
+function Transport:reserveDock(link)
     for _, dock in ipairs(self.docks) do
-        if not self.reserved[dock] then
-            self.reserved[dock] = true
+        local key = dockKey(link, dock)
+        if not self.reserved[key] then
+            self.reserved[key] = true
             return dock
         end
     end
@@ -206,13 +230,13 @@ end
 
 --- Give a dock back, clearing the interface configuration
 --- @param dock number
-function Transport:releaseDock(dock)
+function Transport:releaseDock(dock, link)
     if not dock then return end
 
     -- Clearing matters: a dock left configured keeps pulling that item out of
     -- the network and holding it in the interface forever.
-    invoke(self.me, "setInterfaceConfiguration", dock)
-    self.reserved[dock] = nil
+    invoke(self:interfaceFor(link), "setInterfaceConfiguration", dock)
+    self.reserved[dockKey(link, dock)] = nil
 end
 
 --- Wait until a dock holds nothing
@@ -254,16 +278,18 @@ function Transport:stage(spec, count, link)
     local entry, find_err = self:find(spec)
     if not entry then return nil, find_err end
 
-    local dock, dock_err = self:reserveDock()
+    local dock, dock_err = self:reserveDock(link)
     if not dock then return nil, dock_err end
+
+    local interface = self:interfaceFor(link)
 
     -- Hand back whatever the previous operation left, and wait for it to go
     if link then
-        invoke(self.me, "setInterfaceConfiguration", dock)
+        invoke(interface, "setInterfaceConfiguration", dock)
 
         local emptied, occupant = self:awaitDockEmpty(link, dock)
         if not emptied then
-            self:releaseDock(dock)
+            self:releaseDock(dock, link)
             return nil, "le quai " .. dock .. " ne se vide pas (contient encore '"
                 .. tostring(occupant) .. "')"
         end
@@ -277,11 +303,11 @@ function Transport:stage(spec, count, link)
     -- invoke() answers (pcall succeeded, method result); reading only the first
     -- treats a store() that returned false as a success, which is how a stale
     -- database entry once had AE2 deliver a Labware labelled as a princess.
-    local called, stored = invoke(self.me, "store",
+    local called, stored = invoke(interface, "store",
         {name = entry.name, label = entry.label}, self.database.address, dock, 1)
 
     if not called then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return nil, "store() injoignable: " .. tostring(stored)
     end
 
@@ -291,22 +317,22 @@ function Transport:stage(spec, count, link)
         and (written.label or written.name) or nil
 
     if not writtenLabel then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return nil, "store() n'a rien ecrit dans la database pour '"
             .. tostring(spec.label or spec.name) .. "'"
     end
 
     if spec.label and writtenLabel ~= spec.label then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return nil, "la database contient '" .. writtenLabel
             .. "' au lieu de '" .. spec.label .. "' (filtre AE2 inadapte ?)"
     end
 
-    local config_called, configured = invoke(self.me, "setInterfaceConfiguration",
+    local config_called, configured = invoke(interface, "setInterfaceConfiguration",
         dock, self.database.address, dock, count)
 
     if not config_called or configured == false then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return nil, "configuration du quai impossible: " .. tostring(configured)
     end
 
@@ -370,7 +396,7 @@ function Transport:deliver(spec, link, slot, count)
 
     local stocked, stock_err = self:awaitStock(link, dock, count, spec.label)
     if not stocked then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return false, stock_err
     end
 
@@ -383,7 +409,7 @@ function Transport:deliver(spec, link, slot, count)
         and (staged.label or staged.name) or nil
 
     if spec.label and stagedLabel and stagedLabel ~= spec.label then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return false, "le quai contient '" .. stagedLabel
             .. "' au lieu de '" .. spec.label .. "'"
     end
@@ -392,7 +418,7 @@ function Transport:deliver(spec, link, slot, count)
         link.source, link.machine, count, dock, slot)
 
     if not ok then
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
         return false, "transfert impossible: " .. tostring(answer)
     end
 
@@ -405,14 +431,14 @@ function Transport:deliver(spec, link, slot, count)
         local occupied = (occupant_ok and type(occupant) == "table")
             and (occupant.label or occupant.name) or "vide"
 
-        self:releaseDock(dock)
+        self:releaseDock(dock, link)
 
         return false, string.format(
             "la machine refuse '%s' dans le slot %d (ce slot contient: %s)",
             stagedLabel or spec.label or "?", slot, occupied)
     end
 
-    self:releaseDock(dock)
+    self:releaseDock(dock, link)
     return true
 end
 

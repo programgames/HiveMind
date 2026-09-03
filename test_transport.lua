@@ -475,6 +475,53 @@ local absent = layer:findAll({name = "forestry:bee_drone_ge", label = "Water Dro
 check("une etiquette absente ne remonte rien", #absent, 0)
 
 print("")
+print("-- une interface ME par banc --")
+
+-- Two benches, two interface blocks. Stocking a dock only works on the
+-- interface that dock belongs to; configuring one while watching the other
+-- means the item never arrives, and every failure reads as "the machine
+-- refused it". A whole probe run reported that, fifteen times over.
+local configured = {}
+
+local function fakeInterface(tag)
+    return {
+        setInterfaceConfiguration = callable(function(dock)
+            table.insert(configured, tag .. ":" .. tostring(dock))
+            return true
+        end),
+        store = callable(function() return false end),
+        getItemsInNetwork = callable(function() return {} end),
+    }
+end
+
+local twoBenches = transport.new({
+    me = fakeInterface("defaut"),
+    interfaces = {[1] = fakeInterface("genetique"), [2] = fakeInterface("elevage")},
+    database = {address = "db"},
+    transposers = {},
+    config = {docks = {1, 2}},
+})
+
+checkTruthy("le banc 1 a son interface",
+            twoBenches:interfaceFor({transposer = 1}) ~= twoBenches.me)
+checkTruthy("le banc 2 aussi",
+            twoBenches:interfaceFor({transposer = 2}) ~= twoBenches.me)
+check("un banc inconnu retombe sur l'interface par defaut",
+      twoBenches:interfaceFor({transposer = 9}), twoBenches.me)
+check("sans lien, l'interface par defaut", twoBenches:interfaceFor(nil), twoBenches.me)
+
+-- Docks are numbered per interface: both benches have a dock 1, and treating
+-- them as one pool would hand the same dock to two benches at once
+local first = twoBenches:reserveDock({transposer = 1})
+local second = twoBenches:reserveDock({transposer = 2})
+check("chaque banc obtient son quai 1", first, 1)
+check("sans se le disputer", second, 1)
+
+twoBenches:releaseDock(first, {transposer = 1})
+check("la liberation vise la bonne interface",
+      configured[#configured], "genetique:1")
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

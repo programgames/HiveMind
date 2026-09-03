@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.32.0"
+hivemind.VERSION = "0.33.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -125,6 +125,42 @@ function hivemind.bootstrap(options)
     local me = optional("me_interface") or optional("me_controller")
     if not me then table.insert(problems, "aucune interface ME (adapter sur la ME Interface ?)") end
 
+    -- One interface per bench. Configuring one while watching another bench's
+    -- dock means the item never arrives, and every failure reads as "the
+    -- machine refused it" -- which cost a whole probe run.
+    local interfaces = {}
+    for address in component.list("me_interface") do
+        local resolved, proxy = pcall(component.proxy, address)
+        if resolved and proxy then interfaces[address] = proxy end
+    end
+
+    local byBench = {}
+    for index, address in pairs(config.interfaces or {}) do
+        -- A prefix, because that is all a component listing shows and writing
+        -- a full uuid from memory means writing one that does not exist
+        local proxy = nil
+        for full, candidate in pairs(interfaces) do
+            if full:sub(1, #address) == address then proxy = candidate break end
+        end
+
+        if proxy then
+            byBench[index] = proxy
+        else
+            table.insert(problems, "interface ME du transposer " .. index
+                .. " introuvable (" .. tostring(address):sub(1, 8)
+                .. ") - un Adapter la touche-t-il ?")
+        end
+    end
+
+    -- A bench with no interface of its own cannot be supplied at all, and the
+    -- failure looks like a machine refusing every item
+    for _, name in ipairs(config.enabledMachines()) do
+        local index = config.machines[name].transposer
+        if index and not byBench[index] and next(config.interfaces or {}) then
+            table.insert(problems, name .. " : aucune interface ME sur son banc")
+        end
+    end
+
     local database = optional("database")
     if not database then
         table.insert(problems, "aucune Database upgrade (dans le slot d'un Adapter)")
@@ -132,6 +168,7 @@ function hivemind.bootstrap(options)
 
     local layer = transport.new({
         me = me,
+        interfaces = byBench,
         database = database or {address = nil},
         transposers = transposers,
         config = config.transport,
