@@ -273,6 +273,51 @@ function Transport:retrieve(link, slot, count)
     return movedCount(answer, requested)
 end
 
+--- Move an item straight from one machine to another
+--- Used for the queen leaving the Mutatron for the apiary: sending her through
+--- the ME network would lose track of which queen is ours, because AE2 exposes
+--- no genome and every queen carries the same label shape. Both machines must
+--- hang off the same transposer, since a transposer only reaches what it
+--- physically touches.
+--- @param fromLink table Source machine link
+--- @param fromSlot number
+--- @param toLink table Destination machine link
+--- @param toSlot number
+--- @param count number|nil
+--- @return boolean ok
+--- @return string|nil error
+function Transport:transferBetween(fromLink, fromSlot, toLink, toSlot, count)
+    count = count or 1
+
+    if not fromLink or not toLink then
+        return false, "liaison de machine manquante"
+    end
+
+    local fromIndex = fromLink.transposer or 1
+    local toIndex = toLink.transposer or 1
+
+    if fromIndex ~= toIndex then
+        return false, "les deux machines ne partagent pas le meme transposer"
+    end
+
+    local transposer, err = self:transposerFor(fromIndex)
+    if not transposer then return false, err end
+
+    local ok, answer = invoke(transposer, "transferItem",
+        fromLink.machine, toLink.machine, count, fromSlot, toSlot)
+
+    if not ok then
+        return false, "transfert impossible: " .. tostring(answer)
+    end
+
+    local moved = movedCount(answer, count)
+    if moved < count then
+        return false, "transfert incomplet (" .. moved .. "/" .. count .. ")"
+    end
+
+    return true
+end
+
 --- Read a machine slot
 --- @param link table Machine link
 --- @param slot number

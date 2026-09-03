@@ -56,6 +56,7 @@ local function newMachine(options, metatable)
         transport = options.transport,
         complainAfter = settings.complain_after_seconds or 60,
         minimumRatio = settings.minimum_ratio or 0.05,
+        slotOffset = (options.config and options.config.slot_offset) or 0,
         onWait = options.onWait,
         sleep = options.sleep or function(seconds)
             local ok, os_sleep = pcall(function() return os.sleep end)
@@ -144,12 +145,23 @@ function Machine:awaitReady(options)
     end
 end
 
+--- Translate a driver slot index into a transposer slot index
+--- The Apiarist Terminal reports slots from zero while OpenComputers numbers
+--- them from one. Its documentation says to pass its indices straight through,
+--- so the offset defaults to zero, but it is configurable because getting this
+--- wrong puts every item one slot off with no error to explain it.
+--- @param slot number
+--- @return number
+function Machine:resolveSlot(slot)
+    return (tonumber(slot) or 0) + self.slotOffset
+end
+
 --- Read one of the machine's own slots
 --- @param slot number
 --- @return table|nil stack
 function Machine:slot(slot)
     if not self.transport or not self.link then return nil end
-    return self.transport:inspect(self.link, slot)
+    return self.transport:inspect(self.link, self:resolveSlot(slot))
 end
 
 --- Put an item from the ME network into one of the machine's slots
@@ -162,7 +174,7 @@ function Machine:load(spec, slot, count)
     if not self.transport or not self.link then
         return false, "machine sans liaison de transport"
     end
-    return self.transport:deliver(spec, self.link, slot, count)
+    return self.transport:deliver(spec, self.link, self:resolveSlot(slot), count)
 end
 
 --- Empty a slot back into the network
@@ -171,7 +183,7 @@ end
 --- @return number moved
 function Machine:unload(slot, count)
     if not self.transport or not self.link then return 0 end
-    return self.transport:retrieve(self.link, slot, count)
+    return self.transport:retrieve(self.link, self:resolveSlot(slot), count)
 end
 
 --- Empty every listed slot back into the network

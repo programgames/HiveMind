@@ -152,6 +152,13 @@ config.energy = {
     minimum_ratio = 0.05,
 }
 
+-- The Apiarist Terminal reports slot indices starting at zero (queen = 0),
+-- while OpenComputers numbers transposer slots from one. Its documentation says
+-- to feed those indices straight to the transfer calls, so the default assumes
+-- the driver already accounts for it. If the very first real run puts the queen
+-- one slot off, set this to 1 and everything realigns.
+config.slot_offset = 0
+
 config.transport = {
     -- The ME Interface has nine configuration slots, used as loading docks.
     -- Reserving them all would starve any other interface user.

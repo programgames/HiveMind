@@ -285,6 +285,36 @@ check("items rendus au reseau", layer:retrieve(LINK, 3, 5), 5)
 check("slot machine vide", world.machine[3], nil)
 
 print("")
+print("-- transfert machine a machine --")
+
+reset()
+layer = newTransport()
+
+local MUTATRON = {transposer = 1, machine = 5, source = SIDE_SOURCE}
+local APIARY = {transposer = 1, machine = 2, source = SIDE_SOURCE}
+
+world.machine[2] = {name = "forestry:bee_queen_ge", label = "Common Queen"}
+
+-- The queen must not travel through AE2: it exposes no genome, so we would lose
+-- track of which queen is ours
+local direct, direct_err = layer:transferBetween(MUTATRON, 2, APIARY, 0, 1)
+checkTruthy("transfert direct reussi (" .. tostring(direct_err) .. ")", direct)
+check("aucun quai consomme", next(layer.reserved), nil)
+check("aucun passage par le reseau", calls.store, 0)
+
+local OTHER = {transposer = 2, machine = 1, source = SIDE_SOURCE}
+local crossed, crossed_err = layer:transferBetween(MUTATRON, 2, OTHER, 0, 1)
+check("transposers differents refuse", crossed, false)
+checkTruthy("raison explicite", crossed_err and crossed_err:find("transposer"))
+
+check("liaison manquante refusee", (layer:transferBetween(nil, 1, APIARY, 0)), false)
+
+reset({moveShort = true})
+layer = newTransport()
+world.machine[2] = {name = "forestry:bee_queen_ge", label = "Common Queen"}
+check("transfert incomplet detecte", (layer:transferBetween(MUTATRON, 2, APIARY, 0, 1)), false)
+
+print("")
 print("-- inspection --")
 
 reset()
