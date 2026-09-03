@@ -66,7 +66,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.12.1"
+hivemind.VERSION = "0.12.2"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -764,7 +764,11 @@ end
 function hivemind.planChain(context)
     local registry = context.species
 
-    if not registry.list or next(registry:list()) == nil then
+    -- list() answers (species, source). Without the parentheses both are passed
+    -- to next(), which then treats "cache" as a table key and refuses.
+    local known = registry.list and registry:list() or nil
+
+    if not known or next(known) == nil then
         print("Aucune espece connue. Lance d'abord l'option 2.")
         return
     end
