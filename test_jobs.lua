@@ -311,6 +311,45 @@ check("la tache en panne est en erreur", halting:get(brokenId).status, jobs.ERRO
 check("la suivante n'a pas ete entamee", halting:get(afterId).step, 1)
 
 print("")
+print("-- une passe rend la main dans le temps imparti --")
+
+-- A campaign that keeps succeeding keeps going. Thirty cycles of several
+-- minutes each is a run that never reports back, and from outside that looks
+-- exactly like a hang.
+os.remove(PATH)
+freshWorld()
+
+local LOOPING = {steps = {
+    {name = "travaille", run = function() return jobs.DONE end},
+    {name = "recommence", run = function(job)
+        job.step = 0            -- back to step one, as a campaign does
+        return jobs.DONE
+    end},
+}}
+
+local endless = jobs.new({
+    path = PATH,
+    handlers = {loop = LOOPING},
+    clock = clock,
+})
+
+endless:submit("loop", {})
+local bounded = endless:run(context, {maxSteps = 5000, budget = 20})
+
+checkTruthy("la passe s'arrete d'elle-meme", bounded.exhausted)
+checkTruthy("elle a quand meme travaille", bounded.steps > 0)
+checkTruthy("elle n'a pas epuise maxSteps", bounded.steps < 5000)
+check("la tache reste reprenable", endless:get(1).status, jobs.PENDING)
+
+-- Without a budget the same job would run until maxSteps
+os.remove(PATH)
+local unbounded = jobs.new({path = PATH, handlers = {loop = LOOPING}, clock = clock})
+unbounded:submit("loop", {})
+local free = unbounded:run(context, {maxSteps = 40})
+check("sans budget, seul maxSteps arrete", free.steps, 40)
+check("et rien ne signale un temps ecoule", free.exhausted, false)
+
+print("")
 print("-- persistance de la file --")
 
 os.remove(PATH)

@@ -11,6 +11,7 @@
 --   autoreport                 collect and write /home/hivemind-report.txt
 --   autoreport --run           also empty the apiary and advance the queue
 --   autoreport --passes 4      run the queue up to four times, for slow cycles
+--   autoreport --budget 900    total seconds of queue work before publishing
 --   autoreport --upload        publish the report: fixed mailbox, then a URL
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
 --   autoreport --multiply Common:32
@@ -110,7 +111,7 @@ end
 
 local function main(args)
     local doRun, doUpload, toCancel, campaigns = false, false, {}, {}
-    local passes = 1
+    local passes, budget = 1, 600
     for index, arg in ipairs(args) do
         if arg == "--run" then doRun = true end
         if arg == "--upload" then doUpload = true end
@@ -122,6 +123,13 @@ local function main(args)
         -- one run pick it back up.
         if arg == "--passes" then
             passes = math.max(1, math.min(20, tonumber(args[index + 1]) or 1))
+        end
+
+        -- Total seconds of queue work before the run stops and publishes.
+        -- Without it a productive campaign can churn for an hour and the report
+        -- that would say so never arrives.
+        if arg == "--budget" then
+            budget = math.max(30, tonumber(args[index + 1]) or 600)
         end
 
         if arg == "--multiply" then
@@ -351,7 +359,7 @@ local function main(args)
         for pass = 1, passes do
             section("EXECUTION DE LA FILE"
                 .. (passes > 1 and (" - passe " .. pass .. "/" .. passes) or ""))
-            capture(hivemind.runQueue, context)
+            capture(hivemind.runQueue, context, {budget = budget / passes})
 
             if #context.queue:pending() == 0 then break end
         end

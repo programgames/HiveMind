@@ -308,8 +308,16 @@ function Queue:run(context, options)
     options = options or {}
     self:load()
 
-    local report = {steps = 0, completed = 0, retried = 0, failed = 0, blocked = false}
+    local report = {steps = 0, completed = 0, retried = 0, failed = 0,
+                    blocked = false, exhausted = false}
     local limit = options.maxSteps or 1000
+
+    -- A campaign that keeps succeeding keeps going: thirty cycles of several
+    -- minutes each is a run that never reports back, and from outside that is
+    -- indistinguishable from a hang. The budget stops the pass, not the work --
+    -- everything is on disk and the next pass resumes.
+    local budget = options.budget
+    local startedAt = self.clock()
 
     -- A job that answered RETRY is waiting, not failing, and there is usually
     -- other work behind it. Stopping the whole pass on it meant one bee missing
@@ -323,6 +331,11 @@ function Queue:run(context, options)
             if not parked[candidate.id] then job = candidate break end
         end
         if not job then break end
+
+        if budget and (self.clock() - startedAt) >= budget then
+            report.exhausted = true
+            break
+        end
 
         local before_step = job.step
         local outcome, detail = self:step(job, context)

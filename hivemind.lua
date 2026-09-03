@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.24.0"
+hivemind.VERSION = "0.25.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -981,7 +981,8 @@ end
 
 --- Run the queue until it stops making progress
 --- @param context table
-function hivemind.runQueue(context)
+function hivemind.runQueue(context, options)
+    options = options or {}
     local pending = #context.queue:pending()
     if pending == 0 then
         print("Aucune tache en attente.")
@@ -991,6 +992,7 @@ function hivemind.runQueue(context)
     print("Execution de " .. pending .. " tache(s)...")
 
     local report = context.queue:run(context, {
+        budget = options.budget,
         onProgress = function(job, outcome, detail)
             print(string.format("  #%d %s etape %d : %s%s",
                 job.id, job.kind, job.step, outcome,
@@ -1001,7 +1003,9 @@ function hivemind.runQueue(context)
     print(string.format("%d etape(s), %d terminee(s), %d attente(s), %d echec(s)",
         report.steps, report.completed, report.retried, report.failed))
 
-    if report.blocked then
+    if report.exhausted then
+        print("Temps imparti ecoule: la file reprend ou elle s'est arretee.")
+    elseif report.blocked then
         print("La file est bloquee: corrige la cause puis relance.")
     end
 end
