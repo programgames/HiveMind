@@ -127,6 +127,13 @@ config.machines = {
     --
     -- The genetics bench is transposer 1, with the ME Interface on side 4.
     -- Sides below come from tools/discover; regenerate it after moving a block.
+    --
+    -- WARNING: the slot maps here are read off the Gendustry documentation and
+    -- the first real inspection already disagreed -- labware turned up at index
+    -- 1 on both the imprinter and the genetic transposer, and a blank sample at
+    -- index 0 on the sampler. Nothing should act on these numbers until the
+    -- slot diagnostic has confirmed them with a bee, a template and a sample
+    -- placed by hand.
     sampler = {
         transposer = 1, machine = 5, source = 4,
         slots = {input = 1, blank = 2, labware = 3, output = 4},

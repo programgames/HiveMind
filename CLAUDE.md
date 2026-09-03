@@ -91,6 +91,18 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 
 ## 4. Topologie réelle
 
+Deux transposers depuis que le banc de génétique existe. **L'ordre compte** :
+les machines nomment un transposer par son index.
+
+| Transposer | Index | Machines |
+|---|---|---|
+| `65d3da44` | 1 | Sampler (5), Genetic Transposer (3), Imprinter (2), ME Interface (4) |
+| `95625858` | 2 | Mutatron (5), Apiary (3), coffre à templates (4), ME Interface (2) |
+
+Les correspondances de slots du banc de génétique viennent de la documentation
+Gendustry et **la première lecture réelle les a démenties**. Rien ne doit s'y
+fier avant confirmation par le diagnostic.
+
 Un seul transposer `95625858`, en `lib/config.lua` :
 
 | Élément | Face machine | Face source |

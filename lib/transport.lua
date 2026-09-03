@@ -485,6 +485,22 @@ end
 --- @param link table Machine link
 --- @param slot number
 --- @return table|nil stack
+--- How many slots a machine's inventory has
+--- The diagnostic could only show slots that held something, so an empty slot
+--- and a slot that does not exist looked identical, and the real shape of a
+--- machine stayed invisible.
+--- @param link table
+--- @return number|nil size
+function Transport:inventorySize(link)
+    local transposer = self:transposerFor(link.transposer)
+    if not transposer then return nil end
+
+    local ok, size = invoke(transposer, "getInventorySize", link.machine)
+    if not ok then return nil end
+
+    return tonumber(size)
+end
+
 function Transport:inspect(link, slot)
     local transposer = self:transposerFor(link.transposer)
     if not transposer then return nil end

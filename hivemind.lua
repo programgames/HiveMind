@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.28.0"
+hivemind.VERSION = "0.29.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -680,17 +680,22 @@ function hivemind.slotDiagnostic(context)
                 end
             end
 
-            for raw = 1, 16 do
+            -- Every slot the machine really has, empty ones included. Hiding
+            -- them made an empty slot and a slot that does not exist look the
+            -- same, which is no use at all when the point is to learn the shape
+            -- of a machine nobody has documented for us.
+            local size = context.transport:inventorySize(link) or 16
+            print("  " .. size .. " slot(s)")
+
+            for raw = 1, size do
                 local stack = context.transport:inspect(link, raw)
                 -- raw is the transposer index; the driver would call it raw-offset
                 local driverIndex = raw - config.slot_offset
                 local role = labels[driverIndex]
 
-                if stack or role then
-                    print(string.format("  slot %-3d (driver %-3d %-9s) %s",
-                        raw, driverIndex, role or "?",
-                        stack and (stack.label or stack.name or "?") or "vide"))
-                end
+                print(string.format("  slot %-3d (driver %-3d %-11s) %s",
+                    raw, driverIndex, role or "?",
+                    stack and (stack.label or stack.name or "?") or "vide"))
             end
             print("")
         end
