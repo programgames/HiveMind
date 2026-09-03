@@ -47,7 +47,7 @@ Recalculer avec `lua progress.lua`.
 - [ ] Mutagen Producer piloté
 - [ ] Bibliothèque réellement remplie, N copies par allèle
 - [ ] Index des templates tenu et vérifié au démarrage
-- [ ] Template « perfection » de 12 gènes construit
+- [ ] Template « perfection » de 12 gènes construit (écriture gène par gène faite)
 - [ ] Template complet par espèce, pour le Replicator
 
 ## Phase 3 — Campagnes (poids 20)

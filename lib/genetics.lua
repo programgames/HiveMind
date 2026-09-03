@@ -533,6 +533,220 @@ genetics.DUPLICATE_STEPS = {
     },
 }
 
+--- Build and check the parameters of a template-writing job
+--- A template is what the Imprinter applies to a bee, and it is built one gene
+--- at a time in the Genetic Transposer: a blank template in the destination
+--- slot, a sample in the source slot, and the result comes out carrying the
+--- gene.
+---
+--- Templates share one item id and one label and differ only by NBT, so AE2
+--- cannot tell two apart and one that enters the network is lost among its
+--- kind. The written template therefore never leaves the bench: it goes
+--- straight from the output slot back to the destination slot, and from there
+--- to the Imprinter. Both machines sit on the same transposer, so no chest and
+--- no network hop is needed.
+--- @param options table {gene}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.templateParams(options)
+    options = options or {}
+
+    local gene = options.gene
+    if type(gene) ~= "table" or not gene.label then
+        return nil, "gene manquant ou sans etiquette"
+    end
+
+    return {
+        gene = {name = gene.name or "gendustry:gene_sample", label = gene.label},
+        blank = options.blank or {name = "gendustry:gene_template"},
+        labware = options.labware or {name = "gendustry:labware"},
+        timeout = options.timeout,
+    }
+end
+
+genetics.TEMPLATE_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "preparer-le-template",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.destination) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+            local waiting = machine:slot(slots.output)
+
+            -- A template left in the output by a previous gene goes back to the
+            -- destination slot, never to the network, where it would be lost
+            -- among identical blanks.
+            if waiting and waiting.name == job.params.blank.name then
+                local moved = context.transport:transferBetween(
+                    machine.link, machine:resolveSlot(slots.output),
+                    machine.link, machine:resolveSlot(slots.destination), 1)
+
+                if not moved then
+                    return jobs.RETRY,
+                        "le template ne revient pas de la sortie vers l entree"
+                end
+
+                report(context, "template repris de la sortie")
+                return jobs.DONE
+            end
+
+            -- Anything else in the output is ordinary output
+            if waiting then
+                local _, cleared = drainOutput(machine)
+                if not cleared then
+                    return jobs.RETRY, "la sortie du transposer ne se vide pas"
+                end
+            end
+
+            if machine:slot(slots.destination) then return jobs.DONE end
+
+            local ok, reason = machine:load(job.params.blank, slots.destination, 1)
+            if not ok then
+                return jobs.RETRY, "template vierge indisponible: " .. tostring(reason)
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "charger-le-gene",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+
+            local slots = machine.link.slots
+            local source = machine:slot(slots.source)
+
+            -- The labware counts too. Checking only the source let a second gene
+            -- skip this step entirely -- the source was already right from the
+            -- previous one -- and the machine then sat there with no labware.
+            return source ~= nil and source.label == job.params.gene.label
+                and machine:slot(slots.labware) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+
+            for _, entry in ipairs({
+                {spec = job.params.gene,    slot = slots.source,  role = "gene"},
+                {spec = job.params.labware, slot = slots.labware, role = "labware"},
+            }) do
+                local occupant = machine:slot(entry.slot)
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    machine:unload(entry.slot)
+                    occupant = machine:slot(entry.slot)
+                end
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    return jobs.RETRY, entry.role .. ": le transposer tient encore "
+                        .. tostring(occupant.label) .. " dans le slot "
+                        .. machine:resolveSlot(entry.slot)
+                        .. ", et ne le rend pas. Retire-le a la main."
+                end
+
+                if not occupant then
+                    local ok, reason = machine:load(entry.spec, entry.slot, 1)
+                    if not ok then
+                        return jobs.RETRY, entry.role .. " indisponible: "
+                            .. tostring(reason)
+                    end
+                end
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "attendre-le-template",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local wait = job.params.timeout
+                or (context.config and context.config.genetics
+                    and context.config.genetics.sample_timeout_seconds)
+                or 120
+
+            local stack, reason = machine:awaitOutput(machine.link.slots.output, wait)
+            if not stack then return jobs.RETRY, tostring(reason) end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "ranger-le-template",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+            local produced = machine:slot(slots.output)
+
+            if produced and produced.name ~= job.params.blank.name then
+                -- Not a template: the destination slot held the wrong thing, so
+                -- the machine wrote into a blank sample instead
+                report(context, "ATTENTION: sortie " .. tostring(produced.label)
+                    .. " au lieu d un template")
+            end
+
+            -- The destination slot has to be free for the template to return
+            if machine:slot(slots.destination) then
+                machine:unload(slots.destination)
+            end
+
+            local moved = context.transport:transferBetween(
+                machine.link, machine:resolveSlot(slots.output),
+                machine.link, machine:resolveSlot(slots.destination), 1)
+
+            if not moved then
+                -- Never to the network: a written template is indistinguishable
+                -- from a blank one there, and would be gone for good
+                return jobs.RETRY, "le template ne peut pas revenir en entree;"
+                    .. " il reste en sortie, ne le mets pas dans le reseau"
+            end
+
+            job.params.written = tostring(job.params.gene.label)
+            report(context, "template ecrit avec " .. job.params.written)
+
+            return jobs.DONE
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.templateHandler()
+    return {steps = genetics.TEMPLATE_STEPS}
+end
+
 --- The handler to register with the job queue
 --- @return table handler
 function genetics.duplicateHandler()

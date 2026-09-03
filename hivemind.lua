@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.56.0"
+hivemind.VERSION = "0.57.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -270,6 +270,7 @@ function hivemind.bootstrap(options)
     register("sample",    genetics, "sampleHandler",    "lib/genetics.lua")
     register("duplicate", genetics, "duplicateHandler", "lib/genetics.lua")
     register("campaign",  genetics, "campaignHandler",  "lib/genetics.lua")
+    register("template",  genetics, "templateHandler",  "lib/genetics.lua")
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
@@ -1391,6 +1392,78 @@ function hivemind.duplicateGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue the writing of one gene into a template
+--- A template is what the Imprinter applies to a bee: without one the library
+--- is a museum. It is built in the Genetic Transposer and never leaves that
+--- bench, because AE2 cannot tell a written template from a blank one.
+--- @param context table
+function hivemind.writeTemplate(context)
+    print("")
+    print("=== ECRIRE UN GENE DANS UN TEMPLATE ===")
+    print("Le template reste dans le Genetic Transposer: le reseau ME ne sait")
+    print("pas distinguer un template ecrit d un vierge, il y serait perdu.")
+    print("")
+
+    local samples = context.transport:findAll({name = "gendustry:gene_sample"})
+
+    if #samples == 0 then
+        print("Aucun gene en stock. Utilise d abord l option a.")
+        return
+    end
+
+    local merged, order = {}, {}
+    for _, item in ipairs(samples) do
+        local label = tostring(item.label or "?")
+        if not merged[label] then
+            merged[label] = 0
+            table.insert(order, label)
+        end
+        merged[label] = merged[label] + (tonumber(item.size) or 0)
+    end
+    table.sort(order)
+
+    for index, label in ipairs(order) do
+        print(string.format("%3d. %-44s x%d", index, label, merged[label]))
+    end
+
+    print("")
+    io.write("Choisis le gene a ecrire (numero, ou vide pour annuler): ")
+    local answer = io.read()
+    local choice = tonumber(answer and answer:gsub("%s+", ""))
+
+    if not choice or not order[choice] then print("Annule.") return end
+
+    local blanks = 0
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:gene_template"}) or {}) do
+        blanks = blanks + (tonumber(item.size) or 0)
+    end
+
+    print("")
+    print("  " .. order[choice])
+    print("  templates en stock : " .. blanks)
+
+    if blanks == 0 then
+        print("")
+        print("Aucun Gene Template. Mets-en en autocraft AE2.")
+        return
+    end
+
+    local params, err = genetics.templateParams({gene = {label = order[choice]}})
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("template", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+end
+
 --- Queue a run of extractions until a gene comes up
 --- One draw is a lottery ticket; getting a particular chromosome means buying
 --- tickets until it comes up. Nobody should restart that thirteen times by hand.
@@ -1661,6 +1734,8 @@ local ENTRIES = {
      hint = "copie tout ce qui est en un seul exemplaire", action = "secureLibrary"},
     {key = "d", label = "Campagne de genes",
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
+    {key = "e", label = "Ecrire un gene dans un template",
+     hint = "le template reste dans la machine", action = "writeTemplate"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",

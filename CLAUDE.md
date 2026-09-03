@@ -128,6 +128,13 @@ aucune erreur. Tout se désigne par préfixe d'adresse.
 bloc adressable comme composant. Une ME Interface sans Adapter est invisible, et
 chaque livraison échoue en donnant l'impression que la machine refuse l'objet.
 
+**Un template ne doit jamais entrer dans le réseau ME** — même id, même
+étiquette, il y serait perdu parmi les vierges. Pas besoin de coffre pour
+autant : les trois machines de génétique partagent un transposer, donc le
+template va directement de la sortie du Genetic Transposer vers son entrée,
+puis vers l'Imprinter. Un transposer sait déplacer un objet **à l'intérieur du
+même inventaire**.
+
 **Une ME Interface par banc, et chacune doit avoir un Adapter.** Approvisionner
 un quai ne marche que sur l'interface à laquelle ce quai appartient : configurer
 l'une en surveillant le quai de l'autre fait que l'objet n'arrive jamais, et

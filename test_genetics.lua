@@ -141,7 +141,9 @@ local function tickTransposer()
         world.gtransposer[oc(2)] = nil
     end
 
-    world.gtransposer[oc(3)] = {name = "gendustry:gene_sample",
+    -- It writes into whatever the destination slot holds: a blank sample gives
+    -- a sample, a blank template gives a template carrying the same gene.
+    world.gtransposer[oc(3)] = {name = blank.name or "gendustry:gene_sample",
                                 label = source.label, size = 1}
 end
 
@@ -190,6 +192,16 @@ local transposerComponent = {
         local stack = from[fromSlot]
         if not stack then return false end
 
+        -- A transposer can move an item inside one inventory, which is how a
+        -- written template returns from the output slot to the destination slot
+        -- without ever touching the network
+        if fromSide == toSide then
+            if to[toSlot] then return false end
+            to[toSlot] = stack
+            from[fromSlot] = nil
+            return true
+        end
+
         if toSide == SIDE_INTERFACE then
             -- Gendustry refuses automated extraction from input slots, exactly
             -- as the Mutatron does. A mock that allowed it made a job asking
@@ -223,12 +235,14 @@ local transposerComponent = {
         end
 
         local COPIES = {
-            [oc(0)] = "gendustry:gene_sample_blank",
-            [oc(1)] = "gendustry:labware",
-            [oc(2)] = "gendustry:gene_sample",
+            [oc(0)] = {["gendustry:gene_sample_blank"] = true,
+                       ["gendustry:gene_template"] = true},
+            [oc(1)] = {["gendustry:labware"] = true},
+            [oc(2)] = {["gendustry:gene_sample"] = true},
         }
 
-        if toSide == SIDE_TRANSPOSER and COPIES[toSlot] ~= stack.name then
+        if toSide == SIDE_TRANSPOSER
+           and not (COPIES[toSlot] and COPIES[toSlot][stack.name]) then
             return false
         end
 
@@ -264,9 +278,15 @@ local function stagingLayer()
     -- The real stage() goes through the ME database; here the dock simply gets
     -- what was asked for, so the tests exercise the job and not AE2.
     layer.stage = function(self, spec, count, link)
-        for _, item in ipairs(world.network) do
+        for index, item in ipairs(world.network) do
             if item.name == spec.name then
                 world.interface[1] = {name = item.name, label = item.label, size = 1}
+
+                -- Taken out of the network, as AE2 really does. Without this a
+                -- test could not tell one consumed template from none.
+                item.size = item.size - 1
+                if item.size <= 0 then table.remove(world.network, index) end
+
                 return 1
             end
         end
@@ -293,7 +313,8 @@ local function buildStack()
         path = QUEUE,
         handlers = {sample = genetics.sampleHandler(),
                     duplicate = genetics.duplicateHandler(),
-                    campaign = genetics.campaignHandler()},
+                    campaign = genetics.campaignHandler(),
+                    template = genetics.templateHandler()},
         clock = function() ticks = ticks + 1 return ticks end,
         maxAttempts = 2,
     })
@@ -664,6 +685,65 @@ check("et copie bien ce qu'on lui demandait",
       queue:get(jobId).params.copied, "Bee Sample - Fertility: 2")
 checkTruthy("l'intrus est rendu au reseau",
             table.concat(world.collected, ","):find("Territory: Average", 1, true))
+
+print("")
+print("-- ecrire un gene dans un template, sans passer par le reseau --")
+
+-- Templates share one id and one label and differ only by NBT, so AE2 cannot
+-- tell two apart: one that enters the network is lost among identical blanks.
+-- The written one therefore goes straight from the output slot back to the
+-- destination slot, on the same machine.
+os.remove(QUEUE)
+reset()
+table.insert(world.network, {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Fertility: 2", size = 3})
+table.insert(world.network, {name = "gendustry:gene_template",
+                             label = "Gene Template", size = 5})
+
+queue, context = buildStack()
+queue:submit("template", genetics.templateParams(
+    {gene = {label = "Bee Sample - Fertility: 2"}}))
+
+local written = queue:run(context, {maxSteps = 60})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("quatre etapes", written.steps, 4)
+check("le gene ecrit est note", queue:get(1).params.written,
+      "Bee Sample - Fertility: 2")
+
+-- Where the template ends up matters more than anything else here
+local held = world.gtransposer[oc(0)]
+check("le template revient en entree", held and held.name, "gendustry:gene_template")
+check("il porte le gene", held and held.label, "Bee Sample - Fertility: 2")
+check("la sortie est vide", world.gtransposer[oc(3)], nil)
+
+check("aucun template n'est parti au reseau",
+      table.concat(world.collected, ","):find("Gene Template", 1, true), nil)
+
+print("")
+print("-- un second gene s'ecrit dans le meme template --")
+
+queue:submit("template", genetics.templateParams(
+    {gene = {label = "Bee Sample - Fertility: 2"}}))
+queue:run(context, {maxSteps = 60})
+
+check("la seconde tache aboutit", queue:get(2).status, jobs.COMPLETE)
+check("le template est toujours en entree",
+      world.gtransposer[oc(0)] and world.gtransposer[oc(0)].name,
+      "gendustry:gene_template")
+check("un seul template consomme", (function()
+    for _, item in ipairs(world.network) do
+        if item.name == "gendustry:gene_template" then return item.size end
+    end
+end)(), 4)
+
+print("")
+print("-- parametres de template --")
+
+check("gene manquant refuse", (genetics.templateParams({})), nil)
+local templateDefaults = genetics.templateParams({gene = {label = "Bee Sample - Speed: Fast"}})
+check("template vierge par defaut", templateDefaults.blank.name,
+      "gendustry:gene_template")
 
 print("")
 print("=== Resultats ===")
