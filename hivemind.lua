@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.19.0"
+hivemind.VERSION = "0.20.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -183,6 +183,9 @@ function hivemind.bootstrap(options)
         species = registry,
         library = genes,
         queue = queue,
+        -- Job steps read tuning from here rather than carrying a copy in every
+        -- set of parameters, where an old value would outlive the config
+        config = config,
         log = function(text) print("  " .. text) end,
     }, problems
 end

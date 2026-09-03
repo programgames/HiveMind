@@ -209,8 +209,16 @@ multiply.STEPS = {
                 return jobs.RETRY, table.concat(detail, " | ")
             end
 
-            local done, reason = apiary:awaitPrincess(job.params.cycleTimeout or 300)
-            if not done then return jobs.RETRY, tostring(reason) end
+            local wait = job.params.cycleTimeout
+                or (context.config and context.config.breeding
+                    and context.config.breeding.cycle_timeout_seconds)
+                or 900
+
+            local done, reason = apiary:awaitPrincess(wait)
+            if not done then
+                reason = tostring(reason) .. " (attente de " .. wait .. " s)"
+            end
+            if not done then return jobs.RETRY, reason end
 
             return jobs.DONE
         end,

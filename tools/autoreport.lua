@@ -10,6 +10,7 @@
 -- Usage:
 --   autoreport                 collect and write /home/hivemind-report.txt
 --   autoreport --run           also empty the apiary and advance the queue
+--   autoreport --passes 4      run the queue up to four times, for slow cycles
 --   autoreport --upload        publish the report: fixed mailbox, then a URL
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
 --   autoreport --multiply Common:32
@@ -98,12 +99,20 @@ end
 
 local function main(args)
     local doRun, doUpload, toCancel, campaigns = false, false, {}, {}
+    local passes = 1
     for index, arg in ipairs(args) do
         if arg == "--run" then doRun = true end
         if arg == "--upload" then doUpload = true end
 
         -- --multiply Common:32 queues a drone campaign without the menu, so a
         -- whole session still fits in one non-interactive command.
+        -- A job that answers RETRY is parked for the rest of the pass, so a
+        -- cycle finishing right after costs another command. Several passes in
+        -- one run pick it back up.
+        if arg == "--passes" then
+            passes = math.max(1, math.min(20, tonumber(args[index + 1]) or 1))
+        end
+
         if arg == "--multiply" then
             local value = args[index + 1]
             if value then
@@ -309,8 +318,13 @@ local function main(args)
 
         -- Moves items, spends mutagen, can kill a queen: the same thing menu
         -- option 4 does, which is why it is not the default
-        section("EXECUTION DE LA FILE")
-        capture(hivemind.runQueue, context)
+        for pass = 1, passes do
+            section("EXECUTION DE LA FILE"
+                .. (passes > 1 and (" - passe " .. pass .. "/" .. passes) or ""))
+            capture(hivemind.runQueue, context)
+
+            if #context.queue:pending() == 0 then break end
+        end
 
         section("FILE APRES EXECUTION")
         for _, line in ipairs(context.queue:describe()) do say("  " .. line) end
