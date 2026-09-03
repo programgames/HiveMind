@@ -9,8 +9,9 @@
 --
 -- Usage:
 --   autoreport                 collect and write /home/hivemind-report.txt
---   autoreport --run           also advance the queue, capturing what happens
+--   autoreport --run           also empty the apiary and advance the queue
 --   autoreport --upload        also publish the report and print the URL
+--   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
 --   autoreport --run --upload  both
 --
 -- --run moves items, consumes mutagen and can kill a queen, exactly as menu
@@ -81,10 +82,17 @@ local function dump(value, indent, depth, seen)
 end
 
 local function main(args)
-    local doRun, doUpload = false, false
-    for _, arg in ipairs(args) do
+    local doRun, doUpload, toCancel = false, false, {}
+    for index, arg in ipairs(args) do
         if arg == "--run" then doRun = true end
         if arg == "--upload" then doUpload = true end
+        -- Cancelling through the menu costs a screenshot round trip for what is
+        -- one number; a blocked job that will never resolve has to go before
+        -- the queue can move at all.
+        if arg == "--cancel" then
+            local id = tonumber(args[index + 1])
+            if id then table.insert(toCancel, id) end
+        end
     end
 
     -- Loaded as a module, never as a program: hivemind starts its menu unless it
@@ -202,7 +210,22 @@ local function main(args)
     section("SLOTS")
     capture(hivemind.slotDiagnostic, context)
 
+    if #toCancel > 0 then
+        section("ANNULATIONS")
+        for _, id in ipairs(toCancel) do
+            local cancelled = context.queue:cancel(id)
+            say("  #" .. id .. " : " .. (cancelled and "annulee" or "introuvable"))
+        end
+    end
+
     if doRun then
+        -- Harvest first. Bees left in the apiary output are invisible to jobs,
+        -- which search the ME network: a Common Drone parked in an output slot
+        -- is reported as "introuvable dans le reseau" while sitting two blocks
+        -- away. Emptying the slots also lets the next cycle start.
+        section("RECOLTE DE L'APIARY")
+        capture(hivemind.harvestApiary, context)
+
         -- Moves items, spends mutagen, can kill a queen: the same thing menu
         -- option 4 does, which is why it is not the default
         section("EXECUTION DE LA FILE")

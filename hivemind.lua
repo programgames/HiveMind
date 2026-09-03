@@ -66,7 +66,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.14.1"
+hivemind.VERSION = "0.15.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -759,6 +759,47 @@ local function availabilityFrom(context, registry)
     end
 end
 
+--- Move everything sitting in the breeding apiary's output slots to the network
+--- Full output slots stall a cycle and, worse, hide bees the queue is looking
+--- for: a Common Drone parked in slot 8 is invisible to a job that searches the
+--- ME network, which then reports it as missing.
+--- @param context table
+--- @return number collected
+function hivemind.harvestApiary(context)
+    local apiary = context.machines and context.machines.breeding_apiary
+
+    if not apiary then
+        print("Aucun apiary de croisement configure.")
+        return 0
+    end
+
+    local waiting = apiary:outputs()
+    if #waiting == 0 then
+        print("La sortie de l'apiary est deja vide.")
+        return 0
+    end
+
+    print("Recolte de " .. #waiting .. " pile(s) dans la sortie de l'apiary...")
+
+    local collected = 0
+    for _, output in ipairs(waiting) do
+        local moved = apiary:unload(output.slot)
+        collected = collected + (tonumber(moved) or 0)
+        print(string.format("  %-28s %s",
+            tostring(output.label or "?"),
+            (tonumber(moved) or 0) > 0 and "recolte" or "NON DEPLACE"))
+    end
+
+    local left = #apiary:outputs()
+    print(collected .. " item(s) envoye(s) au reseau, " .. left .. " pile(s) restante(s).")
+
+    if left > 0 then
+        print("Le reseau refuse le reste: verifie la ME Interface et l'espace disque.")
+    end
+
+    return collected
+end
+
 --- Plan a whole breeding chain and queue it
 --- @param context table
 function hivemind.planChain(context)
@@ -967,6 +1008,7 @@ local function menu(context)
         print("6. Diagnostic des slots")
         print("7. Gerer la file (annuler, purger)")
         print("8. Viser une espece (chaine complete)")
+        print("9. Vider la sortie de l'apiary vers le reseau")
         io.write("Choix: ")
 
         local choice = io.read()
@@ -982,6 +1024,7 @@ local function menu(context)
         elseif choice == "6" then hivemind.slotDiagnostic(context)
         elseif choice == "7" then hivemind.manageQueue(context)
         elseif choice == "8" then hivemind.planChain(context)
+        elseif choice == "9" then hivemind.harvestApiary(context)
         else print("Choix invalide.") end
     end
 end
