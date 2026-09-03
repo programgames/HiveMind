@@ -33,15 +33,55 @@ local FILES = {
     "tools/upload.lua",
 }
 
+--- Turn a path into an absolute one
+--- The filesystem library takes absolute paths only; it is the shell that
+--- resolves the working directory. Handing it "tools" silently does nothing,
+--- and the write then fails on a directory that was never created.
+--- @param path string
+--- @return string absolute
+local function absolute(path)
+    if path:sub(1, 1) == "/" then return path end
+
+    local loaded, shell = pcall(require, "shell")
+    if not (loaded and type(shell) == "table") then return "/" .. path end
+
+    if shell.resolve then
+        local ok, resolved = pcall(shell.resolve, path)
+        if ok and type(resolved) == "string" then return resolved end
+    end
+
+    if shell.getWorkingDirectory then
+        local ok, cwd = pcall(shell.getWorkingDirectory)
+        if ok and type(cwd) == "string" then
+            return (cwd:gsub("/$", "")) .. "/" .. path
+        end
+    end
+
+    return "/" .. path
+end
+
 --- Create a directory and its parents, tolerating those that exist
 --- @param path string Directory path
+--- @return boolean ok
+--- @return string|nil error
 local function ensureDirectory(path)
-    if not path or path == "" or path == "/" then return end
+    if not path or path == "" or path == "/" then return true end
 
     local ok, filesystem = pcall(require, "filesystem")
-    if ok and filesystem and filesystem.makeDirectory then
-        pcall(filesystem.makeDirectory, path)
+    if not (ok and filesystem and filesystem.makeDirectory) then
+        return true   -- desktop test runs have no filesystem library
     end
+
+    local target = absolute(path)
+
+    if filesystem.exists and filesystem.exists(target) then return true end
+
+    local made, err = pcall(filesystem.makeDirectory, target)
+    if not made then
+        return false, "creation de " .. target .. " impossible: " .. tostring(err)
+    end
+
+    return true
 end
 
 --- Fetch one file over HTTP
@@ -84,10 +124,14 @@ end
 --- @return boolean ok
 --- @return string|nil error
 local function write(path, body)
-    ensureDirectory(path:match("^(.*)/[^/]*$"))
+    local made, directory_err = ensureDirectory(path:match("^(.*)/[^/]*$"))
+    if not made then return false, directory_err end
 
     local file, err = io.open(path, "w")
-    if not file then return false, tostring(err) end
+    if not file then
+        return false, "ouverture impossible (" .. tostring(err)
+            .. ") - le repertoire existe-t-il ?"
+    end
 
     file:write(body)
     file:close()
