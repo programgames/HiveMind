@@ -182,6 +182,25 @@ local function main(args)
     say("HiveMind - rapport automatique")
     say("version " .. tostring(hivemind.VERSION))
 
+    -- The full report is only posted once everything has run, so a long pass
+    -- and a run that never started look identical from the outside. A line sent
+    -- now says which one it is.
+    if doUpload then
+        local net_ok, internet = pcall(require, "internet")
+        if net_ok and component.isAvailable("internet") then
+            local ok_config, configuration = pcall(require, "lib.config")
+            local mailbox = ok_config and configuration and configuration.report_mailbox
+
+            if mailbox then
+                pcall(internet.request, mailbox,
+                    "DEMARRAGE version " .. tostring(hivemind.VERSION)
+                    .. " passes=" .. passes
+                    .. " run=" .. tostring(doRun),
+                    {["Content-Type"] = "text/plain"}, "POST")
+            end
+        end
+    end
+
     -- The CDN can serve a fresh tool next to a stale program. Saying so here
     -- beats a report full of empty sections that look like good news.
     local absent = {}
