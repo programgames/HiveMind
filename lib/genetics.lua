@@ -544,6 +544,201 @@ genetics.DUPLICATE_STEPS = {
 -- chromosomes. A job written against the opposite assumption could never work,
 -- so it is gone rather than left to fail in the world.
 
+--- Build and check the parameters of an imprinting job
+--- The Imprinter overwrites a bee's genes with those of a template: this is
+--- what turns the library into a tool rather than a museum.
+---
+--- The template is NOT supplied by the job. A filled template and an empty one
+--- share an item id and a label, so AE2 cannot tell them apart and asking it
+--- for one would hand back whichever it liked. The template is placed in the
+--- machine by hand, once, and then serves every bee that follows.
+--- @param options table {bee}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.imprintParams(options)
+    options = options or {}
+
+    local bee = options.bee
+    if type(bee) ~= "table" or not bee.label then
+        return nil, "abeille manquante ou sans etiquette"
+    end
+
+    return {
+        bee = {name = bee.name or "forestry:bee_drone_ge", label = bee.label},
+        labware = options.labware or {name = "gendustry:labware"},
+        timeout = options.timeout,
+    }
+end
+
+genetics.IMPRINT_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "vider-la-sortie-de-l-imprinter",
+        verify = function(job, context)
+            local machine = machineOf(context, "imprinter")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "imprinter")
+            if not machine then return jobs.FAILED, err end
+
+            local moved, cleared = drainOutput(machine)
+            if moved > 0 then
+                report(context, "sortie de l imprinter recoltee: " .. moved .. " item(s)")
+            end
+
+            if not cleared then
+                return jobs.RETRY, "la sortie de l imprinter ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "verifier-le-template",
+        verify = function(job, context)
+            local machine = machineOf(context, "imprinter")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.template) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "imprinter")
+            if not machine then return jobs.FAILED, err end
+
+            -- Never fetched from the network: a filled template and an empty
+            -- one share an id and a label there, so AE2 would hand back
+            -- whichever it liked and the bee would come out wrong.
+            return jobs.FAILED,
+                "aucun template dans l imprinter (slot "
+                .. machine:resolveSlot(machine.link.slots.template) .. ")."
+                .. " Pose-le a la main: un template rempli et un vide sont"
+                .. " indiscernables dans le reseau ME, le programme ne peut pas"
+                .. " choisir le bon."
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "charger-l-abeille",
+        verify = function(job, context)
+            local machine = machineOf(context, "imprinter")
+            if not machine then return false end
+
+            local slots = machine.link.slots
+            local bee = machine:slot(slots.bee)
+
+            return bee ~= nil and bee.label == job.params.bee.label
+                and machine:slot(slots.labware) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "imprinter")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+
+            for _, entry in ipairs({
+                {spec = job.params.labware, slot = slots.labware, role = "labware"},
+                {spec = job.params.bee,     slot = slots.bee,     role = "abeille"},
+            }) do
+                local occupant = machine:slot(entry.slot)
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    machine:unload(entry.slot)
+                    occupant = machine:slot(entry.slot)
+                end
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    return jobs.RETRY, entry.role .. ": l imprinter tient encore "
+                        .. tostring(occupant.label) .. " dans le slot "
+                        .. machine:resolveSlot(entry.slot)
+                        .. ", et ne le rend pas. Retire-le a la main."
+                end
+
+                if not occupant then
+                    local ok, reason = machine:load(entry.spec, entry.slot, 1)
+                    if not ok then
+                        return jobs.RETRY, entry.role .. " indisponible: "
+                            .. tostring(reason)
+                    end
+                end
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "attendre-l-abeille-imprimee",
+        verify = function(job, context)
+            local machine = machineOf(context, "imprinter")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "imprinter")
+            if not machine then return jobs.FAILED, err end
+
+            local wait = job.params.timeout
+                or (context.config and context.config.genetics
+                    and context.config.genetics.sample_timeout_seconds)
+                or 120
+
+            local stack, reason = machine:awaitOutput(machine.link.slots.output, wait)
+            if not stack then return jobs.RETRY, tostring(reason) end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "recolter-l-abeille",
+        verify = function(job, context)
+            local machine = machineOf(context, "imprinter")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "imprinter")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+            local produced = machine:slot(slots.output)
+
+            if produced then
+                job.params.imprinted = tostring(produced.label)
+                report(context, "abeille imprimee: " .. job.params.imprinted)
+            end
+
+            machine:unload(slots.output)
+
+            if machine:slot(slots.output) then
+                return jobs.RETRY, "la sortie de l imprinter ne se vide pas"
+            end
+
+            -- Worth knowing whether the machine keeps its template: it decides
+            -- whether one placement serves every bee or only the next one
+            if not machine:slot(slots.template) then
+                report(context, "le template a ete consomme; il faut en reposer un")
+            end
+
+            return jobs.DONE
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.imprintHandler()
+    return {steps = genetics.IMPRINT_STEPS}
+end
+
 --- The handler to register with the job queue
 --- @return table handler
 function genetics.duplicateHandler()

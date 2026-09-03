@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.60.0"
+hivemind.VERSION = "0.61.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -270,6 +270,7 @@ function hivemind.bootstrap(options)
     register("sample",    genetics, "sampleHandler",    "lib/genetics.lua")
     register("duplicate", genetics, "duplicateHandler", "lib/genetics.lua")
     register("campaign",  genetics, "campaignHandler",  "lib/genetics.lua")
+    register("imprint",   genetics, "imprintHandler",   "lib/genetics.lua")
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
@@ -1391,6 +1392,68 @@ function hivemind.duplicateGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue the imprinting of a bee with the template already in the machine
+--- This is what turns the library into a tool: the bee comes out carrying the
+--- template's genes instead of its own.
+--- @param context table
+function hivemind.imprintBee(context)
+    print("")
+    print("=== IMPRIMER UNE ABEILLE ===")
+    print("L imprinter ecrase les genes de l abeille par ceux du template.")
+    print("")
+
+    local imprinter = context.machines and context.machines.imprinter
+    if not imprinter then
+        print("Imprinter absent de la configuration.")
+        return
+    end
+
+    -- The template is placed by hand and stays: a filled one and an empty one
+    -- are indistinguishable in AE2, so the program must never pick one itself
+    local template = imprinter:slot(imprinter.link.slots.template)
+
+    if not template then
+        print("Aucun template dans l imprinter.")
+        print("")
+        print("Fabrique-le a la table de craft (option e), puis pose-le a la")
+        print("main dans le slot " .. imprinter:resolveSlot(imprinter.link.slots.template)
+            .. " de l imprinter. Le programme ne peut pas le choisir")
+        print("lui-meme: un template rempli et un vide portent le meme nom.")
+        return
+    end
+
+    print("Template en place : " .. tostring(template.label))
+    print("")
+
+    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+    if not beeSpec then print("Annule.") return end
+
+    print("")
+    print("  " .. beeSpec.label .. " recevra les genes du template")
+    io.write("Confirmer ? (o/N): ")
+
+    local answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local params, err = genetics.imprintParams({bee = beeSpec})
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("imprint", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+end
+
 --- Explain how a template is actually built, and what is available for one
 --- Templates are not made in a machine. The mod's own text says so: "Genetic
 --- Samples can be added to a Template. Combine them in any crafting table.
@@ -1742,6 +1805,8 @@ local ENTRIES = {
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
     {key = "e", label = "Construire un template",
      hint = "ce qui manque, et comment le faire", action = "templateHelp"},
+    {key = "f", label = "Imprimer une abeille",
+     hint = "applique le template pose dans la machine", action = "imprintBee"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",

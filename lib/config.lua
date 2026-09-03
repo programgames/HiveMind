@@ -184,11 +184,10 @@ config.machines = {
     },
     imprinter = {
         transposer = GENETICS, machine = 2, source = 4,
-        -- Measured: 1 is labware, 2 takes the bee. Slots 0 and 3 refused every
-        -- marker, including the one template we own -- which had been consumed
-        -- by the time the imprinter was probed, so that test proved nothing.
-        -- Read as template/output by symmetry with the other two machines;
-        -- confirm with a spare template before acting on it.
+        -- Fully measured now. Slots 0 and 3 refused every marker for a long
+        -- time, which read as "both are outputs"; in fact the imprinter simply
+        -- will not take an EMPTY template. Given a filled one it went straight
+        -- into driver 0, exactly where symmetry said it would.
         slots = {template = 0, labware = 1, bee = 2, output = 3},
     },
     replicator = {

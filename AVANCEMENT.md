@@ -40,7 +40,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Parseur d'étiquettes de samples
 - [x] Genetic Sampler piloté
 - [x] Genetic Transposer piloté (duplication des samples)
-- [ ] Imprinter piloté
+- [x] Imprinter piloté
 - [ ] Replicator piloté
 - [ ] DNA Extractor piloté
 - [ ] Protein Liquifier piloté

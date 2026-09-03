@@ -44,6 +44,7 @@ end
 local SIDE_INTERFACE = config.machines.sampler.source
 local SIDE_SAMPLER = config.machines.sampler.machine
 local SIDE_TRANSPOSER = config.machines.genetic_transposer.machine
+local SIDE_IMPRINTER = config.machines.imprinter.machine
 local OFFSET = config.slot_offset
 
 --- Transposer index of a slot the driver calls `driverSlot`
@@ -65,6 +66,7 @@ local function reset(options)
         interface = {},
         sampler = {},
         gtransposer = {},
+        imprinter = {},
         collected = {},
         -- The chromosome the machine will draw. Nobody chooses it in game.
         draw = options.draw or "Territory: Average",
@@ -83,6 +85,7 @@ local function inventoryFor(side)
     if side == SIDE_INTERFACE then return world.interface end
     if side == SIDE_SAMPLER then return world.sampler end
     if side == SIDE_TRANSPOSER then return world.gtransposer end
+    if side == SIDE_IMPRINTER then return world.imprinter end
     return nil
 end
 
@@ -147,6 +150,28 @@ local function tickTransposer()
                                 label = source.label, size = 1}
 end
 
+--- The Imprinter overwrites the bee's genes with the template's, and keeps the
+--- template: one placement serves every bee that follows.
+local function tickImprinter()
+    if world.imprinter[oc(3)] then return end
+    if not world.starts then return end
+
+    local template = world.imprinter[oc(0)]
+    local labware = world.imprinter[oc(1)]
+    local bee = world.imprinter[oc(2)]
+
+    if not (template and labware and bee) then return end
+
+    world.imprints = (world.imprints or 0) + 1
+    world.imprinter[oc(1)] = nil
+    world.imprinter[oc(2)] = nil
+
+    if world.imprinterEatsTemplate then world.imprinter[oc(0)] = nil end
+
+    world.imprinter[oc(3)] = {name = bee.name,
+                              label = "Imprime " .. tostring(bee.label), size = 1}
+end
+
 local me = {
     getItemsInNetwork = callable(function(filter)
         local matching = {}
@@ -175,12 +200,14 @@ local database = {
 
 local transposerComponent = {
     getInventorySize = callable(function(side)
-        if side == SIDE_SAMPLER or side == SIDE_TRANSPOSER then return 4 end
+        if side == SIDE_SAMPLER or side == SIDE_TRANSPOSER
+           or side == SIDE_IMPRINTER then return 4 end
         return inventoryFor(side) and 9 or nil
     end),
     getStackInSlot = callable(function(side, slot)
         if side == SIDE_SAMPLER then tickSampler() end
         if side == SIDE_TRANSPOSER then tickTransposer() end
+        if side == SIDE_IMPRINTER then tickImprinter() end
         local inventory = inventoryFor(side)
         return inventory and inventory[slot] or nil
     end),
@@ -217,6 +244,10 @@ local transposerComponent = {
                 return false
             end
 
+            if fromSide == SIDE_IMPRINTER and fromSlot ~= oc(3) then
+                return false
+            end
+
             table.insert(world.collected, stack.label)
             from[fromSlot] = nil
             return true
@@ -243,6 +274,19 @@ local transposerComponent = {
 
         if toSide == SIDE_TRANSPOSER
            and not (COPIES[toSlot] and COPIES[toSlot][stack.name]) then
+            return false
+        end
+
+        -- The imprinter refuses an EMPTY template, which is what made its
+        -- template slot look like an output for several probe runs
+        local IMPRINTS = {
+            [oc(0)] = {["gendustry:gene_template"] = true},
+            [oc(1)] = {["gendustry:labware"] = true},
+            [oc(2)] = {["forestry:bee_drone_ge"] = true},
+        }
+
+        if toSide == SIDE_IMPRINTER
+           and not (IMPRINTS[toSlot] and IMPRINTS[toSlot][stack.name]) then
             return false
         end
 
@@ -313,7 +357,8 @@ local function buildStack()
         path = QUEUE,
         handlers = {sample = genetics.sampleHandler(),
                     duplicate = genetics.duplicateHandler(),
-                    campaign = genetics.campaignHandler()},
+                    campaign = genetics.campaignHandler(),
+                    imprint = genetics.imprintHandler()},
         clock = function() ticks = ticks + 1 return ticks end,
         maxAttempts = 2,
     })
@@ -684,6 +729,77 @@ check("et copie bien ce qu'on lui demandait",
       queue:get(jobId).params.copied, "Bee Sample - Fertility: 2")
 checkTruthy("l'intrus est rendu au reseau",
             table.concat(world.collected, ","):find("Territory: Average", 1, true))
+
+print("")
+print("-- imprimer une abeille avec le template pose --")
+
+os.remove(QUEUE)
+reset()
+world.imprinter[oc(0)] = {name = "gendustry:gene_template",
+                          label = "Genetic Template", size = 1}
+
+queue, context = buildStack()
+queue:submit("imprint", genetics.imprintParams({bee = {label = "Meadows Drone"}}))
+
+local printed = queue:run(context, {maxSteps = 60})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("cinq etapes", printed.steps, 5)
+check("la machine a tourne une fois", world.imprints, 1)
+checkTruthy("l abeille imprimee part au reseau",
+            table.concat(world.collected, ","):find("Imprime Meadows Drone", 1, true))
+check("le template reste en place",
+      world.imprinter[oc(0)] and world.imprinter[oc(0)].name,
+      "gendustry:gene_template")
+
+print("")
+print("-- sans template pose, on refuse au lieu d en chercher un --")
+
+-- A filled template and an empty one share an id and a label, so AE2 would hand
+-- back whichever it liked and the bee would come out carrying the wrong genes.
+os.remove(QUEUE)
+reset()
+table.insert(world.network, {name = "gendustry:gene_template",
+                             label = "Genetic Template", size = 9})
+
+queue, context = buildStack()
+queue:submit("imprint", genetics.imprintParams({bee = {label = "Meadows Drone"}}))
+for _ = 1, 4 do queue:run(context, {maxSteps = 60}) end
+
+check("la tache est en erreur", queue:get(1).status, jobs.ERROR)
+checkTruthy("elle dit ou poser le template",
+            queue:get(1).error and queue:get(1).error:find("a la main"))
+check("aucune abeille gaspillee", world.imprints, nil)
+check("aucun template pris dans le reseau", (function()
+    for _, item in ipairs(world.network) do
+        if item.name == "gendustry:gene_template" then return item.size end
+    end
+end)(), 9)
+
+print("")
+print("-- un template consomme est signale --")
+
+os.remove(QUEUE)
+reset()
+world.imprinterEatsTemplate = true
+world.imprinter[oc(0)] = {name = "gendustry:gene_template",
+                          label = "Genetic Template", size = 1}
+
+queue, context = buildStack()
+queue:submit("imprint", genetics.imprintParams({bee = {label = "Meadows Drone"}}))
+queue:run(context, {maxSteps = 60})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+checkTruthy("la disparition du template est dite",
+            table.concat(log, " | "):find("template a ete consomme", 1, true))
+
+print("")
+print("-- parametres d imprint --")
+
+check("abeille manquante refusee", (genetics.imprintParams({})), nil)
+local imprintDefaults = genetics.imprintParams({bee = {label = "X Drone"}})
+check("labware par defaut", imprintDefaults.labware.name, "gendustry:labware")
+check("aucun template en parametre", imprintDefaults.template, nil)
 
 print("")
 print("=== Resultats ===")

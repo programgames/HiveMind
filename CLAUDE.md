@@ -136,8 +136,14 @@ can be added at once. » C'est pourquoi aucun slot d'aucune machine n'accepte un
 vierge » : un template vierge est un template à zéro chromosome. Un seul item :
 `gendustry:gene_template`.
 
-L'Imprinter refuse un template **vide** — d'où les deux slots qui « refusent
-tout » à la sonde. Il faudra un template rempli pour identifier son slot.
+L'Imprinter refuse un template **vide** — d'où les deux slots qui « refusaient
+tout » à la sonde. Avec un template rempli, il entre au **driver 0**, comme la
+symétrie le laissait penser. Disposition confirmée : 0 template, 1 labware,
+2 abeille, 3 sortie.
+
+Le programme ne va **jamais** chercher un template dans le réseau : rempli ou
+vide, même id et même étiquette, AE2 rendrait n'importe lequel. Il est posé à la
+main une fois et sert ensuite toutes les abeilles.
 
 **Un template ne doit jamais entrer dans le réseau ME** — même id, même
 étiquette, il y serait perdu parmi les vierges. Pas besoin de coffre pour
