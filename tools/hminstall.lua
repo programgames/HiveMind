@@ -37,6 +37,7 @@ local FILES = {
     "lib/data/mutations.lua",
     "tools/calibrate.lua",
     "tools/discover.lua",
+    "tools/probe.lua",
     "tools/upload.lua",
     "tools/autoreport.lua",
     "tools/hminstall.lua",
@@ -318,6 +319,7 @@ local function main(args)
     print("")
     print("Lance le programme avec :  hivemind")
     print("Rapport automatique     :  tools/autoreport --run --upload")
+    print("Sondage des slots       :  tools/probe --yes --upload")
     print("Autres outils           :  tools/calibrate, tools/discover, tools/upload")
     print("Mise a jour             :  hminstall")
     print("")

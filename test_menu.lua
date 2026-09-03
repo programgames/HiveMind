@@ -142,6 +142,26 @@ end
 check("autoreport n'appelle que des fonctions reelles", #absent == 0,
       table.concat(absent, ", "))
 
+-- ---------------------------------------------------------------------------
+
+print("")
+print("-- probe --")
+
+local prober = assert(io.open("tools/probe.lua", "r"))
+local probeText = prober:read("*all")
+prober:close()
+
+-- It moves items into machines, so it must not do that just for being run
+check("le sondage ne bouge rien sans --yes",
+      probeText:find("Rien n", 1, true) ~= nil
+      and probeText:find("ete deplace", 1, true) ~= nil)
+check("il rend chaque marqueur",
+      probeText:find("context.transport:retrieve", 1, true) ~= nil)
+check("il ignore les marqueurs absents du reseau",
+      probeText:find("ABSENT, ignore", 1, true) ~= nil)
+check("il ne sonde que les machines sans driver",
+      probeText:find("not config.machines[name].component", 1, true) ~= nil)
+
 print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
