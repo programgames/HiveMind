@@ -2,16 +2,18 @@
 --
 -- The genetics machines have no driver to ask, and the slot maps in the
 -- Gendustry documentation turned out to be wrong: labware sits at index 1 on
--- the imprinter and the genetic transposer, not 3. Guessing again would put
--- every delivery in the wrong place, silently.
+-- the imprinter and the genetic transposer, not 3, and the documented output at
+-- 4 is outside a four-slot inventory. Guessing again would put every delivery
+-- in the wrong place, silently.
 --
--- So the machines are asked the only way they answer: try to put a known item
--- in a slot and see whether it stays. A machine refuses what a slot is not for,
--- which turns "which slot takes a bee?" into an experiment instead of a guess.
+-- So the machines are asked the only way they answer: offer a known item to a
+-- slot and see whether it stays. A machine refuses what a slot is not for,
+-- which turns "which slot takes a bee?" into an experiment.
 --
--- Every marker is taken back out afterwards. Nothing is consumed unless a
--- machine starts working on what it was handed, which is why this only runs
--- with --yes.
+-- One staging per marker, not one per attempt. Going through the ME network for
+-- every slot cost up to twenty seconds each and turned a short experiment into
+-- twenty minutes of apparent hang. The marker is parked on a dock once, then
+-- offered to each slot straight from there.
 --
 -- Usage:
 --   probe            list what would be tried, move nothing
@@ -22,11 +24,11 @@ local component = require("component")
 
 -- Items whose slot a machine will accept or refuse, and that exist in quantity
 local MARKERS = {
-    {name = "gendustry:labware",          role = "labware"},
-    {name = "forestry:bee_drone_ge",      role = "abeille"},
+    {name = "gendustry:labware",           role = "labware"},
+    {name = "forestry:bee_drone_ge",       role = "abeille"},
     {name = "gendustry:gene_sample_blank", role = "sample vierge"},
-    {name = "gendustry:gene_sample",      role = "sample"},
-    {name = "gendustry:gene_template",    role = "template"},
+    {name = "gendustry:gene_sample",       role = "sample"},
+    {name = "gendustry:gene_template",     role = "template"},
 }
 
 local report = {}
@@ -34,6 +36,14 @@ local report = {}
 local function say(text)
     table.insert(report, text or "")
     print(text or "")
+end
+
+--- Call a component method without letting a failure stop the run
+local function invoke(proxy, method, ...)
+    if not proxy then return false, "composant absent" end
+    local target = proxy[method]
+    if target == nil then return false, "methode absente" end
+    return pcall(target, ...)
 end
 
 local function main(args)
@@ -59,6 +69,7 @@ local function main(args)
 
     local config = require("lib.config")
     local context = hivemind.bootstrap()
+    local transport = context.transport
 
     say("HiveMind - sondage des slots")
     say("version " .. tostring(hivemind.VERSION))
@@ -79,21 +90,21 @@ local function main(args)
 
     say("Machines a sonder : " .. table.concat(targets, ", "))
 
-    -- A marker nobody owns teaches nothing, and the failure would read as
+    -- A marker nobody owns teaches nothing, and its failure would read as
     -- "this slot refuses bees" when it means "there are no bees"
     local available = {}
     for _, marker in ipairs(MARKERS) do
         local total = 0
-        for _, item in ipairs(context.transport:findAll({name = marker.name}) or {}) do
+        for _, item in ipairs(transport:findAll({name = marker.name}) or {}) do
             total = total + (tonumber(item.size) or 0)
         end
 
         if total > 0 then
             table.insert(available, marker)
-            say(string.format("  marqueur %-24s %-14s x%d",
+            say(string.format("  marqueur %-30s %-14s x%d",
                 marker.name, marker.role, total))
         else
-            say(string.format("  marqueur %-24s %-14s ABSENT, ignore",
+            say(string.format("  marqueur %-30s %-14s ABSENT, ignore",
                 marker.name, marker.role))
         end
     end
@@ -115,45 +126,85 @@ local function main(args)
     for _, name in ipairs(targets) do
         local machine = context.machines[name]
         local link = machine.link
+        local transposer = transport:transposerFor(link.transposer)
 
         say("")
         say("=== " .. name .. " (face " .. tostring(link.machine) .. ") ===")
 
-        local size = context.transport:inventorySize(link)
-        if not size then
+        local size = transport:inventorySize(link)
+
+        if not transposer then
+            say("  transposer introuvable")
+        elseif not size then
             say("  inventaire illisible")
         else
-            say("  " .. size .. " slot(s)")
+            -- accepted[slot] = {roles...}
+            local accepted, occupied = {}, {}
 
             for raw = 1, size do
-                local occupied = context.transport:inspect(link, raw)
+                local stack = transport:inspect(link, raw)
+                if stack then
+                    occupied[raw] = stack.label or stack.name or "?"
+                end
+                accepted[raw] = {}
+            end
 
-                if occupied then
-                    say(string.format("  slot %-3d deja occupe par %s",
-                        raw, tostring(occupied.label or occupied.name)))
+            for _, marker in ipairs(available) do
+                -- Staged once for the whole machine instead of once per slot:
+                -- the ME round trip is what made this look like a hang
+                local dock, stage_err = transport:stage({name = marker.name}, 1, link)
+
+                if not dock then
+                    say("  " .. marker.role .. " : mise a quai impossible ("
+                        .. tostring(stage_err) .. ")")
                 else
-                    local accepted = {}
+                    local stocked = transport:awaitStock(link, dock, 1)
 
-                    for _, marker in ipairs(available) do
-                        -- deliver() takes driver indices, and resolveSlot adds
-                        -- the offset; raw is already a transposer index
-                        local moved = context.transport:deliver(
-                            {name = marker.name}, link, raw, 1)
+                    if not stocked then
+                        -- Saying so distinguishes "the machine refused it" from
+                        -- "it never arrived", which look identical otherwise
+                        say("  " .. marker.role .. " : jamais arrive au quai")
+                    else
+                        for raw = 1, size do
+                            if not occupied[raw] then
+                                local moved_ok, answer = invoke(transposer,
+                                    "transferItem", link.source, link.machine,
+                                    1, dock, raw)
 
-                        if moved then
-                            table.insert(accepted, marker.role)
-                            context.transport:retrieve(link, raw, 64)
+                                local moved = moved_ok
+                                    and ((answer == true) or (tonumber(answer) or 0) > 0)
+
+                                if moved then
+                                    table.insert(accepted[raw], marker.role)
+                                    -- Straight back to the dock, so the next
+                                    -- slot is offered the same single item
+                                    invoke(transposer, "transferItem",
+                                        link.machine, link.source, 64, raw, dock)
+                                end
+                            end
                         end
                     end
 
-                    if #accepted > 0 then
-                        say(string.format("  slot %-3d (driver %-3d) accepte : %s",
-                            raw, raw - config.slot_offset,
-                            table.concat(accepted, ", ")))
-                    else
-                        say(string.format("  slot %-3d (driver %-3d) refuse tout",
-                            raw, raw - config.slot_offset))
-                    end
+                    -- Clearing the dock's configuration is what sends the
+                    -- marker home: while it stands, AE2 keeps that item pinned
+                    -- in the interface.
+                    transport:releaseDock(dock)
+                end
+            end
+
+            say("  " .. size .. " slot(s)")
+            for raw = 1, size do
+                local driverIndex = raw - config.slot_offset
+
+                if occupied[raw] then
+                    say(string.format("  slot %-3d (driver %-3d) occupe par %s",
+                        raw, driverIndex, occupied[raw]))
+                elseif #accepted[raw] > 0 then
+                    say(string.format("  slot %-3d (driver %-3d) accepte : %s",
+                        raw, driverIndex, table.concat(accepted[raw], ", ")))
+                else
+                    say(string.format("  slot %-3d (driver %-3d) refuse tout"
+                        .. " (sortie ?)", raw, driverIndex))
                 end
             end
         end

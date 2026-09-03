@@ -162,6 +162,17 @@ check("il ignore les marqueurs absents du reseau",
 check("il ne sonde que les machines sans driver",
       probeText:find("not config.machines[name].component", 1, true) ~= nil)
 
+-- One ME round trip per attempt cost up to twenty seconds each: sixty attempts
+-- turned a short experiment into an apparent hang. The marker is staged once
+-- per machine and offered to every slot from the dock.
+check("un seul approvisionnement par marqueur",
+      probeText:find("transport:stage", 1, true) ~= nil
+      and probeText:find("transport:deliver", 1, true) == nil)
+check("le marqueur revient au quai entre deux slots",
+      probeText:find("link.machine, link.source, 64, raw, dock", 1, true) ~= nil)
+check("un marqueur jamais arrive est distingue d'un refus",
+      probeText:find("jamais arrive au quai", 1, true) ~= nil)
+
 print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
