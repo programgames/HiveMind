@@ -37,6 +37,7 @@ local library = require("lib.library")
 local species = require("lib.species")
 local jobs = require("lib.jobs")
 local breeding = require("lib.breeding")
+local planner = require("lib.planner")
 local genome = require("lib.genome")
 
 local hivemind = {}
@@ -45,7 +46,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.11.1"
+hivemind.VERSION = "0.12.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -708,6 +709,120 @@ function hivemind.slotDiagnostic(context)
     print("les livraisons. Vide-le a la main dans la ME Interface si besoin.")
 end
 
+--- Which species the ME network already holds
+--- Built once from the bee labels rather than queried per species: a chain can
+--- ask about dozens, and each query is a round trip to the network.
+--- @param context table
+--- @param registry table
+--- @return function available
+local function availabilityFrom(context, registry)
+    local labels = {}
+
+    for _, itemName in ipairs({"forestry:bee_princess_ge", "forestry:bee_drone_ge"}) do
+        for _, item in ipairs(context.transport:findAll({name = itemName})) do
+            table.insert(labels, tostring(item.label or ""):lower())
+        end
+    end
+
+    local all = registry:list()
+
+    return function(uid)
+        local entry = all[uid]
+        local needle = tostring(entry and entry.name or uid):lower()
+        if needle == "" then return false end
+
+        for _, label in ipairs(labels) do
+            if label:find(needle, 1, true) then return true end
+        end
+
+        return false
+    end
+end
+
+--- Plan a whole breeding chain and queue it
+--- @param context table
+function hivemind.planChain(context)
+    local registry = context.species
+
+    if not registry.list or next(registry:list()) == nil then
+        print("Aucune espece connue. Lance d'abord l'option 2.")
+        return
+    end
+
+    local target = chooseSpecies(context)
+    if not target then print("Annule.") return end
+
+    print("")
+    print("Analyse du reseau et de l'arbre de croisement...")
+
+    local available = availabilityFrom(context, registry)
+
+    local plan, err = planner.plan({
+        registry = registry,
+        available = available,
+        target = target,
+    })
+
+    if not plan then
+        print("Planification impossible: " .. tostring(err))
+        return
+    end
+
+    local all = registry:list()
+    local function naming(uid)
+        local entry = all[uid]
+        return entry and entry.name or uid
+    end
+
+    print("")
+    for _, line in ipairs(planner.describe(plan, naming)) do print(line) end
+
+    if plan.held then return end
+
+    if not plan.reachable then
+        print("")
+        print("Fournis les especes manquantes puis relance cette option.")
+        return
+    end
+
+    -- Labels of species not bred yet cannot be read from the network, so they
+    -- are predicted from the species name. A wrong guess surfaces as a clear
+    -- "introuvable dans le reseau" on that step rather than a silent failure.
+    print("")
+    io.write("Mettre ces " .. #plan.steps .. " croisement(s) en file ? (o/N): ")
+
+    local answer = io.read()
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Annule.")
+        return
+    end
+
+    local queued = 0
+
+    for _, step in ipairs(plan.steps) do
+        local params, params_err = breeding.params({
+            target = step.target,
+            princess = {name = "forestry:bee_princess_ge",
+                        label = naming(step.princess.uid) .. " Princess"},
+            drone = {name = "forestry:bee_drone_ge",
+                     label = naming(step.drone.uid) .. " Drone"},
+        })
+
+        if not params then
+            print("Etape ignoree (" .. naming(step.target) .. "): " .. tostring(params_err))
+        else
+            local id, submit_err = context.queue:submit("breed", params)
+            if id then
+                queued = queued + 1
+            else
+                print("Etape ignoree (" .. naming(step.target) .. "): " .. tostring(submit_err))
+            end
+        end
+    end
+
+    print(queued .. " tache(s) creee(s). Lance l'option 4 pour les executer.")
+end
+
 --- Cancel a job or clear out the finished ones
 --- A job whose target turned out to be impossible sits in the queue blocking
 --- everything behind it, and there was no way to get rid of it.
@@ -794,6 +909,7 @@ local function menu(context)
         print("5. Quitter")
         print("6. Diagnostic des slots")
         print("7. Gerer la file (annuler, purger)")
+        print("8. Viser une espece (chaine complete)")
         io.write("Choix: ")
 
         local choice = io.read()
@@ -808,6 +924,7 @@ local function menu(context)
         elseif choice == "5" then print("Au revoir.") return
         elseif choice == "6" then hivemind.slotDiagnostic(context)
         elseif choice == "7" then hivemind.manageQueue(context)
+        elseif choice == "8" then hivemind.planChain(context)
         else print("Choix invalide.") end
     end
 end

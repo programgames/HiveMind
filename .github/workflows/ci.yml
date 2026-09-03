@@ -41,7 +41,8 @@ jobs:
           'test_genome.lua', 'test_state.lua', 'test_species.lua', 'test_jobs.lua',
           'test_transport.lua', 'test_machines.lua', 'test_library.lua',
           'tools/calibrate.lua', 'tools/upload.lua', 'tools/discover.lua',
-          'lib/breeding.lua', 'test_breeding.lua', 'hivemind.lua'
+          'lib/breeding.lua', 'test_breeding.lua', 'hivemind.lua',
+          'lib/planner.lua', 'test_planner.lua'
         }
         local errors = false
         for _, file in ipairs(files) do
@@ -93,6 +94,7 @@ jobs:
         lua test_machines.lua
         lua test_library.lua
         lua test_breeding.lua
+        lua test_planner.lua
         echo "::endgroup::"
 
     - name: Test Suite - Genome Layer
