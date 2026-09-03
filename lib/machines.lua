@@ -459,6 +459,33 @@ function Apiary:modifiers()
     return result
 end
 
+--- Environment the apiary actually reports
+--- @return table {temperature, humidity}
+function Apiary:getEnvironment()
+    local ok, environment = invoke(self.component, "getEnvironment")
+    if not ok or type(environment) ~= "table" then return {} end
+    return environment
+end
+
+--- Names of the installed upgrades
+--- An upgrade fitted for a previous bee is the usual reason a new one refuses
+--- to work, so it belongs in any environment complaint.
+--- @return string[] names
+function Apiary:upgradeNames()
+    local ok, upgrades = invoke(self.component, "listUpgrades")
+    if not ok or type(upgrades) ~= "table" then return {} end
+
+    local names = {}
+    for _, upgrade in pairs(upgrades) do
+        if type(upgrade) == "table" then
+            table.insert(names, tostring(upgrade.label or upgrade.name or "?"))
+        end
+    end
+
+    table.sort(names)
+    return names
+end
+
 --- Is an Automation upgrade installed
 --- It must not be, on the apiary the program drives: waitForPrincess is
 --- documented to fail when one is present.

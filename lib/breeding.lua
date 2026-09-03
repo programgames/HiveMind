@@ -183,8 +183,11 @@ breeding.STEPS = {
 
             report(context, "mutation " .. tostring(mutation.label or job.params.target))
 
+            -- Measured in game: sixty seconds was not enough and the step timed
+            -- out on a machine that then finished on its own. Harmless, since
+            -- verify() picks the queen up on the next pass, but noisy.
             local produced, produce_err = mutatron:produce(mutation.index or 1,
-                                                          job.params.timeout or 60)
+                                                          job.params.timeout or 180)
             if not produced then
                 return jobs.RETRY, tostring(produce_err)
             end
@@ -252,8 +255,24 @@ breeding.STEPS = {
 
             local blocking = apiary:environmentErrors()
             if #blocking > 0 then
-                return jobs.RETRY, "l'apiary ne convient pas a cette abeille: "
-                    .. table.concat(blocking, ", ")
+                -- The complaint alone sends you guessing. The biome and the
+                -- installed upgrades are what decides it, and an upgrade fitted
+                -- for the previous bee is the usual culprit.
+                local detail = {"l'apiary ne convient pas a cette abeille: "
+                    .. table.concat(blocking, ", ")}
+
+                local environment = apiary.getEnvironment and apiary:getEnvironment() or nil
+                if type(environment) == "table" then
+                    table.insert(detail, "biome " .. tostring(environment.temperature)
+                        .. "/" .. tostring(environment.humidity))
+                end
+
+                local upgrades = apiary.upgradeNames and apiary:upgradeNames() or {}
+                if #upgrades > 0 then
+                    table.insert(detail, "upgrades: " .. table.concat(upgrades, ", "))
+                end
+
+                return jobs.RETRY, table.concat(detail, " | ")
             end
 
             -- One call replaces the Mechanical User, the beebee gun and the
