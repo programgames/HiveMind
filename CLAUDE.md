@@ -141,6 +141,9 @@ tout » à la sonde. Avec un template rempli, il entre au **driver 0**, comme la
 symétrie le laissait penser. Disposition confirmée : 0 template, 1 labware,
 2 abeille, 3 sortie.
 
+**Le template n'est pas consommé par l'Imprinter** (vérifié : il est resté en
+slot 0 après trois imprints). Une pose sert toutes les abeilles suivantes.
+
 Le programme ne va **jamais** chercher un template dans le réseau : rempli ou
 vide, même id et même étiquette, AE2 rendrait n'importe lequel. Il est posé à la
 main une fois et sert ensuite toutes les abeilles.

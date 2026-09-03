@@ -45,8 +45,8 @@ Recalculer avec `lua progress.lua`.
 - [ ] DNA Extractor piloté
 - [ ] Protein Liquifier piloté
 - [ ] Mutagen Producer piloté
-- [ ] Bibliothèque réellement remplie, N copies par allèle
-- [ ] Index des templates tenu et vérifié au démarrage
+- [x] Bibliothèque réellement remplie, N copies par allèle
+- [x] Sort des templates tranché : posés à la main, jamais dans le réseau
 - [ ] Template « perfection » de 12 gènes construit (écriture gène par gène faite)
 - [ ] Template complet par espèce, pour le Replicator
 
@@ -65,3 +65,8 @@ Recalculer avec `lua progress.lua`.
   les passes. Rendement observé : **un drone par cycle**, pas trois.
 - Premiers gènes extraits en jeu : `Fertility = 2`, `Flowering = Slower`.
   Le Sampler tourne, le tirage aléatoire est confirmé.
+- Campagne de gènes : `Species = Forest` obtenu en **6 abeilles** sur 13
+  budgétées, arrêt automatique dès le tirage voulu.
+- **Boucle complète de la phase 2 prouvée** : trois Forest Drones imprimés en
+  Cultivated Drones (`x2 → x5`, `105 → 102`) avec un template posé à la main.
+  Le template n'est **pas consommé** : une pose sert toutes les abeilles.
