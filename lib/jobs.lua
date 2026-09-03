@@ -212,8 +212,14 @@ function Queue:step(job, context)
 
     local handler = self.handlers[job.kind]
     if not handler or type(handler.steps) ~= "table" then
+        -- A job outlives the code that ran it: a kind removed from the program
+        -- leaves its jobs in the queue for good, failing every pass with a
+        -- message that names the problem and not the remedy.
         job.status = jobs.ERROR
-        job.error = "aucun gestionnaire pour: " .. tostring(job.kind)
+        job.error = "type de tache '" .. tostring(job.kind)
+            .. "' inconnu du programme. Soit lib/ est plus ancien que la file"
+            .. " (relance hminstall), soit ce type n existe plus:"
+            .. " annule la tache #" .. tostring(job.id) .. "."
         job.updated = self.clock()
         self:save()
         return jobs.FAILED, job.error

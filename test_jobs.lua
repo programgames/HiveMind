@@ -369,6 +369,39 @@ checkTruthy("la ligne nomme le type", lines[1]:find("breed", 1, true))
 os.remove(PATH)
 
 print("")
+print("-- une tache dont le type a disparu du programme --")
+
+-- A job outlives the code that ran it. A kind removed from the program leaves
+-- its jobs failing every pass with a message that named the problem and not the
+-- remedy: "aucun gestionnaire pour: template".
+os.remove(PATH)
+freshWorld()
+
+local writer = jobs.new({path = PATH, handlers = {breed = BREED, flaky = FLAKY},
+                         clock = clock})
+local orphanId = writer:submit("flaky", {})
+
+-- A later version of the program, without that job type
+local orphaned = jobs.new({path = PATH, handlers = {breed = BREED}, clock = clock})
+orphaned:run(context, {maxSteps = 10})
+
+check("la tache est en erreur", orphaned:get(orphanId).status, jobs.ERROR)
+checkTruthy("le type inconnu est nomme",
+            orphaned:get(orphanId).error and orphaned:get(orphanId).error:find("flaky"))
+checkTruthy("le numero a annuler est donne",
+            orphaned:get(orphanId).error
+            and orphaned:get(orphanId).error:find("#" .. orphanId))
+checkTruthy("les deux causes possibles sont citees",
+            orphaned:get(orphanId).error
+            and orphaned:get(orphanId).error:find("hminstall"))
+
+-- And it must not take the rest of the queue with it
+local companion = orphaned:submit("breed", {target = "Common"})
+orphaned:run(context, {maxSteps = 20})
+check("les autres taches passent quand meme",
+      orphaned:get(companion).status, jobs.COMPLETE)
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
