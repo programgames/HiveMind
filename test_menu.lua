@@ -209,6 +209,16 @@ check("les campagnes de genes aussi",
 check("une campagne deja en file n'est pas recreee",
       toolText:find("deja en file", 1, true) ~= nil)
 
+-- A crash nine sections in lost everything that had been collected, after the
+-- work had already been done in the world
+check("le rapport est publie meme apres une interruption",
+      toolText:find("pcall(main, {...})", 1, true) ~= nil
+      and toolText:find("publish(wantsUpload)", 1, true) ~= nil)
+check("l'interruption apparait dans le rapport",
+      toolText:find("=== INTERROMPU ===", 1, true) ~= nil)
+check("la memoire est rapportee",
+      toolText:find("computer.freeMemory()", 1, true) ~= nil)
+
 -- ---------------------------------------------------------------------------
 
 print("")

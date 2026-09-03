@@ -269,6 +269,22 @@ local function main(args)
         say(string.format("  %-24s %s", kind, address:sub(1, 8)))
     end
 
+    -- A run that dies with an empty error message is usually a machine out of
+    -- memory, and there was no way to tell that from the report
+    local mem_ok, computer = pcall(require, "computer")
+    if mem_ok and computer and computer.totalMemory then
+        local total = tonumber(computer.totalMemory()) or 0
+        local free = tonumber(computer.freeMemory()) or 0
+
+        say("")
+        say(string.format("  memoire : %d / %d octets libres (%d%% utilises)",
+            free, total, total > 0 and math.floor((1 - free / total) * 100) or 0))
+
+        if total > 0 and free / total < 0.25 then
+            say("  ATTENTION: moins d'un quart de memoire libre.")
+        end
+    end
+
     local context, problems = hivemind.bootstrap()
 
     if #problems > 0 then
@@ -406,15 +422,23 @@ local function main(args)
         for _, shortage in ipairs(context.library:shortages() or {}) do
             if already[shortage.label] then
                 say("  " .. shortage.label .. " : deja en file")
-            elseif genetics then
-                local params = genetics.duplicateParams({sample = {label = shortage.label}})
-                local id = params and context.queue:submit("duplicate", params)
+            elseif type(genetics) == "table"
+                   and type(genetics.duplicateParams) == "function" then
+                local ok_call, params = pcall(genetics.duplicateParams,
+                                              {sample = {label = shortage.label}})
+                local id = ok_call and params
+                    and context.queue:submit("duplicate", params)
+
                 if id then
                     created = created + 1
                     say("  " .. shortage.label .. " -> tache #" .. id)
+                else
+                    say("  " .. shortage.label .. " : refuse ("
+                        .. tostring(ok_call and "parametres" or params) .. ")")
                 end
             else
-                say("  lib/genetics.lua absent: relance hminstall")
+                say("  lib/genetics.lua est plus ancien que cet outil:"
+                    .. " relance hminstall")
             end
         end
 
@@ -425,14 +449,21 @@ local function main(args)
         section("CAMPAGNES DE GENES")
         for _, run in ipairs(geneRuns) do
             local params, err
-            if genetics then
-                params, err = genetics.campaignParams({
+
+            if type(genetics) ~= "table"
+               or type(genetics.campaignParams) ~= "function" then
+                err = "lib/genetics.lua est plus ancien que cet outil:"
+                    .. " relance hminstall"
+            else
+                -- pcall, because a failure here used to take the whole report
+                -- with it after every section had already been collected
+                local ok_call, a, b = pcall(genetics.campaignParams, {
                     bee = {label = run.bee},
                     chromosome = run.chromosome,
                     bees = run.bees,
                 })
-            else
-                err = "lib/genetics.lua absent: relance hminstall"
+
+                if ok_call then params, err = a, b else err = tostring(a) end
             end
 
             if not params then
@@ -488,6 +519,14 @@ local function main(args)
         for _, line in ipairs(context.queue:describe()) do say("  " .. line) end
     end
 
+end
+
+--- Write the report and, when asked, publish it
+--- Kept out of main so it can run after a crash too: an interruption nine
+--- sections in used to take everything with it, and the work had already been
+--- done in the world. A partial report is worth far more than none.
+--- @param doUpload boolean
+local function publish(doUpload)
     local body = table.concat(report, "\n") .. "\n"
 
     local file, err = io.open(OUTPUT, "w")
@@ -559,4 +598,22 @@ local function main(args)
     print("=====================================")
 end
 
-main({...})
+-- Read here because the crash handler has no access to main's locals
+local wantsUpload = false
+for _, arg in ipairs({...}) do
+    if arg == "--upload" then wantsUpload = true end
+end
+
+local completed, failure = pcall(main, {...})
+
+if not completed then
+    say("")
+    say("=== INTERROMPU ===")
+    say("  " .. tostring(failure))
+    say("  Le rapport s'arrete ici; tout ce qui precede a ete collecte.")
+
+    print("")
+    print("Interrompu: " .. tostring(failure))
+end
+
+publish(wantsUpload)
