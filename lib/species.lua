@@ -149,6 +149,42 @@ function Registry:list()
     return {}, "vide"
 end
 
+--- Readable name derived from a species uid
+--- listAllSpecies does not return every species: getBeeParents references uids
+--- absent from it, and a species the registry has never heard of is a species
+--- the planner declares missing even when it sits in the network. Deriving a
+--- name from the uid is a guess, but a far better one than the raw uid.
+--- @param uid string
+--- @return string name
+local function deriveName(uid)
+    local last = uid:match("([^.]+)$") or uid
+
+    -- "speciesMystical" -> "Mystical", "water" -> "Water"
+    local stripped = last:match("^species(.+)$") or last:match("^bee(.+)$") or last
+
+    return (stripped:gsub("^%l", string.upper))
+end
+
+--- Record a species the registry had not seen
+--- @param self table
+--- @param uid string
+--- @param name string|nil
+local function remember(self, uid, name)
+    if type(uid) ~= "string" or uid == "" then return end
+    if self.cache.species[uid] then return end
+
+    -- normalizeParents falls back to the uid when the game reports no name, so
+    -- a name equal to the uid means "unnamed", not "named after itself"
+    local reported = (type(name) == "string" and name ~= "" and name ~= uid) and name or nil
+
+    self.cache.species[uid] = {
+        uid = uid,
+        name = reported or deriveName(uid),
+        -- The name is inferred, not reported by the game
+        derived = reported == nil,
+    }
+end
+
 --- Normalize whatever getBeeParents returned into our own shape
 --- @param raw table
 --- @return table[] mutations
@@ -212,6 +248,15 @@ function Registry:parents(uid)
 
     if ok and type(result) == "table" then
         local mutations = normalizeParents(result)
+
+        -- Parents can name species listAllSpecies never returned. Learning them
+        -- here is what keeps the planner from calling a bee missing while it
+        -- sits in the network.
+        for _, mutation in ipairs(mutations) do
+            remember(self, mutation.parent1.uid, mutation.parent1.name)
+            remember(self, mutation.parent2.uid, mutation.parent2.name)
+        end
+
         self.cache.parents[uid] = mutations
         return mutations, "live"
     end

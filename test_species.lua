@@ -121,6 +121,55 @@ check("espece de base reconnue", registry:isBase("forestry.speciesForest"), true
 check("espece croisable non basique", registry:isBase("magicbees.speciesNickel"), false)
 
 print("")
+print("-- especes apprises par les parents --")
+
+-- Measured in game: listAllSpecies returned 329 entries while getBeeParents
+-- referenced uids absent from them, so the planner declared bees missing that
+-- were sitting in the network.
+local unlisted = species.new({
+    apiary = {
+        listAllSpecies = callable(function()
+            return {{name = "Nickel", uid = "magicbees.speciesNickel"}}
+        end),
+        getBeeParents = callable(function(uid)
+            if uid ~= "magicbees.speciesNickel" then return {} end
+            return {{
+                allele1 = {name = nil, uid = "extrabees.species.water"},
+                allele2 = {name = nil, uid = "magicbees.speciesMystical"},
+                chance = 10.0,
+                specialConditions = {},
+            }}
+        end),
+    },
+    cachePath = TMP .. "/hivemind-unlisted.lua",
+})
+
+unlisted:refresh()
+check("une seule espece listee au depart", (function()
+    local n = 0
+    for _ in pairs(unlisted:list()) do n = n + 1 end
+    return n
+end)(), 1)
+
+unlisted:parents("magicbees.speciesNickel")
+
+local learned = unlisted:list()
+checkTruthy("le parent absent de la liste est appris", learned["extrabees.species.water"])
+checkTruthy("le second aussi", learned["magicbees.speciesMystical"])
+
+-- The derived name has to match the word used in item labels, or the lookup
+-- fails exactly as before
+check("nom derive d'un uid a segments",
+      learned["extrabees.species.water"].name, "Water")
+check("prefixe species retire",
+      learned["magicbees.speciesMystical"].name, "Mystical")
+check("le nom est marque comme deduit",
+      learned["extrabees.species.water"].derived, true)
+
+check("l'espece apprise se retrouve par etiquette",
+      unlisted:fromBeeLabel("Water Princess").uid, "extrabees.species.water")
+
+print("")
 print("-- conditions speciales isolees --")
 
 check("Nickel a un chemin contraint", #registry:constrainedPaths("magicbees.speciesNickel"), 1)
