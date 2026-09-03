@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.10.0"
+hivemind.VERSION = "0.10.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -298,7 +298,31 @@ end
 --- @param role string Shown in the prompt
 --- @return table|nil spec {name, label}
 local function chooseBee(context, itemName, role)
-    local entries = context.transport:findAll({name = itemName})
+    local found = context.transport:findAll({name = itemName})
+
+    -- AE2 lists genetically different bees as separate stacks under the same
+    -- label, so "Attuned Princess" appeared three times with different counts.
+    -- They are merged here: the label is all the transport layer can address.
+    local entries, byLabel = {}, {}
+
+    for _, item in ipairs(found) do
+        local label = item.label or item.name or "?"
+        local existing = byLabel[label]
+
+        if existing then
+            existing.size = (existing.size or 0) + (tonumber(item.size) or 0)
+            existing.variants = existing.variants + 1
+        else
+            local merged = {
+                name = item.name,
+                label = label,
+                size = tonumber(item.size) or 0,
+                variants = 1,
+            }
+            byLabel[label] = merged
+            table.insert(entries, merged)
+        end
+    end
 
     if #entries == 0 then
         print("Aucun item '" .. itemName .. "' visible dans le reseau ME.")
@@ -309,7 +333,14 @@ local function chooseBee(context, itemName, role)
     end
 
     local chosen = pick(entries,
-        function(entry) return string.format("%-32s x%d", entry.label or "?", entry.size or 0) end,
+        function(entry)
+            -- Several variants under one label means bees of the same species
+            -- with different genomes; worth knowing, since which one AE2 hands
+            -- over is not ours to choose
+            local variants = entry.variants > 1
+                and ("  (" .. entry.variants .. " genomes)") or ""
+            return string.format("%-30s x%-5d%s", entry.label or "?", entry.size or 0, variants)
+        end,
         "Choisis la " .. role)
 
     if not chosen then return nil end
@@ -328,12 +359,28 @@ end
 local function chooseFromParents(context, princessLabel, droneLabel)
     local registry = context.species
 
-    if not registry.fromBeeLabel then return nil, false end
+    if not registry.fromBeeLabel then
+        print("")
+        print("(version ancienne: la proposition par parents est indisponible)")
+        return nil, false
+    end
 
     local princess = registry:fromBeeLabel(princessLabel)
     local drone = registry:fromBeeLabel(droneLabel)
 
-    if not (princess and drone) then return nil, false end
+    -- Falling back without a word is how a whole feature goes unnoticed
+    if not princess then
+        print("")
+        print("Espece introuvable pour '" .. tostring(princessLabel) .. "'.")
+        print("Lance l'option 2 si la liste des especes est vide.")
+        return nil, false
+    end
+
+    if not drone then
+        print("")
+        print("Espece introuvable pour '" .. tostring(droneLabel) .. "'.")
+        return nil, false
+    end
 
     if not registry:hasOffspringIndex() then
         print("")
