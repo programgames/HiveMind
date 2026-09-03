@@ -278,20 +278,45 @@ function Transport:deliver(spec, link, slot, count)
         return false, stock_err
     end
 
+    -- Check what actually landed on the dock. AE2 stocks whatever its filter
+    -- matched, which is not always what was asked for, and a machine silently
+    -- refusing the wrong item looks exactly like a machine refusing the right
+    -- one.
+    local staged_ok, staged = invoke(transposer, "getStackInSlot", link.source, dock)
+    local stagedLabel = (staged_ok and type(staged) == "table")
+        and (staged.label or staged.name) or nil
+
+    if spec.label and stagedLabel and stagedLabel ~= spec.label then
+        self:releaseDock(dock)
+        return false, "le quai contient '" .. stagedLabel
+            .. "' au lieu de '" .. spec.label .. "'"
+    end
+
     local ok, answer = invoke(transposer, "transferItem",
         link.source, link.machine, count, dock, slot)
 
-    self:releaseDock(dock)
-
     if not ok then
+        self:releaseDock(dock)
         return false, "transfert impossible: " .. tostring(answer)
     end
 
     local moved = movedCount(answer, count)
+
     if moved < count then
-        return false, "transfert incomplet (" .. moved .. "/" .. count .. ")"
+        -- Say what was refused and what the destination already held: a machine
+        -- rejecting an insertion gives no reason of its own.
+        local occupant_ok, occupant = invoke(transposer, "getStackInSlot", link.machine, slot)
+        local occupied = (occupant_ok and type(occupant) == "table")
+            and (occupant.label or occupant.name) or "vide"
+
+        self:releaseDock(dock)
+
+        return false, string.format(
+            "la machine refuse '%s' dans le slot %d (ce slot contient: %s)",
+            stagedLabel or spec.label or "?", slot, occupied)
     end
 
+    self:releaseDock(dock)
     return true
 end
 

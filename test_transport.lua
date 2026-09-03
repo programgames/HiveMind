@@ -117,6 +117,7 @@ local transposer = {
 
     getStackInSlot = callable(function(side, slot)
         if side == SIDE_SOURCE then
+            if world.interfaceOverride then return world.interfaceOverride end
             local staged = world.interface[slot]
             return staged and staged.stack or nil
         end
@@ -263,9 +264,24 @@ check("quai libere malgre l'echec", next(layer.reserved), nil)
 reset({moveShort = true})
 layer = newTransport()
 local moved, move_err = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 1)
-check("transfert incomplet -> echec", moved, false)
-checkTruthy("raison explicite", move_err and move_err:find("incomplet"))
+check("refus de la machine -> echec", moved, false)
+-- A machine rejecting an insertion gives no reason of its own, so the message
+-- has to say what was refused, where, and what was already in the way
+checkTruthy("l'item refuse est nomme", move_err and move_err:find("Speed: Fastest", 1, true))
+checkTruthy("le slot vise est nomme", move_err and move_err:find("slot 1", 1, true))
+checkTruthy("le contenu du slot est rapporte", move_err and move_err:find("contient", 1, true))
 check("quai libere malgre l'echec", next(layer.reserved), nil)
+
+-- AE2 stocks whatever its filter matched, which is not always what was asked
+reset()
+layer = newTransport()
+world.interfaceOverride = {label = "Cobblestone", name = "minecraft:cobblestone", size = 1}
+local wrong, wrong_err = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 1)
+check("mauvais item sur le quai detecte", wrong, false)
+checkTruthy("les deux etiquettes sont citees",
+            wrong_err and wrong_err:find("Cobblestone", 1, true)
+                      and wrong_err:find("Speed: Fastest", 1, true))
+check("quai libere", next(layer.reserved), nil)
 
 reset()
 layer = newTransport()
