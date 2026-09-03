@@ -198,6 +198,35 @@ function Machine:unload(slot, count)
     return self.transport:retrieve(self.link, self:resolveSlot(slot), count)
 end
 
+--- Wait for a slot to hold something
+--- The genetics machines have no driver to ask, so the only signal that the
+--- work is done is the output slot filling. Polling yields between reads, which
+--- a blocking component call would not: one of those froze the server.
+--- @param slot number Driver slot index
+--- @param timeout number|nil Seconds, default 120
+--- @param interval number|nil Seconds between reads, default 2
+--- @return table|nil stack
+--- @return string|nil error
+function Machine:awaitOutput(slot, timeout, interval)
+    timeout = timeout or 120
+    interval = interval or 2
+
+    local started = self.clock()
+
+    while true do
+        local stack = self:slot(slot)
+        if stack then return stack end
+
+        local elapsed = self.clock() - started
+        if elapsed >= timeout then
+            return nil, string.format("%s: rien en sortie apres %d s",
+                tostring(self.name), math.floor(elapsed))
+        end
+
+        self.sleep(interval)
+    end
+end
+
 --- Empty every listed slot back into the network
 --- @param slots number[]
 --- @return number moved

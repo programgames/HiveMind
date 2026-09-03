@@ -55,7 +55,7 @@ config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b4
 -- one back out. They live in a dedicated chest, one per slot, tracked on disk
 -- and verified by fingerprint. Do not reorganize this chest by hand.
 config.template_chest = {
-    transposer = 1,
+    transposer = 2,
     side = 4,        -- west/right, found by tools/discover.lua
     slots = 27,
 }
@@ -63,7 +63,10 @@ config.template_chest = {
 -- Transposer component addresses, in the order the machine links index them.
 -- Filled in from tools/discover.lua; the bootstrap resolves them to proxies.
 config.transposers = {
-    "95625858-b606-4eb0-89cb-4f3b467c0c06",
+    -- Order matters: machines below name a transposer by index. 1 is the
+    -- genetics bench, 2 the breeding bench, as tools/discover reported them.
+    "65d3da44-cb90-4812-a6fa-d28128c9a988",   -- sampler, transposer, imprinter
+    "95625858-b606-4eb0-89cb-4f3b467c0c06",   -- mutatron, apiary, templates
 }
 
 -- ---------------------------------------------------------------------------
@@ -88,7 +91,7 @@ config.machines = {
     -- Driven through The Apiarist Terminal
     mutatron = {
         component = "advmutatron",
-        transposer = 1,
+        transposer = 2,
         machine = 5,      -- east/left
         source = 2,       -- north/back, the ME Interface
         -- Slot layout reported by listSlots(); kept here as a fallback only,
@@ -98,7 +101,7 @@ config.machines = {
 
     breeding_apiary = {
         component = "industrial_apiary",
-        transposer = 1,
+        transposer = 2,
         machine = 3,      -- south/front
         source = 2,
         slots = {queen = 0, drone = 1, outputs = {6, 7, 8, 9, 10, 11, 12, 13, 14}},
@@ -119,18 +122,21 @@ config.machines = {
         enabled = false,
     },
 
-    -- Item-only machines: no driver, the program watches their slots.
-    -- None of these is installed yet; sides are filled in by discover.
+    -- Item-only machines: no driver, so the program watches their slots
+    -- through the transposer instead of asking a component.
+    --
+    -- The genetics bench is transposer 1, with the ME Interface on side 4.
+    -- Sides below come from tools/discover; regenerate it after moving a block.
     sampler = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
+        transposer = 1, machine = 5, source = 4,
         slots = {input = 1, blank = 2, labware = 3, output = 4},
     },
     genetic_transposer = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
+        transposer = 1, machine = 3, source = 4,
         slots = {source = 1, destination = 2, labware = 3, output = 4},
     },
     imprinter = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
+        transposer = 1, machine = 2, source = 4,
         slots = {bee = 1, template = 2, labware = 3, output = 4},
     },
     replicator = {

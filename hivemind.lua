@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.27.0"
+hivemind.VERSION = "0.28.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -659,7 +659,10 @@ function hivemind.slotDiagnostic(context)
     print("Decalage actuellement applique : " .. tostring(config.slot_offset))
     print("")
 
-    for _, name in ipairs({"mutatron", "breeding_apiary"}) do
+    -- Every enabled machine, not a hardcoded pair: the genetics bench arrived
+    -- and its slot map is taken from the Gendustry docs, which is exactly the
+    -- kind of assumption this screen exists to check.
+    for _, name in ipairs(config.enabledMachines()) do
         local machine = context.machines[name]
         if not machine then
             print(name .. " : absent")

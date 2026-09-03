@@ -355,12 +355,20 @@ local built, missing = machines.all({
     clock = function() ticks = ticks + 1 return ticks end,
 })
 
--- The configuration now describes the real installation: only the Mutatron and
--- the breeding apiary are built, the genetics machines are declared but
--- disabled until they exist in the world.
+-- The configuration describes the real installation. The Mutatron and the
+-- breeding apiary have drivers; the genetics bench has none and is driven
+-- entirely through its slots, which is why it must still be built here.
 checkTruthy("mutatron construit", built.mutatron)
 checkTruthy("apiary construit", built.breeding_apiary)
-check("sampler pas encore installe", built.sampler, nil)
+
+for _, name in ipairs({"sampler", "genetic_transposer", "imprinter"}) do
+    checkTruthy(name .. " construit sans driver", built[name])
+end
+
+-- No component means no energy buffer to read. Answering "not ready" to that
+-- would deadlock every job that touches these machines.
+check("une machine sans driver est prete", (built.sampler:isReady()), machines.READY)
+
 check("machine desactivee ignoree", built.production_apiary, nil)
 -- A missing component must not prevent item moves on that machine
 check("composant manquant signale", missing[1], "breeding_apiary")
@@ -371,7 +379,14 @@ check("mutatron sur la face est/gauche", config.machines.mutatron.machine, 5)
 check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3)
 check("source commune = ME Interface", config.machines.mutatron.source, 2)
 check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
-check("un transposer declare", #config.transposers, 1)
+-- Two benches now, and the genetics one took index 1: everything that was on
+-- the single transposer moved to index 2. Getting that wrong aims every item
+-- movement at the wrong machines, silently.
+check("deux transposers declares", #config.transposers, 2)
+check("le banc de genetique est le premier", config.machines.sampler.transposer, 1)
+check("le mutatron est passe au second", config.machines.mutatron.transposer, 2)
+check("le coffre a templates suit l'apiary", config.template_chest.transposer, 2)
+check("la source du banc de genetique", config.machines.imprinter.source, 4)
 
 print("")
 print("-- la fleur exigee par l'abeille chargee --")
