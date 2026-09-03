@@ -155,6 +155,7 @@ local function main(args)
 
     local installed = 0
     local downloadFailures, writeFailures = {}, {}
+    local ownBody = nil
 
     for _, path in ipairs(FILES) do
         io.write("  " .. path .. " ... ")
@@ -165,6 +166,8 @@ local function main(args)
             print("TELECHARGEMENT ECHOUE")
             table.insert(downloadFailures, path .. " : " .. tostring(err))
         else
+            if path == "tools/hminstall.lua" then ownBody = body end
+
             local written, write_err = write(path, body)
             if written then
                 installed = installed + 1
@@ -178,6 +181,32 @@ local function main(args)
 
     print("")
     print(installed .. "/" .. #FILES .. " fichier(s) installe(s).")
+
+    -- The copy being run sits where it was first fetched, usually next to
+    -- hivemind, while the download goes to tools/. Without this the running
+    -- installer never updates itself: it reports an old file count forever and
+    -- silently omits newly added modules.
+    if ownBody then
+        local running = debug.getinfo(1, "S").source:match("^@(.*)$")
+        local updatedItself = false
+
+        if running and running ~= "tools/hminstall.lua" then
+            local current = io.open(running, "r")
+            local body = current and current:read("*all") or nil
+            if current then current:close() end
+
+            if body ~= ownBody then
+                local ok = write(running, ownBody)
+                updatedItself = ok
+            end
+        end
+
+        if updatedItself then
+            print("")
+            print("L'installeur s'est mis a jour lui-meme.")
+            print("Relance 'hminstall' une fois: la liste de fichiers a change.")
+        end
+    end
 
     -- A directory named like the program shadows it: typing "hivemind" then
     -- answers "is a directory". An old state directory left over from before
