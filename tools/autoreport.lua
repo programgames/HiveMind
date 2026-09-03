@@ -264,6 +264,33 @@ local function main(args)
         print("Relance hminstall; si le message revient, redemarre l'ordinateur.")
     end
 
+    -- Three runs in a row behaved like an older version, and there was no way
+    -- to tell a stale file from a stale module cache or a wrong path. The size
+    -- on disk settles it: it can be compared with what the repository serves.
+    section("FICHIERS SUR DISQUE")
+
+    for _, path in ipairs({"hivemind.lua", "lib/config.lua", "lib/genome.lua",
+                           "lib/state.lua", "lib/species.lua", "lib/jobs.lua",
+                           "lib/transport.lua", "lib/machines.lua",
+                           "lib/library.lua", "lib/breeding.lua",
+                           "lib/multiply.lua", "lib/genetics.lua",
+                           "lib/planner.lua", "tools/autoreport.lua"}) do
+        local handle = io.open(path, "r")
+
+        if not handle then
+            say(string.format("  %-24s ABSENT", path))
+        else
+            local content = handle:read("*all") or ""
+            handle:close()
+            say(string.format("  %-24s %6d octets", path, #content))
+        end
+    end
+
+    -- Where require actually looks. A second copy earlier in the path would be
+    -- loaded instead of the one just downloaded, and nothing would say so.
+    say("")
+    say("  package.path : " .. tostring(package.path))
+
     section("COMPOSANTS")
     for address, kind in component.list() do
         say(string.format("  %-24s %s", kind, address:sub(1, 8)))

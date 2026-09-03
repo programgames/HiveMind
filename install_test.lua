@@ -50,7 +50,10 @@ package.loaded["internet"] = {
 -- failure seen in game, where lib/ worked only because it existed already.
 local existing = {}
 
+local removed = {}
+
 package.loaded["filesystem"] = {
+    remove = function(path) table.insert(removed, path) return true end,
     exists = function(path) return existing[path] == true end,
     makeDirectory = function(path)
         if path:sub(1, 1) ~= "/" then
@@ -149,6 +152,7 @@ check("tous les modules requis sont telecharges", allListed)
 
 check("branche par defaut utilisee", requested[1]:find("industrial-genetics", 1, true) ~= nil)
 
+
 -- GitHub's raw CDN kept serving a stale copy for minutes after a push, which
 -- once produced an install mixing a fresh tool with a three-versions-old
 -- program. A query the cache has never seen forces a real fetch.
@@ -177,6 +181,26 @@ check("calibrate ecrit", writes:find("tools/calibrate.lua=", 1, true) ~= nil)
 -- self-update it reports an old file count forever and omits new modules.
 check("l'installeur se met a jour lui-meme",
       writes:find("tools/hminstall.lua=", 1, true) ~= nil)
+
+-- Three runs in a row behaved like an older version, with no way to tell a
+-- stale file from a stale module cache. A file that cannot survive the install
+-- cannot be stale.
+requested, written, out, removed = {}, {}, {}, {}
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")), "--clean")
+release()
+
+check("--clean efface avant d'ecrire", #removed > 0)
+check("il efface autant de fichiers qu'il en installe", #removed == declared)
+check("et il installe quand meme tout",
+      table.concat(out, " "):find(declared .. "/" .. declared, 1, true) ~= nil)
+
+-- Without it nothing is deleted: a normal run must stay a plain overwrite
+requested, written, out, removed = {}, {}, {}, {}
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+check("sans --clean rien n'est efface", #removed == 0)
 
 -- Run from where the user actually launches it, not from tools/. That copy is
 -- the one that never updated itself, so it kept reporting an old file count and

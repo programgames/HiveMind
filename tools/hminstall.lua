@@ -15,6 +15,7 @@
 -- Usage:
 --   hminstall                 install from the default branch
 --   hminstall <branch>        install from another branch
+--   hminstall --clean         delete each file before writing it
 
 local component = require("component")
 
@@ -155,6 +156,14 @@ end
 --- @param body string
 --- @return boolean ok
 --- @return string|nil error
+--- Remove a file, tolerating one that is not there
+--- @param path string
+local function remove(path)
+    local ok, filesystem = pcall(require, "filesystem")
+    if not (ok and filesystem and filesystem.remove) then return end
+    pcall(filesystem.remove, absolute(path))
+end
+
 local function write(path, body)
     local made, directory_err = ensureDirectory(path:match("^(.*)/[^/]*$"))
     if not made then return false, directory_err end
@@ -176,8 +185,15 @@ local function main(args)
     local again = false
     local positional = {}
 
+    -- Deletes each target before writing it. Three runs in a row behaved like
+    -- an older version with no way to tell a stale file from a stale cache, and
+    -- a file that cannot survive cannot be stale.
+    local clean = false
+
     for _, arg in ipairs(args) do
-        if arg == "--again" then again = true else table.insert(positional, arg) end
+        if arg == "--again" then again = true
+        elseif arg == "--clean" then clean = true
+        else table.insert(positional, arg) end
     end
 
     local branch = positional[1] or DEFAULT_BRANCH
@@ -192,6 +208,8 @@ local function main(args)
 
     for _, path in ipairs(FILES) do
         io.write("  " .. path .. " ... ")
+
+        if clean then remove(path) end
 
         local body, err = fetch(base .. path)
 
@@ -350,6 +368,7 @@ local function main(args)
     print("Sondage des slots       :  tools/probe --yes --upload")
     print("Autres outils           :  tools/calibrate, tools/discover, tools/upload")
     print("Mise a jour             :  hminstall")
+    print("Reinstallation propre   :  hminstall --clean")
     print("")
     print("Les fichiers sont dans le repertoire courant; lance-les depuis ici.")
 end
