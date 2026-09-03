@@ -294,6 +294,45 @@ local function main(args)
         say(string.format("  %-32s %d", itemName, total))
     end
 
+    -- The library is the point of phase 2, and "6 alleles sur 6 chromosomes"
+    -- says nothing about which six or how exposed they are
+    section("BIBLIOTHEQUE DE GENES")
+
+    local scanned = pcall(function() context.library:scan() end)
+    if not scanned then say("  scan impossible") end
+
+    local genes = context.library.allGenes and context.library:allGenes() or {}
+    local lines = {}
+
+    for slot, chromosome in pairs(genes) do
+        -- The slot number alone means nothing to a reader; genome knows what
+        -- each one is called in game
+        local name = genome and genome.labelForSlot and genome.labelForSlot(slot)
+        for allele, entry in pairs(chromosome) do
+            table.insert(lines, {
+                slot = slot,
+                text = string.format("  slot %-3d %-22s %-24s x%d",
+                    slot, tostring(name or "?"), tostring(allele),
+                    tonumber(entry.count) or 0),
+            })
+        end
+    end
+
+    table.sort(lines, function(a, b) return a.text < b.text end)
+
+    if #lines == 0 then say("  (vide)") end
+    for _, line in ipairs(lines) do say(line.text) end
+
+    local shortages = context.library.shortages and context.library:shortages() or {}
+    if #shortages > 0 then
+        say("")
+        say("  " .. #shortages .. " gene(s) sous le seuil de securite :")
+        for _, shortage in ipairs(shortages) do
+            say(string.format("    %-40s %d copie(s)",
+                tostring(shortage.label), tonumber(shortage.count) or 0))
+        end
+    end
+
     section("REGISTRE DES ESPECES")
     local known, source = context.species:list()
     local count, derived = 0, 0

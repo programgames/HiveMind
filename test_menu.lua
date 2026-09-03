@@ -178,6 +178,15 @@ end
 check("autoreport n'appelle que des fonctions reelles", #absent == 0,
       table.concat(absent, ", "))
 
+-- "6 alleles sur 6 chromosomes" says nothing about which six or how exposed
+-- they are, and the library is the whole point of phase 2
+check("le rapport detaille la bibliotheque",
+      toolText:find("BIBLIOTHEQUE DE GENES", 1, true) ~= nil)
+check("il nomme les chromosomes plutot que leur numero",
+      toolText:find("genome.labelForSlot(slot)", 1, true) ~= nil)
+check("il signale ce qui est sous le seuil",
+      toolText:find("sous le seuil de securite", 1, true) ~= nil)
+
 -- ---------------------------------------------------------------------------
 
 print("")
