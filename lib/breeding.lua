@@ -222,12 +222,15 @@ breeding.STEPS = {
             -- Straight from machine to machine: sending the queen back through
             -- the ME network would lose track of which queen is ours, since
             -- AE2 shows no genome.
-            local moved = transport:transferBetween(
-                mutatron.link, mutatron:slots().output,
-                apiary.link, queen_slot, 1)
+            --
+            -- Both indices go through resolveSlot: these are the driver's
+            -- numbers, and the transposer counts differently.
+            local moved, reason = transport:transferBetween(
+                mutatron.link, mutatron:resolveSlot(mutatron:slots().output),
+                apiary.link, apiary:resolveSlot(queen_slot), 1)
 
             if not moved then
-                return jobs.RETRY, "transfert de la reine impossible"
+                return jobs.RETRY, "transfert de la reine impossible: " .. tostring(reason)
             end
 
             return jobs.DONE

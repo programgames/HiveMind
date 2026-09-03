@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.6.1"
+hivemind.VERSION = "0.7.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -410,6 +410,55 @@ function hivemind.submitBreeding(context)
     print("Tache #" .. id .. " creee.")
 end
 
+--- Dump what the transposer really sees, slot by slot
+--- The driver reports slot indices from zero, OpenComputers numbers them from
+--- one, and nothing says which side has already adjusted. Rather than guess,
+--- this prints the raw inventory next to the driver's map so the offset can be
+--- read off the screen.
+--- @param context table
+function hivemind.slotDiagnostic(context)
+    print("=== SLOTS REELS (lecture brute par le transposer) ===")
+    print("Decalage actuellement applique : " .. tostring(config.slot_offset))
+    print("")
+
+    for _, name in ipairs({"mutatron", "breeding_apiary"}) do
+        local machine = context.machines[name]
+        if not machine then
+            print(name .. " : absent")
+        else
+            local link = machine.link
+            print(name .. " (face " .. tostring(link.machine) .. ")")
+
+            local slots = machine.slots and machine:slots() or {}
+            local labels = {}
+            for key, value in pairs(slots) do
+                if type(value) == "number" then
+                    labels[value] = key
+                elseif type(value) == "table" then
+                    for _, index in ipairs(value) do labels[index] = key end
+                end
+            end
+
+            for raw = 1, 16 do
+                local stack = context.transport:inspect(link, raw)
+                -- raw is the transposer index; the driver would call it raw-offset
+                local driverIndex = raw - config.slot_offset
+                local role = labels[driverIndex]
+
+                if stack or role then
+                    print(string.format("  slot %-3d (driver %-3d %-9s) %s",
+                        raw, driverIndex, role or "?",
+                        stack and (stack.label or stack.name or "?") or "vide"))
+                end
+            end
+            print("")
+        end
+    end
+
+    print("Lis la ligne d'un item que tu as pose toi-meme : si son role ne")
+    print("correspond pas, ajuste config.slot_offset dans lib/config.lua.")
+end
+
 --- Run the queue until it stops making progress
 --- @param context table
 function hivemind.runQueue(context)
@@ -446,6 +495,7 @@ local function menu(context)
         print("3. Programmer un croisement")
         print("4. Executer la file")
         print("5. Quitter")
+        print("6. Diagnostic des slots")
         io.write("Choix: ")
 
         local choice = io.read()
@@ -458,6 +508,7 @@ local function menu(context)
         elseif choice == "3" then hivemind.submitBreeding(context)
         elseif choice == "4" then hivemind.runQueue(context)
         elseif choice == "5" then print("Au revoir.") return
+        elseif choice == "6" then hivemind.slotDiagnostic(context)
         else print("Choix invalide.") end
     end
 end

@@ -50,6 +50,20 @@ end
 -- Sides come from the real installation discovered in game
 local SIDE_INTERFACE, SIDE_APIARY, SIDE_MUTATRON = 2, 3, 5
 
+-- The Apiarist Terminal numbers slots from zero, OpenComputers from one, and
+-- the first real run proved they are off by one: inserting labware at driver
+-- slot 3 landed on the output and was refused. The simulated inventories are
+-- therefore keyed by transposer index, and the mocked drivers convert, so the
+-- two views describe the same physical slot the way the game does.
+local SLOT_OFFSET = 1
+
+--- Transposer index of a slot the driver calls `driverSlot`
+--- @param driverSlot number
+--- @return number
+local function oc(driverSlot)
+    return driverSlot + SLOT_OFFSET
+end
+
 local world, log
 
 local function reset(options)
@@ -165,10 +179,10 @@ local mutatronComponent = {
     canStart = callable(function() return world.mutagen > 0 end),
     getEnergyStored = callable(function() return world.energy end),
     getMaxEnergyStored = callable(function() return 20000 end),
-    getOutput = callable(function() return world.mutatron[2] end),
+    getOutput = callable(function() return world.mutatron[oc(2)] end),
     listMutations = callable(function()
         -- The machine only offers mutations the loaded parents allow
-        if not (world.mutatron[0] and world.mutatron[1]) then return {} end
+        if not (world.mutatron[oc(0)] and world.mutatron[oc(1)]) then return {} end
         return {{index = 1, key = 4, name = "forestry:bee_queen_ge",
                  label = "Common Queen", nbt = genomeFor("forestry.speciesCommon")}}
     end),
@@ -176,13 +190,13 @@ local mutatronComponent = {
         world.produceCalls = world.produceCalls + 1
 
         if world.mutagen <= 0 then return false, "reservoir vide" end
-        if not world.mutatron[3] then return false, "labware manquant" end
+        if not world.mutatron[oc(3)] then return false, "labware manquant" end
 
         world.mutagen = world.mutagen - 1000
-        world.mutatron[0], world.mutatron[1] = nil, nil
-        world.mutatron[2] = {name = "forestry:bee_queen_ge", label = "Common Queen",
-                             nbt = genomeFor("forestry.speciesCommon"), size = 1}
-        return true, world.mutatron[2]
+        world.mutatron[oc(0)], world.mutatron[oc(1)] = nil, nil
+        world.mutatron[oc(2)] = {name = "forestry:bee_queen_ge", label = "Common Queen",
+                                 nbt = genomeFor("forestry.speciesCommon"), size = 1}
+        return true, world.mutatron[oc(2)]
     end),
 }
 
@@ -193,15 +207,17 @@ local apiaryComponent = {
     end),
     getBees = callable(function()
         local bees = {}
-        if world.apiary[0] then bees.queen = world.apiary[0] end
-        if world.apiary[1] then bees.drone = world.apiary[1] end
+        if world.apiary[oc(0)] then bees.queen = world.apiary[oc(0)] end
+        if world.apiary[oc(1)] then bees.drone = world.apiary[oc(1)] end
         return bees
     end),
     listOutputs = callable(function()
         local outputs = {}
+        -- The driver reports its own indices, which the machine layer converts
         for _, slot in ipairs({6, 7, 8, 9, 10, 11, 12, 13, 14}) do
-            if world.apiary[slot] then
-                table.insert(outputs, {slot = slot, label = world.apiary[slot].label, count = 1})
+            local stack = world.apiary[oc(slot)]
+            if stack then
+                table.insert(outputs, {slot = slot, label = stack.label, count = 1})
             end
         end
         return outputs
@@ -213,11 +229,11 @@ local apiaryComponent = {
     getEnergyStored = callable(function() return world.energy end),
     getMaxEnergyStored = callable(function() return 20000 end),
     waitForPrincess = callable(function(timeout)
-        if not world.apiary[0] then return false, "aucune reine" end
+        if not world.apiary[oc(0)] then return false, "aucune reine" end
         world.cycleRuns = world.cycleRuns + 1
-        world.apiary[0] = nil
-        world.apiary[6] = {label = "Common Princess", size = 1}
-        world.apiary[7] = {label = "Common Drone", size = 3}
+        world.apiary[oc(0)] = nil
+        world.apiary[oc(6)] = {label = "Common Princess", size = 1}
+        world.apiary[oc(7)] = {label = "Common Drone", size = 3}
         return true
     end),
 }
@@ -298,7 +314,7 @@ check("sept etapes", report.steps, 7)
 check("le Mutatron a tourne une fois", world.produceCalls, 1)
 check("mutagene consomme une fois", world.mutagen, 7000)
 check("un cycle d'apiary", world.cycleRuns, 1)
-check("slot reine vide a la fin", world.apiary[0], nil)
+check("slot reine vide a la fin", world.apiary[oc(0)], nil)
 check("sorties de l'apiary videes", #apiaryComponent.listOutputs(), 0)
 
 -- Everything harvested went back to the ME network
@@ -316,7 +332,7 @@ queue, context = buildStack()
 queue:submit("breed", PARAMS)
 
 for _ = 1, 4 do queue:step(queue:pending()[1], context) end
-check("la reine est produite", world.mutatron[2] ~= nil, true)
+check("la reine est produite", world.mutatron[oc(2)] ~= nil, true)
 check("un seul passage au Mutatron", world.produceCalls, 1)
 
 -- New process: nothing in memory, the queue is reread from disk
@@ -337,11 +353,11 @@ queue, context = buildStack()
 queue:submit("breed", PARAMS)
 
 -- Someone put the labware in by hand
-world.mutatron[3] = {label = "Labware", size = 1}
+world.mutatron[oc(3)] = {label = "Labware", size = 1}
 queue:step(queue:pending()[1], context)          -- output already empty
 local skipped = queue:step(queue:pending()[1], context)
 check("l'etape labware est sautee", skipped, jobs.DONE)
-check("aucun labware supplementaire tire", world.mutatron[3].size, 1)
+check("aucun labware supplementaire tire", world.mutatron[oc(3)].size, 1)
 
 print("")
 print("-- panne de mutagene : attendre, pas echouer --")

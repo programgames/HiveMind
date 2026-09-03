@@ -156,10 +156,14 @@ config.energy = {
 
 -- The Apiarist Terminal reports slot indices starting at zero (queen = 0),
 -- while OpenComputers numbers transposer slots from one. Its documentation says
--- to feed those indices straight to the transfer calls, so the default assumes
--- the driver already accounts for it. If the very first real run puts the queen
--- one slot off, set this to 1 and everything realigns.
-config.slot_offset = 0
+-- to feed those indices straight through, so this started at 0.
+--
+-- The first real run settled it: inserting labware at driver slot 3 was refused
+-- with "transfert incomplet (0/1)". Machines refuse insertion into their output
+-- slot, and driver slot 3 lands on the output when the two numbering schemes are
+-- off by one. Hence 1. Menu option 6 dumps the raw slots if this ever needs
+-- checking again.
+config.slot_offset = 1
 
 config.transport = {
     -- The ME Interface has nine configuration slots, used as loading docks.
