@@ -767,6 +767,18 @@ function genetics.campaignParams(options)
         return nil, "chromosome vise invalide"
     end
 
+    -- A profile wants Fertility 4, not any Fertility. Stopping on the first
+    -- draw of the right chromosome hands back whatever value that bee happened
+    -- to carry, and the campaign has to be run again for the one that counts.
+    local allele = options.allele
+    if allele ~= nil and type(allele) ~= "string" then
+        return nil, "allele vise invalide"
+    end
+
+    if allele and not chromosome then
+        return nil, "un allele vise sans chromosome"
+    end
+
     local budget = tonumber(options.bees) or 13
     if budget < 1 then return nil, "budget invalide: " .. tostring(options.bees) end
 
@@ -775,6 +787,7 @@ function genetics.campaignParams(options)
         blank = options.blank or {name = "gendustry:gene_sample_blank"},
         labware = options.labware or {name = "gendustry:labware"},
         chromosome = chromosome,
+        allele = allele,
         budget = budget,
         spent = 0,
         obtainedList = {},
@@ -806,15 +819,19 @@ table.insert(genetics.CAMPAIGN_STEPS, {
         end
 
         local wanted = job.params.chromosome
+        local wantedAllele = job.params.allele
+
         local hit = drawn and wanted and drawn.chromosome == wanted
+            and (not wantedAllele or drawn.allele == wantedAllele)
 
         report(context, job.params.bee.label .. ": " .. job.params.spent .. "/"
             .. job.params.budget .. " abeille(s), dernier tirage "
             .. ((drawn and drawn.chromosome) or "?"))
 
         if hit then
-            return jobs.DONE, wanted .. " obtenu apres "
-                .. job.params.spent .. " abeille(s)"
+            return jobs.DONE, wanted
+                .. (wantedAllele and (" = " .. wantedAllele) or "")
+                .. " obtenu apres " .. job.params.spent .. " abeille(s)"
         end
 
         if job.params.spent >= job.params.budget then
@@ -822,6 +839,7 @@ table.insert(genetics.CAMPAIGN_STEPS, {
                 -- Not a failure: thirteen genes went into the library and the
                 -- draw simply did not come up. Saying "failed" would hide that.
                 return jobs.DONE, "budget epuise sans " .. wanted
+                    .. (wantedAllele and (" = " .. wantedAllele) or "")
                     .. "; " .. #job.params.obtainedList .. " gene(s) recoltes"
             end
 

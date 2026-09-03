@@ -16,6 +16,7 @@
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
 --   autoreport --secure       copy every gene held below the safe number
 --   autoreport --genes "Forest Drone:Species:13"
+--   autoreport --genes "Wintry Drone:Fertility=4:13"
 --                             hunt a chromosome (repeatable)
 --   autoreport --multiply Common:32
 --                             queue a drone campaign (repeatable)
@@ -144,11 +145,21 @@ local function main(args)
         if arg == "--genes" then
             local value = args[index + 1]
             if value then
-                local bee, chromosome, count = value:match("^([^:]+):?([^:]*):?(%d*)$")
+                local bee, target, count = value:match("^([^:]+):?([^:]*):?(%d*)$")
+
+                -- "Fertility=4" pins the value too: a profile wants Fertility 4,
+                -- not whatever Fertility the first lucky bee happened to carry
+                local chromosome, allele
+                if target and target ~= "" then
+                    chromosome, allele = target:match("^(.-)=(.+)$")
+                    if not chromosome then chromosome = target end
+                end
+
                 if bee and bee ~= "" then
                     table.insert(geneRuns, {
                         bee = bee,
-                        chromosome = (chromosome ~= "" and chromosome or nil),
+                        chromosome = chromosome,
+                        allele = allele,
                         bees = tonumber(count),
                     })
                 end
@@ -522,6 +533,7 @@ local function main(args)
                 local ok_call, a, b = pcall(genetics.campaignParams, {
                     bee = {label = run.bee},
                     chromosome = run.chromosome,
+                    allele = run.allele,
                     bees = run.bees,
                 })
 
@@ -534,6 +546,7 @@ local function main(args)
                 local id, submit_err = context.queue:submit("campaign", params)
                 say("  " .. run.bee .. " x" .. params.budget
                     .. (run.chromosome and (" -> " .. run.chromosome) or " -> tout")
+                    .. (run.allele and (" = " .. run.allele) or "")
                     .. " : " .. (id and ("tache #" .. id) or tostring(submit_err)))
             end
         end

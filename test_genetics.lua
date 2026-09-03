@@ -802,6 +802,46 @@ check("labware par defaut", imprintDefaults.labware.name, "gendustry:labware")
 check("aucun template en parametre", imprintDefaults.template, nil)
 
 print("")
+print("-- viser un allele precis, pas seulement un chromosome --")
+
+-- A profile wants Fertility 4, not any Fertility. Stopping on the first draw of
+-- the right chromosome hands back whatever that bee happened to carry.
+os.remove(QUEUE)
+reset()
+world.draws = {"Fertility: 2", "Speed: Fast", "Fertility: 4", "Fertility: 1"}
+
+queue, context = buildStack()
+queue:submit("campaign", genetics.campaignParams({
+    bee = {label = "Meadows Drone"}, chromosome = "Fertility",
+    allele = "4", bees = 10}))
+queue:run(context, {maxSteps = 200})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("la premiere Fertility ne suffit pas", queue:get(1).params.spent, 3)
+check("les tirages intermediaires sont gardes",
+      #queue:get(1).params.obtainedList, 3)
+
+print("")
+print("-- sans allele vise, le premier du bon chromosome suffit --")
+
+os.remove(QUEUE)
+reset()
+world.draws = {"Fertility: 2", "Speed: Fast", "Fertility: 4"}
+
+queue, context = buildStack()
+queue:submit("campaign", genetics.campaignParams({
+    bee = {label = "Meadows Drone"}, chromosome = "Fertility", bees = 10}))
+queue:run(context, {maxSteps = 200})
+
+check("une seule abeille depensee", queue:get(1).params.spent, 1)
+
+print("")
+print("-- un allele sans chromosome n a pas de sens --")
+
+check("refuse", (genetics.campaignParams({
+    bee = {label = "X Drone"}, allele = "4"})), nil)
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

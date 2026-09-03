@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.64.0"
+hivemind.VERSION = "0.65.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1569,12 +1569,23 @@ function hivemind.geneCampaign(context)
         return
     end
 
+    -- A profile wants Fertility 4, not any Fertility: stopping on the first
+    -- draw of the right chromosome hands back whatever that bee carried
+    local wantedAllele = nil
+    if wanted then
+        io.write("Allele precis ? (vide = n importe lequel): ")
+        wantedAllele = io.read()
+        wantedAllele = wantedAllele
+            and wantedAllele:gsub("^%s+", ""):gsub("%s+$", "")
+        if wantedAllele == "" then wantedAllele = nil end
+    end
+
     io.write("Combien d'abeilles au maximum ? [13]: ")
     local answer = io.read()
     local budget = tonumber(answer and answer:gsub("%s+", "")) or 13
 
     local params, err = genetics.campaignParams({
-        bee = beeSpec, chromosome = wanted, bees = budget,
+        bee = beeSpec, chromosome = wanted, allele = wantedAllele, bees = budget,
     })
 
     if not params then
@@ -1584,7 +1595,8 @@ function hivemind.geneCampaign(context)
 
     print("")
     print("  " .. beeSpec.label .. " x" .. budget
-        .. (wanted and (" -> vise " .. wanted) or " -> tout prendre"))
+        .. (wanted and (" -> vise " .. wanted) or " -> tout prendre")
+        .. (wantedAllele and (" = " .. wantedAllele) or ""))
     print("  Le Sampler detruit chaque abeille.")
     io.write("Confirmer ? (o/N): ")
 
