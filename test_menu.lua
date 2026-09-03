@@ -196,6 +196,19 @@ check("le rapport detaille la bibliotheque",
       toolText:find("BIBLIOTHEQUE DE GENES", 1, true) ~= nil)
 check("il nomme les chromosomes plutot que leur numero",
       toolText:find("genome.labelForSlot(slot)", 1, true) ~= nil)
+check("et il charge bien le module qui les nomme",
+      toolText:find('pcall(require, "lib.genome")', 1, true) ~= nil)
+
+-- Any module the tool uses must be required, or it is a nil global that fails
+-- silently rather than loudly
+for _, module in ipairs({"lib.genetics", "lib.multiply", "lib.genome", "lib.config"}) do
+    local short = module:match("%.(%w+)$")
+    if toolText:find(short .. "%.%w") then
+        check("le module " .. module .. " est charge",
+              toolText:find('require, "' .. module .. '"', 1, true) ~= nil
+              or toolText:find('require("' .. module .. '")', 1, true) ~= nil)
+    end
+end
 check("il signale ce qui est sous le seuil",
       toolText:find("sous le seuil de securite", 1, true) ~= nil)
 

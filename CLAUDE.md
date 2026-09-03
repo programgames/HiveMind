@@ -77,6 +77,10 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   entièrement vide demande l'impossible et échoue alors qu'il a réussi. Ce qui
   reste en entrée n'est d'ailleurs pas un déchet : un labware ou un sample
   vierge laissé là est exactement ce dont le run suivant a besoin.
+- **Le Genetic Transposer rend son slot source** (vérifié en jeu :
+  « entree liberee »), le Sampler non. Toujours **essayer l'extraction avant**
+  de conclure qu'un slot est bloqué : le comportement diffère d'une machine à
+  l'autre et rien ne le documente.
 - **Toutes les machines ne consomment pas ce qu'elles lisent.** Le Sampler
   détruit l'abeille ; le **Genetic Transposer garde son sample source** — c'est
   ce qui rend la duplication sûre, et c'est aussi pourquoi faire tourner la

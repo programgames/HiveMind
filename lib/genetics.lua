@@ -98,8 +98,10 @@ local function finishLoadedStep(machineName, inputKey, wantedLabel)
 
             local slots = machine.link.slots
 
-            -- Try simply taking it back first. The Sampler refuses that on its
-            -- inputs, but not every machine does, and asking costs one call.
+            -- Take it back first. Observed in game: the Genetic Transposer DOES
+            -- release its source slot, which is what unblocked a queue that had
+            -- spent three passes going round in circles. The Sampler refuses.
+            -- Asking costs one call and answers the question per machine.
             machine:unload(slots[inputKey])
             if not foreign(job, machine) then
                 report(context, "entree liberee: " .. tostring(occupant.label))

@@ -224,6 +224,11 @@ local function main(args)
     local has_genetics, genetics = pcall(require, "lib.genetics")
     if not has_genetics then genetics = nil end
 
+    -- Without this, genome is a nil global and every chromosome prints as "?".
+    -- The line was lost when a patch failed halfway and only half of it landed.
+    local has_genome, genome = pcall(require, "lib.genome")
+    if not has_genome then genome = nil end
+
     say("HiveMind - rapport automatique")
     say("version " .. tostring(hivemind.VERSION))
 
