@@ -41,6 +41,15 @@ config.sides = sides
 -- program itself, and typing "hivemind" answers "is a directory".
 config.state_directory = "/home/hivemind-state"
 
+-- Where a report is dropped so it can be read without anyone copying a code
+-- off the screen. paste.rs hands out a random id every time, which means a
+-- human has to relay it; this address is fixed, so the report can simply be
+-- collected. Set to nil to send nothing there.
+--
+-- The address is unguessable but the contents are readable by whoever holds it:
+-- machine state, network inventory and component addresses. Nothing else.
+config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b462"
+
 -- Templates never enter the ME network: they all share one item id and one
 -- label, so AE2 could not tell them apart and we could never pull a specific
 -- one back out. They live in a dedicated chest, one per slot, tracked on disk

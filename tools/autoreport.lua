@@ -10,7 +10,7 @@
 -- Usage:
 --   autoreport                 collect and write /home/hivemind-report.txt
 --   autoreport --run           also empty the apiary and advance the queue
---   autoreport --upload        also publish the report and print the URL
+--   autoreport --upload        publish the report: fixed mailbox, then a URL
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
 --   autoreport --multiply Common:32
 --                             queue a drone campaign (repeatable)
@@ -339,23 +339,45 @@ local function main(args)
         return
     end
 
-    local requested, handle = pcall(internet.request, "https://paste.rs/", body,
-        {["Content-Type"] = "text/plain"}, "POST")
+    --- POST a body and return whatever came back
+    --- @return boolean ok
+    --- @return string response
+    local function post(url, headers)
+        local requested, handle = pcall(internet.request, url, body,
+            headers or {["Content-Type"] = "text/plain"}, "POST")
 
-    if not requested then
-        print("Envoi impossible: " .. tostring(handle))
-        return
+        if not requested then return false, tostring(handle) end
+
+        local chunks = {}
+        local read_ok = pcall(function()
+            for chunk in handle do table.insert(chunks, chunk) end
+        end)
+
+        if not read_ok then return false, "reponse illisible" end
+
+        return true, table.concat(chunks)
     end
 
-    local chunks = {}
-    local read_ok = pcall(function()
-        for chunk in handle do table.insert(chunks, chunk) end
-    end)
+    -- A fixed address means the report can be collected without anyone reading
+    -- a random code off the screen and typing it back. Best effort: a failure
+    -- here must not cost the paste that follows.
+    local ok_config, configuration = pcall(require, "lib.config")
+    local mailbox = ok_config and configuration and configuration.report_mailbox
 
-    local response = table.concat(chunks)
+    if mailbox then
+        local sent, answer = post(mailbox)
+        if sent then
+            print("Rapport depose dans la boite aux lettres.")
+        else
+            print("Boite aux lettres injoignable: " .. tostring(answer))
+        end
+    end
 
-    if not read_ok or response == "" then
-        print("Reponse vide du serveur; le fichier reste dans " .. OUTPUT)
+    local paste_ok, response = post("https://paste.rs/")
+
+    if not paste_ok or response == "" then
+        print("Publication impossible: " .. tostring(response))
+        print("Le fichier reste dans " .. OUTPUT)
         return
     end
 

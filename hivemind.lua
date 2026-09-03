@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.18.0"
+hivemind.VERSION = "0.19.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
