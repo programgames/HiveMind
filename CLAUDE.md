@@ -77,7 +77,12 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   entièrement vide demande l'impossible et échoue alors qu'il a réussi. Ce qui
   reste en entrée n'est d'ailleurs pas un déchet : un labware ou un sample
   vierge laissé là est exactement ce dont le run suivant a besoin.
-- **Un slot d'entrée bloqué se vide en laissant la machine le consommer.**
+- **Toutes les machines ne consomment pas ce qu'elles lisent.** Le Sampler
+  détruit l'abeille ; le **Genetic Transposer garde son sample source** — c'est
+  ce qui rend la duplication sûre, et c'est aussi pourquoi faire tourner la
+  machine ne libère jamais ce slot. Essayer, puis abandonner vite et le dire.
+- **Un slot d'entrée bloqué se vide en laissant la machine le consommer**,
+  quand elle le consomme.
   C'est la seule issue, et elle est productive : on fournit les consommables
   manquants, la machine finit, le slot se libère et on récupère un gène de plus.
   Le Mutatron fait exception — une mutation avec les mauvais parents peut ne

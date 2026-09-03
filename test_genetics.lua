@@ -132,7 +132,15 @@ local function tickTransposer()
     world.copies = (world.copies or 0) + 1
     world.gtransposer[oc(0)] = nil
     world.gtransposer[oc(1)] = nil
-    world.gtransposer[oc(2)] = nil
+
+    -- The source is NOT consumed. That is the whole reason duplication is safe,
+    -- and the reason a job cannot clear this slot by running the machine.
+    if not world.consumesSource then
+        -- keep it in place
+    else
+        world.gtransposer[oc(2)] = nil
+    end
+
     world.gtransposer[oc(3)] = {name = "gendustry:gene_sample",
                                 label = source.label, size = 1}
 end
@@ -186,8 +194,14 @@ local transposerComponent = {
             -- Gendustry refuses automated extraction from input slots, exactly
             -- as the Mutatron does. A mock that allowed it made a job asking
             -- for the impossible look correct.
-            if (fromSide == SIDE_SAMPLER or fromSide == SIDE_TRANSPOSER)
-               and fromSlot ~= oc(3) then
+            -- The Sampler refuses extraction from its inputs. Whether the
+            -- Genetic Transposer does too is not known, so both are modelled.
+            if fromSide == SIDE_SAMPLER and fromSlot ~= oc(3) then
+                return false
+            end
+
+            if fromSide == SIDE_TRANSPOSER and fromSlot ~= oc(3)
+               and not world.transposerReleasesInputs then
                 return false
             end
 
@@ -508,10 +522,11 @@ checkTruthy("elle nomme la source manquante",
 check("rien n'a ete copie", world.copies, nil)
 
 print("")
-print("-- un sample etranger dans le transposer est copie, puis on continue --")
+print("-- un sample etranger que la machine rend: on continue seul --")
 
 os.remove(QUEUE)
 reset()
+world.transposerReleasesInputs = true
 world.gtransposer[oc(2)] = {name = "gendustry:gene_sample",
                             label = "Bee Sample - Flowering: Slower", size = 1}
 table.insert(world.network, {name = "gendustry:gene_sample",
@@ -523,11 +538,35 @@ queue:submit("duplicate", genetics.duplicateParams(
 queue:run(context, {maxSteps = 60})
 
 check("la tache aboutit sans intervention", queue:get(1).status, jobs.COMPLETE)
-check("deux copies faites", world.copies, 2)
 check("la copie demandee est la bonne",
       queue:get(1).params.copied, "Bee Sample - Fertility: 2")
-checkTruthy("l'intrus est copie au passage, pas jete",
+checkTruthy("l'intrus est rendu au reseau, pas jete",
             table.concat(world.collected, ","):find("Flowering: Slower", 1, true))
+
+print("")
+print("-- un sample etranger que rien ne peut sortir: on le dit vite --")
+
+-- The Genetic Transposer keeps its source; that is what makes duplication safe.
+-- Running it therefore clears nothing, and running it again clears nothing
+-- again. Three passes of that is a loop, not a strategy.
+os.remove(QUEUE)
+reset()
+world.gtransposer[oc(2)] = {name = "gendustry:gene_sample",
+                            label = "Bee Sample - Flowering: Slower", size = 1}
+table.insert(world.network, {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Fertility: 2", size = 1})
+
+queue, context = buildStack()
+queue:submit("duplicate", genetics.duplicateParams(
+    {sample = {label = "Bee Sample - Fertility: 2"}}))
+for _ = 1, 8 do queue:run(context, {maxSteps = 60}) end
+
+check("la tache s'arrete en erreur", queue:get(1).status, jobs.ERROR)
+checkTruthy("elle nomme l'intrus et le slot",
+            queue:get(1).error and queue:get(1).error:find("Flowering: Slower"))
+checkTruthy("et demande un retrait manuel",
+            queue:get(1).error and queue:get(1).error:find("a la main"))
+checkTruthy("sans tourner en rond indefiniment", (world.copies or 0) <= 4)
 
 print("")
 print("-- une campagne s'arrete des que le gene vise sort --")

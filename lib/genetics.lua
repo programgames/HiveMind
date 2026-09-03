@@ -96,9 +96,30 @@ local function finishLoadedStep(machineName, inputKey, wantedLabel)
             local occupant = foreign(job, machine)
             if not occupant then return jobs.DONE end
 
-            report(context, "travail engage a finir: " .. tostring(occupant.label))
-
             local slots = machine.link.slots
+
+            -- Try simply taking it back first. The Sampler refuses that on its
+            -- inputs, but not every machine does, and asking costs one call.
+            machine:unload(slots[inputKey])
+            if not foreign(job, machine) then
+                report(context, "entree liberee: " .. tostring(occupant.label))
+                return jobs.DONE
+            end
+
+            -- Some machines consume what they read and some do not. The Genetic
+            -- Transposer keeps its source -- that is what makes duplication
+            -- safe -- so running it clears nothing, and running it again clears
+            -- nothing again. Three tries is enough to know which kind this is.
+            job.params.clearAttempts = (job.params.clearAttempts or 0) + 1
+
+            if job.params.clearAttempts > 3 then
+                return jobs.FAILED, "le slot " .. machine:resolveSlot(slots[inputKey])
+                    .. " tient " .. tostring(occupant.label)
+                    .. " et la machine ne le consomme pas."
+                    .. " Retire-le a la main, puis relance la file."
+            end
+
+            report(context, "travail engage a finir: " .. tostring(occupant.label))
 
             -- Only the consumables: the machine already holds what it reads
             for _, entry in ipairs({
