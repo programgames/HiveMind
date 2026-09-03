@@ -12,6 +12,8 @@
 --   autoreport --run           also empty the apiary and advance the queue
 --   autoreport --upload        also publish the report and print the URL
 --   autoreport --cancel 3     drop job 3 (repeatable) before anything runs
+--   autoreport --multiply Common:32
+--                             queue a drone campaign (repeatable)
 --   autoreport --run --upload  both
 --
 -- --run moves items, consumes mutagen and can kill a queen, exactly as menu
@@ -82,10 +84,23 @@ local function dump(value, indent, depth, seen)
 end
 
 local function main(args)
-    local doRun, doUpload, toCancel = false, false, {}
+    local doRun, doUpload, toCancel, campaigns = false, false, {}, {}
     for index, arg in ipairs(args) do
         if arg == "--run" then doRun = true end
         if arg == "--upload" then doUpload = true end
+
+        -- --multiply Common:32 queues a drone campaign without the menu, so a
+        -- whole session still fits in one non-interactive command.
+        if arg == "--multiply" then
+            local value = args[index + 1]
+            if value then
+                local species, target = value:match("^([^:]+):?(%d*)$")
+                if species then
+                    table.insert(campaigns,
+                        {species = species, target = tonumber(target)})
+                end
+            end
+        end
         -- Cancelling through the menu costs a screenshot round trip for what is
         -- one number; a blocked job that will never resolve has to go before
         -- the queue can move at all.
@@ -126,6 +141,10 @@ local function main(args)
         print("Lance 'hminstall' puis reessaie depuis le repertoire de hivemind.")
         return
     end
+
+    -- Loaded the same way hivemind loads it, from the install directory
+    local has_multiply, multiply = pcall(require, "lib.multiply")
+    if not has_multiply then multiply = nil end
 
     say("HiveMind - rapport automatique")
     say("version " .. tostring(hivemind.VERSION))
@@ -215,6 +234,26 @@ local function main(args)
         for _, id in ipairs(toCancel) do
             local cancelled = context.queue:cancel(id)
             say("  #" .. id .. " : " .. (cancelled and "annulee" or "introuvable"))
+        end
+    end
+
+    if #campaigns > 0 then
+        section("CAMPAGNES DE DRONES")
+        for _, campaign in ipairs(campaigns) do
+            local params, err
+            if multiply then
+                params, err = multiply.params(campaign)
+            else
+                err = "lib/multiply.lua absent: relance hminstall"
+            end
+            if not params then
+                say("  " .. campaign.species .. " : refuse (" .. tostring(err) .. ")")
+            else
+                local id, submit_err = context.queue:submit("multiply", params)
+                say("  " .. campaign.species .. " -> " .. params.target
+                    .. " drones : " .. (id and ("tache #" .. id)
+                                           or tostring(submit_err)))
+            end
         end
     end
 
