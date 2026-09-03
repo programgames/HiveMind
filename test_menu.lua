@@ -107,6 +107,12 @@ check("un chromosome dont l uid ne suit pas l etiquette est signale",
 check("chaque action laisse le temps de lire",
       text:find("Entree pour revenir au menu", 1, true) ~= nil)
 
+-- The apiary keeps its drone, so every read leaves one behind. Reading that one
+-- costs nothing; replacing it costs a bee and usually fails anyway.
+check("une abeille deja en place peut etre relue",
+      text:find("La lire elle ?", 1, true) ~= nil)
+
+
 
 check("la duplication est atteignable", wired.duplicateGene == true)
 check("la mise a l'abri est atteignable", wired.secureLibrary == true)

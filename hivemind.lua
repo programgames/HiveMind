@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.67.0"
+hivemind.VERSION = "0.68.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1488,24 +1488,39 @@ function hivemind.analyseBee(context)
     end
 
     local occupant = apiary:slot(slots.drone)
-    if occupant then
-        print("Le slot drone contient deja " .. tostring(occupant.label) .. ".")
-        print("Il sera rendu au reseau avant la lecture.")
-        apiary:unload(slots.drone)
+    local beeSpec
 
-        if apiary:slot(slots.drone) then
-            print("Impossible de le retirer. Sors-le a la main puis reessaie.")
-            return
+    if occupant then
+        -- The apiary keeps its drone, so a previous read leaves one behind.
+        -- Reading it costs nothing; replacing it costs a bee and usually fails.
+        print("Le slot drone contient " .. tostring(occupant.label) .. ".")
+        io.write("La lire elle ? (O/n, n = en poser une autre): ")
+
+        local answer = io.read()
+        local reuse = not answer or answer == ""
+            or answer:lower():sub(1, 1) == "o" or answer:lower():sub(1, 1) == "y"
+
+        if reuse then
+            beeSpec = {name = occupant.name, label = occupant.label}
+        else
+            apiary:unload(slots.drone)
+
+            if apiary:slot(slots.drone) then
+                print("L apiary ne la rend pas. Sors-la a la main puis reessaie.")
+                return
+            end
         end
     end
 
-    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
-    if not beeSpec then print("Annule.") return end
+    if not beeSpec then
+        beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+        if not beeSpec then print("Annule.") return end
 
-    local ok, reason = apiary:load(beeSpec, slots.drone, 1)
-    if not ok then
-        print("Impossible de poser l abeille: " .. tostring(reason))
-        return
+        local ok, reason = apiary:load(beeSpec, slots.drone, 1)
+        if not ok then
+            print("Impossible de poser l abeille: " .. tostring(reason))
+            return
+        end
     end
 
     local bee = apiary:bees().drone
@@ -1603,7 +1618,8 @@ function hivemind.analyseBee(context)
 
     if apiary:slot(slots.drone) then
         print("")
-        print("ATTENTION: l abeille est restee dans l apiary, retire-la.")
+        print("L abeille reste dans l apiary: il ne rend pas ce slot.")
+        print("La prochaine lecture pourra la relire sans en depenser une autre.")
     end
 end
 
