@@ -146,7 +146,8 @@ local function main(args)
     print("HiveMind - installation depuis la branche " .. branch)
     print("")
 
-    local installed, failures = 0, {}
+    local installed = 0
+    local downloadFailures, writeFailures = {}, {}
 
     for _, path in ipairs(FILES) do
         io.write("  " .. path .. " ... ")
@@ -154,8 +155,8 @@ local function main(args)
         local body, err = fetch(base .. path)
 
         if not body then
-            print("ECHEC")
-            table.insert(failures, path .. " : " .. tostring(err))
+            print("TELECHARGEMENT ECHOUE")
+            table.insert(downloadFailures, path .. " : " .. tostring(err))
         else
             local written, write_err = write(path, body)
             if written then
@@ -163,7 +164,7 @@ local function main(args)
                 print(#body .. " octets")
             else
                 print("ECRITURE IMPOSSIBLE")
-                table.insert(failures, path .. " : " .. tostring(write_err))
+                table.insert(writeFailures, path .. " : " .. tostring(write_err))
             end
         end
     end
@@ -171,12 +172,24 @@ local function main(args)
     print("")
     print(installed .. "/" .. #FILES .. " fichier(s) installe(s).")
 
-    if #failures > 0 then
+    -- Two very different problems: blaming the network for a directory that
+    -- could not be created sends the reader hunting in the wrong place.
+    if #downloadFailures > 0 then
         print("")
-        print("Echecs :")
-        for _, failure in ipairs(failures) do print("  " .. failure) end
-        print("")
+        print("Telechargements echoues :")
+        for _, failure in ipairs(downloadFailures) do print("  " .. failure) end
         print("Verifie la carte Internet et le nom de la branche.")
+    end
+
+    if #writeFailures > 0 then
+        print("")
+        print("Ecritures echouees (le reseau n'est pas en cause) :")
+        for _, failure in ipairs(writeFailures) do print("  " .. failure) end
+        print("Cree le repertoire a la main puis relance, par exemple :")
+        print("  mkdir /home/tools")
+    end
+
+    if #downloadFailures > 0 or #writeFailures > 0 then
         return
     end
 
