@@ -197,6 +197,19 @@ function Registry:parents(uid)
 
     local ok, result = invoke(self.apiary, "getBeeParents", uid)
 
+    -- Calibration queried it with a display name and got an answer; whether the
+    -- uid works is unknown, so an empty result is retried with the name before
+    -- concluding the species has no parents.
+    if ok and type(result) == "table" and next(result) == nil then
+        local entry = self.cache.species[uid]
+        if entry and entry.name and entry.name ~= uid then
+            local retry_ok, retried = invoke(self.apiary, "getBeeParents", entry.name)
+            if retry_ok and type(retried) == "table" and next(retried) ~= nil then
+                ok, result = retry_ok, retried
+            end
+        end
+    end
+
     if ok and type(result) == "table" then
         local mutations = normalizeParents(result)
         self.cache.parents[uid] = mutations
@@ -221,6 +234,80 @@ function Registry:parents(uid)
     return {}, "inconnu"
 end
 
+--- Key for an unordered pair of parents
+--- @param a string
+--- @param b string
+--- @return string
+local function pairKey(a, b)
+    if a <= b then return a .. "|" .. b end
+    return b .. "|" .. a
+end
+
+--- Build the reverse index: which species a given pair of parents produces
+--- getBeeParents only answers the forward question, so the reverse has to be
+--- assembled once by asking about every species. That is slow - several hundred
+--- component calls - which is exactly why it is cached on disk and never
+--- rebuilt unless asked.
+--- @param onProgress function|nil Called with (done, total, name)
+--- @return number pairs Number of parent pairs indexed
+--- @return string|nil error
+function Registry:buildOffspringIndex(onProgress)
+    self:load()
+
+    local all, source = self:list()
+    if source == "vide" then return 0, "aucune espece connue" end
+
+    local names = {}
+    for uid in pairs(all) do table.insert(names, uid) end
+    table.sort(names)
+
+    local index = {}
+    local pairs_found = 0
+
+    for position, uid in ipairs(names) do
+        for _, mutation in ipairs(self:parents(uid)) do
+            local key = pairKey(mutation.parent1.uid, mutation.parent2.uid)
+
+            if not index[key] then
+                index[key] = {}
+                pairs_found = pairs_found + 1
+            end
+
+            table.insert(index[key], uid)
+        end
+
+        if onProgress and position % 10 == 0 then
+            pcall(onProgress, position, #names, all[uid] and all[uid].name)
+        end
+    end
+
+    self.cache.offspring = index
+    return pairs_found
+end
+
+--- Species that two parents can produce
+--- @param a string Parent species uid
+--- @param b string Parent species uid
+--- @return string[] uids
+--- @return boolean built True when the index exists at all
+function Registry:offspringOf(a, b)
+    self:load()
+
+    local index = self.cache.offspring
+    if not index then return {}, false end
+
+    if type(a) ~= "string" or type(b) ~= "string" then return {}, true end
+
+    return index[pairKey(a, b)] or {}, true
+end
+
+--- Is the reverse index available
+--- @return boolean
+function Registry:hasOffspringIndex()
+    self:load()
+    return self.cache.offspring ~= nil
+end
+
 --- A species the program can never produce, only be given
 --- @param uid string
 --- @return boolean isBase
@@ -242,6 +329,22 @@ function Registry:constrainedPaths(uid)
     end
 
     return constrained
+end
+
+--- Species behind a bee item label
+--- "Meadows Princess" names the species Meadows; the role suffix is not part of
+--- it and would defeat every lookup.
+--- @param label string
+--- @return table|nil entry
+function Registry:fromBeeLabel(label)
+    if type(label) ~= "string" then return nil end
+
+    local base = label
+    for _, suffix in ipairs({" Princess", " Drone", " Queen", " princess", " drone", " queen"}) do
+        base = base:gsub(suffix .. "$", "")
+    end
+
+    return self:resolve(base)
 end
 
 --- Find a species by uid or by display name

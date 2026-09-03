@@ -175,6 +175,50 @@ check("aucune condition connue hors ligne", #imperial[1].conditions, 0)
 check("Noble vu comme base hors ligne", offline:isBase("Noble"), true)
 
 print("")
+print("-- index inverse : que produisent ces deux parents --")
+
+-- getBeeParents only answers the forward question. Searching 329 species for
+-- one reachable from a given pair is not something a person should do by hand.
+check("index absent au depart", registry:hasOffspringIndex(), false)
+check("aucune reponse sans index", #(registry:offspringOf("u.a", "u.b")), 0)
+
+local progress = 0
+local pairsFound = registry:buildOffspringIndex(function() progress = progress + 1 end)
+checkTruthy("index construit", pairsFound and pairsFound > 0)
+check("index disponible", registry:hasOffspringIndex(), true)
+
+-- Saffron has two paths; both parent pairs must lead to it
+local fromAB = registry:offspringOf("u.a", "u.b")
+check("premier chemin indexe", fromAB[1], "extrabees.species.yellow")
+local fromCD = registry:offspringOf("u.c", "u.d")
+check("second chemin indexe", fromCD[1], "extrabees.species.yellow")
+
+-- The pair is unordered: a princess and a drone can be given either way round
+check("ordre des parents indifferent",
+      (registry:offspringOf("u.b", "u.a"))[1], "extrabees.species.yellow")
+
+local nickel = registry:offspringOf("magicbees.speciesIron", "magicbees.speciesEsoteric")
+check("Nickel retrouve par ses parents", nickel[1], "magicbees.speciesNickel")
+check("couple sans mutation", #(registry:offspringOf("u.a", "u.d")), 0)
+
+-- Survives a reload, since rebuilding costs hundreds of component calls
+registry:save()
+local withIndex = species.new({apiary = nil, cachePath = CACHE})
+check("index relu depuis le cache", withIndex:hasOffspringIndex(), true)
+check("contenu preserve",
+      (withIndex:offspringOf("magicbees.speciesIron", "magicbees.speciesEsoteric"))[1],
+      "magicbees.speciesNickel")
+
+print("")
+print("-- espece derriere une etiquette d'abeille --")
+
+check("princesse", registry:fromBeeLabel("Nickel Princess").uid, "magicbees.speciesNickel")
+check("drone", registry:fromBeeLabel("Saffron Drone").uid, "extrabees.species.yellow")
+check("reine", registry:fromBeeLabel("Nickel Queen").uid, "magicbees.speciesNickel")
+check("etiquette inconnue", registry:fromBeeLabel("Cobblestone"), nil)
+check("etiquette nil", registry:fromBeeLabel(nil), nil)
+
+print("")
 print("-- resolution par nom --")
 
 check("resolution par uid", registry:resolve("magicbees.speciesNickel").name, "Nickel")

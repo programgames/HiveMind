@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.9.1"
+hivemind.VERSION = "0.10.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -317,6 +317,78 @@ local function chooseBee(context, itemName, role)
     return {name = chosen.name, label = chosen.label}
 end
 
+--- Offer the species those two parents can actually produce
+--- Far better than searching 329 entries for one that may not even be reachable
+--- from the chosen pair. Needs the reverse index, which is built once and kept.
+--- @param context table
+--- @param princessLabel string
+--- @param droneLabel string
+--- @return string|nil uid
+--- @return boolean handled True when the question was answered here
+local function chooseFromParents(context, princessLabel, droneLabel)
+    local registry = context.species
+
+    if not registry.fromBeeLabel then return nil, false end
+
+    local princess = registry:fromBeeLabel(princessLabel)
+    local drone = registry:fromBeeLabel(droneLabel)
+
+    if not (princess and drone) then return nil, false end
+
+    if not registry:hasOffspringIndex() then
+        print("")
+        print("Le programme peut lister ce que ces deux parents produisent,")
+        print("mais doit d'abord interroger le jeu sur les 329 especes.")
+        print("C'est long une fois, puis conserve sur disque.")
+        io.write("Construire cet index maintenant ? (o/N): ")
+
+        local answer = io.read()
+        if not answer or answer:lower():sub(1, 1) ~= "o" then return nil, false end
+
+        print("Construction...")
+        local built, err = registry:buildOffspringIndex(function(done, total)
+            print("  " .. done .. "/" .. total)
+        end)
+
+        if not built then
+            print("Echec: " .. tostring(err))
+            return nil, false
+        end
+
+        registry:save()
+        print(built .. " couples de parents indexes.")
+    end
+
+    local offspring = registry:offspringOf(princess.uid, drone.uid)
+
+    if #offspring == 0 then
+        print("")
+        print("Aucune mutation connue entre " .. (princess.name or princess.uid)
+            .. " et " .. (drone.name or drone.uid) .. ".")
+        print("Tu peux quand meme viser une espece par recherche.")
+        return nil, false
+    end
+
+    local entries = {}
+    local all = registry:list()
+    for _, uid in ipairs(offspring) do
+        table.insert(entries, all[uid] or {uid = uid, name = uid})
+    end
+    table.sort(entries, function(a, b) return tostring(a.name) < tostring(b.name) end)
+
+    print("")
+    print("Mutations possibles entre " .. (princess.name or "?")
+        .. " et " .. (drone.name or "?") .. " :")
+
+    local chosen = pick(entries,
+        function(entry) return string.format("%-28s %s", entry.name or "?", entry.uid or "?") end,
+        "Espece visee")
+
+    if chosen then return chosen.uid, true end
+
+    return nil, true
+end
+
 --- Let the player choose a target species by searching the registry
 --- @param context table
 --- @return string|nil uid
@@ -336,14 +408,14 @@ local function chooseSpecies(context)
     end
 
     while true do
-        io.write("Recherche d'espece (nom ou fragment, vide = tout): ")
+        -- Not "empty = all": pressing enter then dumped 329 species across
+        -- 28 pages, which is not a list anyone reads.
+        io.write("Recherche d'espece (ex: common) - vide pour annuler: ")
         local term = io.read()
-        if not term then return nil end
+        if not term or term == "" then return nil end
 
         local matching = {}
-        if term == "" then
-            matching = all
-        else
+        do
             local needle = term:lower()
             for _, entry in ipairs(all) do
                 if tostring(entry.name):lower():find(needle, 1, true)
@@ -377,7 +449,14 @@ function hivemind.submitBreeding(context)
     local droneSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
     if not droneSpec then print("Annule.") return end
 
-    local target = chooseSpecies(context)
+    -- Ask what these two parents can actually make before falling back to a
+    -- search over every species in the pack
+    local target, handled = chooseFromParents(context, princessSpec.label, droneSpec.label)
+
+    if not target and not handled then
+        target = chooseSpecies(context)
+    end
+
     if not target then print("Annule.") return end
 
     local params, err = breeding.params({
