@@ -188,7 +188,11 @@ local function main(args)
                     -- Clearing the dock's configuration is what sends the
                     -- marker home: while it stands, AE2 keeps that item pinned
                     -- in the interface.
-                    transport:releaseDock(dock)
+                    -- The link matters: docks are reserved per bench, and
+                    -- releasing without one frees a key nobody holds. Every
+                    -- dock stayed marked busy and the next two machines could
+                    -- not stage a single marker.
+                    transport:releaseDock(dock, link)
                 end
             end
 

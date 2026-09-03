@@ -172,7 +172,11 @@ config.machines = {
     },
     genetic_transposer = {
         transposer = GENETICS, machine = 3, source = 4,
-        slots = {source = 0, labware = 1, destination = 2, output = 3},
+        -- Measured by tools/probe, not read off a manual: driver 0 took a blank
+        -- sample and driver 2 took a filled one, so 0 is what receives the gene
+        -- and 2 is what provides it. Driver 3 refused everything, which is what
+        -- an output slot does.
+        slots = {destination = 0, labware = 1, source = 2, output = 3},
     },
     imprinter = {
         transposer = GENETICS, machine = 2, source = 4,

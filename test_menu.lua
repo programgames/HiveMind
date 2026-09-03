@@ -159,8 +159,12 @@ check("le sondage ne bouge rien sans --yes",
 -- offered to the next slot, instead of paying another ME round trip
 check("il reprend chaque marqueur",
       probeText:find("link.machine, link.source, 64, raw, dock", 1, true) ~= nil)
-check("et libere le quai a la fin",
-      probeText:find("transport:releaseDock(dock)", 1, true) ~= nil)
+-- Docks are reserved per bench: releasing without the link frees a key nobody
+-- holds, and every dock stays marked busy for the rest of the run
+check("et libere le quai en nommant son banc",
+      probeText:find("transport:releaseDock(dock, link)", 1, true) ~= nil)
+check("aucune liberation anonyme",
+      probeText:find("releaseDock(dock)", 1, true) == nil)
 check("il ignore les marqueurs absents du reseau",
       probeText:find("ABSENT, ignore", 1, true) ~= nil)
 check("il ne sonde que les machines sans driver",
