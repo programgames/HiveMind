@@ -241,6 +241,10 @@ function Queue:step(job, context)
             job.step = job.step + 1
             job.attempts = 0
             job.error = nil
+            -- Leaving RUNNING here made a merely waiting job look busy in every
+            -- report, and only pending() accepting both statuses kept the queue
+            -- from stalling on it.
+            job.status = (job.step > #handler.steps) and jobs.COMPLETE or jobs.PENDING
             job.updated = self.clock()
             self:save()
             return jobs.DONE, "etape deja accomplie: " .. tostring(step.name)

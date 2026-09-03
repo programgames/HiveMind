@@ -42,6 +42,7 @@ jobs:
           'test_transport.lua', 'test_machines.lua', 'test_library.lua',
           'tools/calibrate.lua', 'tools/upload.lua', 'tools/discover.lua', 'tools/autoreport.lua',
           'lib/breeding.lua', 'test_breeding.lua', 'hivemind.lua',
+        'lib/multiply.lua', 'test_multiply.lua', 'test_menu.lua',
           'lib/planner.lua', 'test_planner.lua'
         }
         local errors = false
@@ -94,6 +95,8 @@ jobs:
         lua test_machines.lua
         lua test_library.lua
         lua test_breeding.lua
+lua test_multiply.lua
+lua test_menu.lua
         lua test_planner.lua
         echo "::endgroup::"
 

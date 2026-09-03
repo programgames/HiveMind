@@ -57,6 +57,7 @@ local library = need("lib.library")
 local species = need("lib.species")
 local jobs = need("lib.jobs")
 local breeding = need("lib.breeding")
+local multiply = need("lib.multiply")
 local planner = need("lib.planner")
 local genome = need("lib.genome")
 
@@ -66,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.15.0"
+hivemind.VERSION = "0.16.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -172,7 +173,8 @@ function hivemind.bootstrap(options)
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
-        handlers = {breed = breeding.handler()},
+        handlers = {breed = breeding.handler(),
+                    multiply = multiply.handler()},
     })
 
     return {
@@ -996,36 +998,255 @@ function hivemind.runQueue(context)
     end
 end
 
+--- Queue a drone accumulation campaign
+--- A cross spends a drone, and the network was holding sixteen princess species
+--- against two drone species: everything could be planned and almost nothing
+--- executed. This puts a princess and a drone of one species in the apiary and
+--- keeps recycling the princess until the stock is deep enough.
+--- @param context table
+function hivemind.accumulateDrones(context)
+    print("")
+    print("=== ACCUMULER DES DRONES ===")
+    print("Une princesse et un drone de la meme espece deviennent une reine.")
+    print("La reine meurt en laissant une princesse et plusieurs drones, et la")
+    print("princesse repart aussitot. Un drone entre, plusieurs sortent.")
+    print("")
+
+    local princessSpec = chooseBee(context, "forestry:bee_princess_ge", "princesse")
+    if not princessSpec then print("Annule.") return end
+
+    -- "Water Princess" is what the network calls it; the job wants "Water"
+    local species = princessSpec.label:gsub("%s+Princess$", "")
+    local droneSpec = {name = "forestry:bee_drone_ge", label = species .. " Drone"}
+
+    -- One drone has to exist to start the line. Saying so now beats a job that
+    -- retries forever with "introuvable dans le reseau".
+    local held = 0
+    for _, item in ipairs(context.transport:findAll(droneSpec) or {}) do
+        held = held + (tonumber(item.size) or 0)
+    end
+
+    print("")
+    print("Espece : " .. species)
+    print("En stock : " .. held .. " " .. droneSpec.label)
+
+    if held == 0 then
+        print("")
+        print("Il faut au moins UN " .. droneSpec.label .. " pour amorcer.")
+        print("Sans lui, aucune reine ne peut se former. Recupere-le par un")
+        print("croisement, une ruche sauvage, ou vide la sortie de l'apiary")
+        print("(option 7) s'il s'y trouve deja.")
+        return
+    end
+
+    io.write("Objectif (nombre de drones a atteindre) [32]: ")
+    local answer = io.read()
+    local target = tonumber(answer and answer:gsub("%s+", "")) or 32
+
+    local params, err = multiply.params({
+        species = species,
+        princess = princessSpec,
+        drone = droneSpec,
+        target = target,
+    })
+
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    print("")
+    print("  " .. species .. " : " .. held .. " -> " .. target .. " drones")
+    print("  au plus " .. params.maxCycles .. " cycles d'apiary")
+    io.write("Confirmer ? (o/N): ")
+
+    answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local id, submit_err = context.queue:submit("multiply", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
+end
+
+--- What the operator should probably do next
+--- The menu used to be nine equal choices with no hint which one mattered. Most
+--- of the time the world has already decided: a full apiary output blocks
+--- everything, a job stalled on a missing drone will never resolve on its own.
+--- @param context table
+--- @return string[] lines
+function hivemind.advice(context)
+    local lines = {}
+
+    -- Cheap reads only: a transposer glance and the queue already in memory.
+    -- The menu redraws after every action and must not cost a network sweep.
+    local apiary = context.machines and context.machines.breeding_apiary
+    if apiary then
+        local waiting = apiary:outputs()
+        if #waiting > 0 then
+            table.insert(lines, "La sortie de l'apiary contient " .. #waiting
+                .. " pile(s). Choisis 7 : tant qu'elles y sont, les taches ne")
+            table.insert(lines, "les voient pas et les reclament comme manquantes.")
+        end
+    end
+
+    local pending = context.queue:pending()
+    local suggested = {}
+
+    for _, job in ipairs(pending) do
+        -- "drone indisponible: introuvable dans le reseau: Water Drone"
+        local missing = job.error and job.error:match("introuvable dans le reseau:%s*(.+)$")
+        if missing then
+            local shortSpecies = missing:gsub("%s+Drone$", ""):gsub("%s+Princess$", "")
+            if not suggested[shortSpecies] then
+                suggested[shortSpecies] = true
+                if missing:find("Drone") then
+                    table.insert(lines, "La tache #" .. job.id .. " attend un "
+                        .. missing .. " que personne ne produit.")
+                    table.insert(lines, "Choisis 3 pour en accumuler, ou 8 pour"
+                        .. " annuler la tache.")
+                else
+                    table.insert(lines, "La tache #" .. job.id .. " attend un "
+                        .. missing .. ", absent du reseau.")
+                end
+            end
+        end
+    end
+
+    if #lines == 0 then
+        if #pending == 0 then
+            table.insert(lines, "Rien en file. Choisis 5 pour viser une espece,"
+                .. " ou 3 pour constituer un stock de drones.")
+        else
+            table.insert(lines, #pending .. " tache(s) prete(s). Choisis 6 pour"
+                .. " les faire tourner.")
+        end
+    end
+
+    return lines
+end
+
+--- One-line summary of the things that stop work
+--- @param context table
+local function headline(context)
+    local online = context.transport:isOnline()
+    local parts = {online and "Reseau ME en ligne" or "Reseau ME HORS LIGNE"}
+
+    local mutatron = context.machines and context.machines.mutatron
+    if mutatron then
+        local status = mutatron:isReady()
+        table.insert(parts, "Mutatron " .. tostring(status))
+    end
+
+    local apiary = context.machines and context.machines.breeding_apiary
+    if apiary then
+        local status = apiary:isReady()
+        local waiting = #apiary:outputs()
+        table.insert(parts, "Apiary " .. tostring(status)
+            .. (waiting > 0 and (" (" .. waiting .. " en sortie)") or ""))
+    end
+
+    local pending = context.queue:pending()
+    local blocked = 0
+    for _, job in ipairs(pending) do
+        if job.error then blocked = blocked + 1 end
+    end
+
+    table.insert(parts, #pending .. " tache(s)"
+        .. (blocked > 0 and (", " .. blocked .. " bloquee(s)") or ""))
+
+    print(table.concat(parts, "  |  "))
+end
+
+local ENTRIES = {
+    {group = "Regarder"},
+    {key = "1", label = "Etat detaille",
+     hint = "stocks, machines, genes, file", action = "status"},
+    {key = "2", label = "Diagnostic des slots",
+     hint = "ce que chaque machine tient vraiment", action = "slotDiagnostic"},
+
+    {group = "Produire"},
+    {key = "3", label = "Accumuler des drones",
+     hint = "une espece, en boucle, jusqu a un objectif", action = "accumulateDrones"},
+    {key = "4", label = "Programmer un croisement",
+     hint = "un seul croisement A + B -> C", action = "submitBreeding"},
+    {key = "5", label = "Viser une espece",
+     hint = "chaine complete calculee toute seule", action = "planChain"},
+
+    {group = "Faire tourner"},
+    {key = "6", label = "Executer la file",
+     hint = "avance toutes les taches en attente", action = "runQueue"},
+    {key = "7", label = "Vider la sortie de l apiary",
+     hint = "renvoie les abeilles vers le reseau", action = "harvestApiary"},
+
+    {group = "Entretenir"},
+    {key = "8", label = "Gerer la file",
+     hint = "annuler une tache, purger les finies", action = "manageQueue"},
+    {key = "9", label = "Rafraichir les especes",
+     hint = "relit la liste complete depuis le jeu", action = "refreshSpecies"},
+}
+
 local function menu(context)
     while true do
         print("")
-        print("=== HiveMind ===")
-        print("1. Etat")
-        print("2. Rafraichir la liste des especes depuis le jeu")
-        print("3. Programmer un croisement")
-        print("4. Executer la file")
-        print("5. Quitter")
-        print("6. Diagnostic des slots")
-        print("7. Gerer la file (annuler, purger)")
-        print("8. Viser une espece (chaine complete)")
-        print("9. Vider la sortie de l'apiary vers le reseau")
+        print("=== HiveMind " .. hivemind.VERSION .. " ===")
+
+        -- Reading the world before drawing the menu costs one transposer call
+        -- and answers the question the menu cannot: which option matters now.
+        local ok = pcall(headline, context)
+        if not ok then print("(etat illisible)") end
+
+        local advised = {}
+        pcall(function() advised = hivemind.advice(context) end)
+
+        if #advised > 0 then
+            print("")
+            for index, line in ipairs(advised) do
+                print((index == 1 and "  -> " or "     ") .. line)
+            end
+        end
+
+        for _, entry in ipairs(ENTRIES) do
+            if entry.group then
+                print("")
+                print("  " .. entry.group)
+            else
+                print(string.format("    %s  %-28s %s",
+                    entry.key, entry.label, entry.hint))
+            end
+        end
+
+        print("")
+        print("    0  Quitter")
         io.write("Choix: ")
 
         local choice = io.read()
         if not choice then return end
 
-        choice = choice:gsub("%s+", "")
+        choice = choice:gsub("%s+", ""):lower()
 
-        if choice == "1" then hivemind.status(context)
-        elseif choice == "2" then hivemind.refreshSpecies(context)
-        elseif choice == "3" then hivemind.submitBreeding(context)
-        elseif choice == "4" then hivemind.runQueue(context)
-        elseif choice == "5" then print("Au revoir.") return
-        elseif choice == "6" then hivemind.slotDiagnostic(context)
-        elseif choice == "7" then hivemind.manageQueue(context)
-        elseif choice == "8" then hivemind.planChain(context)
-        elseif choice == "9" then hivemind.harvestApiary(context)
-        else print("Choix invalide.") end
+        if choice == "0" or choice == "q" then
+            print("Au revoir.")
+            return
+        end
+
+        local matched = nil
+        for _, entry in ipairs(ENTRIES) do
+            if entry.key == choice then matched = entry break end
+        end
+
+        if matched then
+            hivemind[matched.action](context)
+        else
+            print("Choix invalide: tape un chiffre de 0 a 9.")
+        end
     end
 end
 

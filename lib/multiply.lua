@@ -1,0 +1,264 @@
+-- HiveMind drone accumulation
+--
+-- Every cross spends a drone. A network holding sixteen princess species and
+-- two drone species can plan anything and execute almost nothing, which is
+-- exactly the state the first full report showed.
+--
+-- The fix is the oldest trick in Forestry: a princess and a drone of the same
+-- species become a queen, the queen dies leaving a princess and several drones,
+-- and the princess goes straight back in. One drone in, several out, and the
+-- line never runs dry.
+--
+-- Four steps, run in a loop until the network holds enough:
+--
+--   1. empty the apiary output      3. wait for the queen to die
+--   2. load princess and drone      4. collect, count, and go round again
+--
+-- The loop is the last step rewinding job.step. The queue increments it after a
+-- DONE, so setting it to zero restarts at step one with the counters kept on
+-- disk: a reboot mid-campaign resumes where it stopped.
+
+local jobs = require("lib.jobs")
+
+local multiply = {}
+
+--- How many of one item the ME network holds
+--- @param context table
+--- @param spec table {name, label}
+--- @return number
+local function stock(context, spec)
+    if not (context and context.transport) then return 0 end
+
+    local total = 0
+    for _, item in ipairs(context.transport:findAll(spec) or {}) do
+        total = total + (tonumber(item.size) or 0)
+    end
+
+    return total
+end
+
+local function report(context, text)
+    if context and type(context.log) == "function" then
+        pcall(context.log, text)
+    end
+end
+
+local function machineOf(context, name)
+    local machine = context and context.machines and context.machines[name]
+    if not machine then
+        return nil, "machine indisponible: " .. name
+    end
+    return machine
+end
+
+local function labelInSlot(machine, slot)
+    local stack = machine:slot(slot)
+    return stack and stack.label or nil
+end
+
+--- Build and check the parameters of an accumulation job
+--- @param options table {species, target, princess, drone, maxCycles}
+--- @return table|nil params
+--- @return string|nil error
+function multiply.params(options)
+    options = options or {}
+
+    local species = options.species
+    if type(species) ~= "string" or species == "" then
+        return nil, "espece manquante"
+    end
+
+    -- "Water" is what the operator says; "Water Princess" is what the network
+    -- calls it. Deriving both spares them typing the two labels.
+    local princess = options.princess
+        or {name = "forestry:bee_princess_ge", label = species .. " Princess"}
+    local drone = options.drone
+        or {name = "forestry:bee_drone_ge", label = species .. " Drone"}
+
+    local target = tonumber(options.target) or 32
+    if target < 1 then return nil, "objectif invalide: " .. tostring(options.target) end
+
+    return {
+        species = species,
+        princess = princess,
+        drone = drone,
+        target = target,
+        -- A broken apiary would otherwise loop until the world ends
+        maxCycles = tonumber(options.maxCycles) or (target * 4 + 10),
+        cycles = 0,
+        cycleTimeout = options.cycleTimeout,
+    }
+end
+
+--- Has the goal already been met
+--- @return boolean
+local function satisfied(job, context)
+    return stock(context, job.params.drone) >= job.params.target
+end
+
+multiply.STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "vider-la-sortie-de-l-apiary",
+        verify = function(job, context)
+            local apiary = machineOf(context, "breeding_apiary")
+            if not apiary then return false end
+            return satisfied(job, context) or #apiary:outputs() == 0
+        end,
+        run = function(job, context)
+            local apiary, err = machineOf(context, "breeding_apiary")
+            if not apiary then return jobs.FAILED, err end
+
+            for _, output in ipairs(apiary:outputs()) do
+                apiary:unload(output.slot)
+            end
+
+            if #apiary:outputs() > 0 then
+                return jobs.RETRY, "la sortie de l'apiary ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "charger-le-couple",
+        verify = function(job, context)
+            local apiary = machineOf(context, "breeding_apiary")
+            if not apiary then return false end
+            if satisfied(job, context) then return true end
+
+            -- Forestry merges the pair into a queen within a tick, so an
+            -- occupied queen slot means the step succeeded even though neither
+            -- label matches the princess any more.
+            return apiary:slot(apiary:slots().queen) ~= nil
+        end,
+        run = function(job, context)
+            local apiary, err = machineOf(context, "breeding_apiary")
+            if not apiary then return jobs.FAILED, err end
+
+            local slots = apiary:slots()
+
+            -- A leftover from another species blocks the delivery silently:
+            -- two different bees never share a slot.
+            local function place(spec, slot, role)
+                local occupant = labelInSlot(apiary, slot)
+                if occupant == spec.label then return true end
+
+                if occupant then
+                    apiary:unload(slot)
+                    if labelInSlot(apiary, slot) then
+                        return false, role .. ": impossible de retirer "
+                            .. tostring(occupant)
+                    end
+                end
+
+                local ok, reason = apiary:load(spec, slot, 1)
+                if not ok then
+                    return false, role .. " indisponible: " .. tostring(reason)
+                end
+
+                return true
+            end
+
+            local ok, why = place(job.params.princess, slots.queen, "princesse")
+            if not ok then return jobs.RETRY, why end
+
+            ok, why = place(job.params.drone, slots.drone, "drone")
+            if not ok then return jobs.RETRY, why end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "attendre-la-fin-du-cycle",
+        verify = function(job, context)
+            local apiary = machineOf(context, "breeding_apiary")
+            if not apiary then return false end
+            if satisfied(job, context) then return true end
+            return apiary:slot(apiary:slots().queen) == nil
+        end,
+        run = function(job, context)
+            local apiary, err = machineOf(context, "breeding_apiary")
+            if not apiary then return jobs.FAILED, err end
+
+            local blocking = apiary:environmentErrors()
+            if #blocking > 0 then
+                local detail = {"l'apiary ne convient pas a cette abeille: "
+                    .. table.concat(blocking, ", ")}
+
+                local environment = apiary.getEnvironment and apiary:getEnvironment() or nil
+                if type(environment) == "table" then
+                    table.insert(detail, "biome " .. tostring(environment.temperature)
+                        .. "/" .. tostring(environment.humidity))
+                end
+
+                local upgrades = apiary.upgradeNames and apiary:upgradeNames() or {}
+                if #upgrades > 0 then
+                    table.insert(detail, "upgrades: " .. table.concat(upgrades, ", "))
+                end
+
+                return jobs.RETRY, table.concat(detail, " | ")
+            end
+
+            local done, reason = apiary:awaitPrincess(job.params.cycleTimeout or 300)
+            if not done then return jobs.RETRY, tostring(reason) end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "recolter-et-compter",
+        -- No verify: this step is the loop, and skipping it would end the
+        -- campaign after a single cycle.
+        run = function(job, context)
+            local apiary, err = machineOf(context, "breeding_apiary")
+            if not apiary then return jobs.FAILED, err end
+
+            for _, output in ipairs(apiary:outputs()) do
+                apiary:unload(output.slot)
+            end
+
+            if #apiary:outputs() > 0 then
+                return jobs.RETRY, "la sortie de l'apiary ne se vide pas"
+            end
+
+            job.params.cycles = (job.params.cycles or 0) + 1
+
+            local held = stock(context, job.params.drone)
+            report(context, job.params.species .. ": " .. held .. "/"
+                .. job.params.target .. " drones apres "
+                .. job.params.cycles .. " cycle(s)")
+
+            if held >= job.params.target then
+                return jobs.DONE, held .. " drones en stock"
+            end
+
+            if job.params.cycles >= job.params.maxCycles then
+                -- Looping forever on an apiary that produces nothing is worse
+                -- than stopping and saying so
+                return jobs.FAILED, job.params.cycles .. " cycles pour "
+                    .. held .. "/" .. job.params.target
+                    .. " drones: l'apiary ne produit pas assez"
+            end
+
+            -- The queue adds one after a DONE, so zero restarts at step one
+            job.step = 0
+
+            return jobs.DONE, held .. "/" .. job.params.target .. " drones"
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function multiply.handler()
+    return {steps = multiply.STEPS}
+end
+
+return multiply

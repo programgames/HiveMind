@@ -95,7 +95,17 @@ release()
 check("installation sans exception", ok)
 
 local text = table.concat(out, "\n")
-check("17 fichiers installes", text:find("17/17", 1, true) ~= nil)
+-- Counting the entries rather than hardcoding a total: the number changes
+-- every time a module is added, and a test that fails for that reason teaches
+-- nothing.
+local installerSource = real_open("tools/hminstall.lua"):read("*all")
+-- Four spaces then a quoted path: that is a FILES entry, and nothing else in
+-- the installer is written that way.
+local declared = select(2, installerSource:gsub('    "[^"]+%.lua",', ""))
+
+check("la liste de fichiers n'est pas vide", declared > 0)
+check("tous les fichiers declares sont installes",
+      text:find(declared .. "/" .. declared, 1, true) ~= nil)
 
 -- Every module hivemind requires must be in the installer's list, or the
 -- program dies on a require with an empty message
@@ -189,7 +199,7 @@ release()
 text = table.concat(out, "\n")
 check("page HTML refusee", text:find("HTML", 1, true) ~= nil)
 check("rien n'est ecrit", #written == 0 or table.concat(written, " "):find("=") == nil)
-check("zero fichier installe", text:find("0/17", 1, true) ~= nil)
+check("zero fichier installe", text:find("0/" .. declared, 1, true) ~= nil)
 
 -- No internet card
 requested, written, out = {}, {}, {}

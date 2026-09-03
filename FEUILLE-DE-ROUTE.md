@@ -47,6 +47,17 @@ que les templates peuvent être empreintés.
 file de tâches reprenable, transport AE2, drivers machines, bibliothèque de
 gènes, point d'entrée. Un cycle de croisement complet a tourné en jeu.
 
+Le premier rapport complet en jeu a montré le vrai goulot : seize espèces de
+princesses contre deux espèces de drones. Chaque croisement dépense un drone,
+donc presque rien n'était exécutable. `lib/multiply.lua` accumule désormais les
+drones d'une espèce en boucle (princesse + drone → reine → princesse + N
+drones), avec objectif, plafond de cycles et reprise après coupure.
+
+Le même rapport a révélé deux pannes silencieuses : les abeilles laissées dans
+la sortie de l'apiary sont invisibles aux tâches, qui les cherchent dans le
+réseau ME et les déclarent manquantes ; et un parent laissé par une tâche
+précédente bloquait le slot du Mutatron sans que rien ne le dise.
+
 **Reste** : brancher le planificateur d'arbre, qui existe et est testé mais
 n'est relié à rien. Aujourd'hui on programme un croisement à la fois.
 
