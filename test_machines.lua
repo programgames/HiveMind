@@ -52,6 +52,7 @@ local function reset()
         energy = 20000,
         maxEnergy = 20000,
         errors = {},
+        empty = false,
         automated = false,
         produced = nil,
         princessWaited = false,
@@ -88,6 +89,7 @@ local apiary_component = {
                 outputs = {6, 7, 8, 9, 10, 11, 12, 13, 14}}
     end),
     getBees = callable(function()
+        if state.empty then return {} end
         return {
             queen = {name = "forestry:bee_queen_ge", label = "Wintry Queen",
                      nbt = WINTRY, count = 1},
@@ -221,8 +223,34 @@ state.errors = {"forestry:too_hot", "forestry:no_sky", "forestry:no_flower"}
 apiary = build(apiary_component, config.machines.breeding_apiary)
 
 local apiary_status, apiary_detail = apiary:isReady()
-check("erreurs remontees", apiary_status, machines.ERROR)
+check("erreurs remontees quand une abeille est dedans", apiary_status, machines.ERROR)
 checkTruthy("erreurs listees", apiary_detail and apiary_detail:find("no_flower"))
+
+-- Environmental complaints depend on the bee inside: a Wintry queen reports
+-- too_hot exactly where a Forest one works. Blocking on an empty apiary would
+-- stall the queue over a bee we have not loaded yet.
+reset()
+state.empty = true
+state.errors = {"forestry:too_hot", "forestry:no_flower"}
+apiary = build(apiary_component, config.machines.breeding_apiary)
+check("apiary vide considere utilisable", (apiary:isReady()), machines.READY)
+check("les erreurs restent consultables", #apiary:environmentErrors(), 2)
+
+-- An error that only says "nothing loaded" is never a blocker
+reset()
+state.errors = {"forestry:no_queen"}
+apiary = build(apiary_component, config.machines.breeding_apiary)
+check("absence d'abeille n'est pas une panne", (apiary:isReady()), machines.READY)
+check("elle n'apparait pas comme erreur d'environnement",
+      #apiary:environmentErrors(), 0)
+
+-- A real problem alongside a benign one must still come through
+reset()
+state.errors = {"forestry:no_drone", "forestry:no_sky"}
+apiary = build(apiary_component, config.machines.breeding_apiary)
+local mixed_status, mixed_detail = apiary:isReady()
+check("le vrai probleme est retenu", mixed_status, machines.ERROR)
+check("seul le vrai probleme est cite", mixed_detail, "forestry:no_sky")
 
 print("")
 print("-- l'upgrade Automation casse waitForPrincess --")

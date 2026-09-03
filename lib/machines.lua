@@ -424,15 +424,59 @@ function Apiary:isAutomated()
     return self:modifiers().isAutomated == true
 end
 
+--- Forestry error codes that mean "nothing loaded yet", not "broken"
+local WAITING_FOR_BEE = {
+    no_queen = true, no_princess = true, no_drone = true,
+    no_bee = true, not_gendered = true, no_sapling = true,
+}
+
+--- Is this error simply about an empty machine
+--- Codes arrive namespaced ("forestry:no_queen"), so only the suffix matters.
+--- @param code string
+--- @return boolean
+local function isWaitingForBee(code)
+    local suffix = tostring(code):match("([^:]+)$") or ""
+    return WAITING_FOR_BEE[suffix:lower()] == true
+end
+
 function Apiary:isReady()
     if not self:hasEnergy() then return machines.NO_ENERGY, "energie insuffisante" end
 
     local has_errors, list = self:errors()
-    if has_errors then
-        return machines.ERROR, table.concat(list, ", ")
+    if not has_errors then return machines.READY end
+
+    -- Environmental complaints are bee-dependent: a Wintry queen reports
+    -- too_hot exactly where a Forest one works fine. Judging them on an empty
+    -- apiary would block the queue over a bee we have not loaded yet, so they
+    -- only count once something is actually inside and still cannot work.
+    local bees = self:bees()
+    if not (bees.queen or bees.drone) then
+        return machines.READY
     end
 
-    return machines.READY
+    local blocking = {}
+    for _, code in ipairs(list) do
+        if not isWaitingForBee(code) then table.insert(blocking, code) end
+    end
+
+    if #blocking == 0 then return machines.READY end
+
+    return machines.ERROR, table.concat(blocking, ", ")
+end
+
+--- Errors that would stop the bee currently loaded
+--- Reported separately from isReady so the interface can show a warning about
+--- an empty apiary that will not suit the bee we are about to put in it.
+--- @return string[] blocking
+function Apiary:environmentErrors()
+    local _, list = self:errors()
+
+    local blocking = {}
+    for _, code in ipairs(list) do
+        if not isWaitingForBee(code) then table.insert(blocking, code) end
+    end
+
+    return blocking
 end
 
 -- ---------------------------------------------------------------------------
