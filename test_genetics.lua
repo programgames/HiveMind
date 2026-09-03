@@ -43,6 +43,7 @@ end
 
 local SIDE_INTERFACE = config.machines.sampler.source
 local SIDE_SAMPLER = config.machines.sampler.machine
+local SIDE_TRANSPOSER = config.machines.genetic_transposer.machine
 local OFFSET = config.slot_offset
 
 --- Transposer index of a slot the driver calls `driverSlot`
@@ -63,6 +64,7 @@ local function reset(options)
         },
         interface = {},
         sampler = {},
+        gtransposer = {},
         collected = {},
         -- The chromosome the machine will draw. Nobody chooses it in game.
         draw = options.draw or "Territory: Average",
@@ -80,6 +82,7 @@ end
 local function inventoryFor(side)
     if side == SIDE_INTERFACE then return world.interface end
     if side == SIDE_SAMPLER then return world.sampler end
+    if side == SIDE_TRANSPOSER then return world.gtransposer end
     return nil
 end
 
@@ -102,6 +105,26 @@ local function tickSampler()
     world.sampler[oc(2)] = nil
     world.sampler[oc(3)] = {name = "gendustry:gene_sample",
                             label = "Bee Sample - " .. world.draw, size = 1}
+end
+
+--- The Genetic Transposer copies the source gene into the blank, and keeps the
+--- source: that is the whole reason duplication is safe.
+local function tickTransposer()
+    if world.gtransposer[oc(3)] then return end
+    if not world.starts then return end
+
+    local blank = world.gtransposer[oc(0)]
+    local labware = world.gtransposer[oc(1)]
+    local source = world.gtransposer[oc(2)]
+
+    if not (blank and labware and source) then return end
+
+    world.copies = (world.copies or 0) + 1
+    world.gtransposer[oc(0)] = nil
+    world.gtransposer[oc(1)] = nil
+    world.gtransposer[oc(2)] = nil
+    world.gtransposer[oc(3)] = {name = "gendustry:gene_sample",
+                                label = source.label, size = 1}
 end
 
 local me = {
@@ -132,11 +155,12 @@ local database = {
 
 local transposerComponent = {
     getInventorySize = callable(function(side)
-        if side == SIDE_SAMPLER then return 4 end
+        if side == SIDE_SAMPLER or side == SIDE_TRANSPOSER then return 4 end
         return inventoryFor(side) and 9 or nil
     end),
     getStackInSlot = callable(function(side, slot)
         if side == SIDE_SAMPLER then tickSampler() end
+        if side == SIDE_TRANSPOSER then tickTransposer() end
         local inventory = inventoryFor(side)
         return inventory and inventory[slot] or nil
     end),
@@ -152,7 +176,8 @@ local transposerComponent = {
             -- Gendustry refuses automated extraction from input slots, exactly
             -- as the Mutatron does. A mock that allowed it made a job asking
             -- for the impossible look correct.
-            if fromSide == SIDE_SAMPLER and fromSlot ~= oc(3) then
+            if (fromSide == SIDE_SAMPLER or fromSide == SIDE_TRANSPOSER)
+               and fromSlot ~= oc(3) then
                 return false
             end
 
@@ -170,6 +195,16 @@ local transposerComponent = {
         }
 
         if toSide == SIDE_SAMPLER and ACCEPTS[toSlot] ~= stack.name then
+            return false
+        end
+
+        local COPIES = {
+            [oc(0)] = "gendustry:gene_sample_blank",
+            [oc(1)] = "gendustry:labware",
+            [oc(2)] = "gendustry:gene_sample",
+        }
+
+        if toSide == SIDE_TRANSPOSER and COPIES[toSlot] ~= stack.name then
             return false
         end
 
@@ -232,7 +267,8 @@ local function buildStack()
 
     local queue = jobs.new({
         path = QUEUE,
-        handlers = {sample = genetics.sampleHandler()},
+        handlers = {sample = genetics.sampleHandler(),
+                    duplicate = genetics.duplicateHandler()},
         clock = function() ticks = ticks + 1 return ticks end,
         maxAttempts = 2,
     })
@@ -397,6 +433,57 @@ checkTruthy("le delai est cite",
             queue:get(1).error and queue:get(1).error:find("rien en sortie"))
 
 os.remove(QUEUE)
+
+print("")
+print("-- dupliquer un gene, sans perdre la source --")
+
+-- A gene held in one sample is one misplaced click from being gone. This is
+-- the point of the whole library: the source must survive the copy.
+os.remove(QUEUE)
+reset()
+table.insert(world.network, {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Fertility: 2", size = 1})
+
+queue, context = buildStack()
+queue:submit("duplicate", genetics.duplicateParams(
+    {sample = {label = "Bee Sample - Fertility: 2"}}))
+
+local report = queue:run(context, {maxSteps = 40})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("quatre etapes", report.steps, 4)
+check("la machine a copie une fois", world.copies, 1)
+check("la copie porte le meme gene",
+      queue:get(1).params.copied, "Bee Sample - Fertility: 2")
+checkTruthy("la copie part au reseau",
+            table.concat(world.collected, ","):find("Fertility: 2", 1, true))
+
+print("")
+print("-- parametres de duplication --")
+
+check("sample manquant refuse", (genetics.duplicateParams({})), nil)
+check("sample sans etiquette refuse",
+      (genetics.duplicateParams({sample = {name = "gendustry:gene_sample"}})), nil)
+
+local copyDefaults = genetics.duplicateParams({sample = {label = "Bee Sample - Speed: Fast"}})
+check("vierge par defaut", copyDefaults.blank.name, "gendustry:gene_sample_blank")
+check("nom d'item deduit", copyDefaults.sample.name, "gendustry:gene_sample")
+
+print("")
+print("-- un gene absent du reseau fait attendre --")
+
+os.remove(QUEUE)
+reset()
+
+queue, context = buildStack()
+queue:submit("duplicate", genetics.duplicateParams(
+    {sample = {label = "Bee Sample - Species: Ender"}}))
+queue:run(context, {maxSteps = 40})
+
+check("la tache attend", queue:get(1).status, jobs.PENDING)
+checkTruthy("elle nomme la source manquante",
+            queue:get(1).error and queue:get(1).error:find("sample source"))
+check("rien n'a ete copie", world.copies, nil)
 
 print("")
 print("=== Resultats ===")

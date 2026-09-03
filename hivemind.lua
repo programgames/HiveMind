@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.40.0"
+hivemind.VERSION = "0.41.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -224,7 +224,8 @@ function hivemind.bootstrap(options)
         path = stateDirectory .. "/jobs.lua",
         handlers = {breed = breeding.handler(),
                     multiply = multiply.handler(),
-                    sample = genetics.sampleHandler()},
+                    sample = genetics.sampleHandler(),
+                    duplicate = genetics.duplicateHandler()},
     })
 
     return {
@@ -1214,6 +1215,64 @@ function hivemind.sampleGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
+--- Queue a copy of a gene sample
+--- A gene held in one sample is one misplaced click from being gone. The source
+--- survives the copy, so this only ever adds.
+--- @param context table
+function hivemind.duplicateGene(context)
+    print("")
+    print("=== DUPLIQUER UN GENE ===")
+    print("Le Genetic Transposer lit un sample et ecrit une copie dans un")
+    print("sample vierge. La source n'est pas consommee.")
+    print("")
+
+    local samples = context.transport:findAll({name = "gendustry:gene_sample"})
+
+    if #samples == 0 then
+        print("Aucun gene en stock. Utilise d'abord l'option 'a'.")
+        return
+    end
+
+    -- Merged by label: AE2 splits a stack across cells and showing the same
+    -- gene four times would only make the list harder to read
+    local merged, order = {}, {}
+    for _, item in ipairs(samples) do
+        local label = tostring(item.label or "?")
+        if not merged[label] then
+            merged[label] = 0
+            table.insert(order, label)
+        end
+        merged[label] = merged[label] + (tonumber(item.size) or 0)
+    end
+    table.sort(order)
+
+    print("")
+    for index, label in ipairs(order) do
+        print(string.format("%3d. %-44s x%d", index, label, merged[label]))
+    end
+
+    print("")
+    io.write("Choisis le gene (numero, ou vide pour annuler): ")
+    local answer = io.read()
+    local choice = tonumber(answer and answer:gsub("%s+", ""))
+
+    if not choice or not order[choice] then print("Annule.") return end
+
+    local params, err = genetics.duplicateParams({sample = {label = order[choice]}})
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("duplicate", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
+end
+
 --- What the operator should probably do next
 --- The menu used to be nine equal choices with no hint which one mattered. Most
 --- of the time the world has already decided: a full apiary output blocks
@@ -1319,6 +1378,8 @@ local ENTRIES = {
      hint = "chaine complete calculee toute seule", action = "planChain"},
     {key = "a", label = "Extraire un gene",
      hint = "une abeille -> un chromosome au hasard", action = "sampleGene"},
+    {key = "b", label = "Dupliquer un gene",
+     hint = "une copie de plus, la source survit", action = "duplicateGene"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",

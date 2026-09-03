@@ -238,6 +238,178 @@ genetics.SAMPLE_STEPS = {
     },
 }
 
+--- Build and check the parameters of a duplication job
+--- A gene held in a single sample is one misplaced click from being gone. The
+--- Genetic Transposer reads one sample and writes a copy into a blank, so the
+--- source survives and the library gains a spare.
+--- @param options table {sample}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.duplicateParams(options)
+    options = options or {}
+
+    local sample = options.sample
+    if type(sample) ~= "table" or not sample.label then
+        return nil, "sample source manquant ou sans etiquette"
+    end
+
+    return {
+        sample = {name = sample.name or "gendustry:gene_sample", label = sample.label},
+        blank = options.blank or {name = "gendustry:gene_sample_blank"},
+        labware = options.labware or {name = "gendustry:labware"},
+        timeout = options.timeout,
+    }
+end
+
+genetics.DUPLICATE_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "vider-la-sortie-du-transposer",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local moved, cleared = drainOutput(machine)
+            if moved > 0 then
+                report(context, "sortie du transposer recoltee: " .. moved .. " item(s)")
+            end
+
+            if not cleared then
+                return jobs.RETRY, "la sortie du transposer ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "charger-le-transposer",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+
+            local source = machine:slot(machine.link.slots.source)
+            return source ~= nil and source.label == job.params.sample.label
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+
+            -- The source goes in last, for the same reason the bee does in the
+            -- sampler: the machine starts as soon as it has everything
+            local order = {
+                {spec = job.params.blank,   slot = slots.destination, role = "sample vierge"},
+                {spec = job.params.labware, slot = slots.labware,     role = "labware"},
+                {spec = job.params.sample,  slot = slots.source,      role = "sample source"},
+            }
+
+            -- Inspect before loading anything, or the consumables complete the
+            -- machine's requirements around whatever sample is already there
+            for _, entry in ipairs(order) do
+                local occupant = machine:slot(entry.slot)
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    return jobs.RETRY, entry.role
+                        .. ": le transposer contient deja "
+                        .. tostring(occupant.label) .. " dans le slot "
+                        .. machine:resolveSlot(entry.slot)
+                        .. ". Retire-le a la main puis relance."
+                end
+            end
+
+            for _, entry in ipairs(order) do
+                if not machine:slot(entry.slot) then
+                    local ok, reason = machine:load(entry.spec, entry.slot, 1)
+                    if not ok then
+                        return jobs.RETRY, entry.role .. " indisponible: "
+                            .. tostring(reason)
+                    end
+                end
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "attendre-la-copie",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local wait = job.params.timeout
+                or (context.config and context.config.genetics
+                    and context.config.genetics.sample_timeout_seconds)
+                or 120
+
+            local stack, reason = machine:awaitOutput(machine.link.slots.output, wait)
+            if not stack then return jobs.RETRY, tostring(reason) end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "recolter-la-copie",
+        verify = function(job, context)
+            local machine = machineOf(context, "genetic_transposer")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "genetic_transposer")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+            local produced = machine:slot(slots.output)
+
+            if produced and produced.label then
+                -- A copy that is not the same gene means the machine did
+                -- something other than what was asked, and a library built on
+                -- that assumption would be quietly wrong
+                if produced.label ~= job.params.sample.label then
+                    report(context, "ATTENTION: copie '" .. produced.label
+                        .. "' pour une source '" .. job.params.sample.label .. "'")
+                else
+                    report(context, "copie obtenue: " .. produced.label)
+                end
+
+                job.params.copied = produced.label
+            end
+
+            machine:unload(slots.output)
+
+            if machine:slot(slots.output) then
+                return jobs.RETRY, "la sortie du transposer ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.duplicateHandler()
+    return {steps = genetics.DUPLICATE_STEPS}
+end
+
 --- The handler to register with the job queue
 --- @return table handler
 function genetics.sampleHandler()

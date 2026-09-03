@@ -39,7 +39,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Module bibliothèque de gènes écrit et testé
 - [x] Parseur d'étiquettes de samples
 - [x] Genetic Sampler piloté
-- [ ] Genetic Transposer piloté (duplication des samples)
+- [x] Genetic Transposer piloté (duplication des samples)
 - [ ] Imprinter piloté
 - [ ] Replicator piloté
 - [ ] DNA Extractor piloté
@@ -63,3 +63,5 @@ Recalculer avec `lua progress.lua`.
   (tâche #4, `complete etape 8/7`).
 - Campagne d'accumulation : dix cycles d'affilée, comptage juste, reprise entre
   les passes. Rendement observé : **un drone par cycle**, pas trois.
+- Premiers gènes extraits en jeu : `Fertility = 2`, `Flowering = Slower`.
+  Le Sampler tourne, le tirage aléatoire est confirmé.
