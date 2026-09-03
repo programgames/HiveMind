@@ -319,6 +319,13 @@ local function buildStack()
         me = me,
         database = database,
         transposers = {transposerComponent},
+        -- Machines name their transposer by address now, so the stack has to
+        -- offer one to find. A position would break the moment the real world
+        -- gained another transposer, which is exactly what happened.
+        byAddress = {
+            ["65d3da44-cb90-4812-a6fa-d28128c9a988"] = transposerComponent,
+            ["95625858-b606-4eb0-89cb-4f3b467c0c06"] = transposerComponent,
+        },
         config = {docks = {1, 2}, stock_timeout_seconds = 3, poll_interval_seconds = 0},
         sleep = function() end,
         clock = function() ticks = ticks + 1 return ticks end,

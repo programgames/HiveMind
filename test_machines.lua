@@ -379,14 +379,39 @@ check("mutatron sur la face est/gauche", config.machines.mutatron.machine, 5)
 check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3)
 check("source commune = ME Interface", config.machines.mutatron.source, 2)
 check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
--- Two benches now, and the genetics one took index 1: everything that was on
--- the single transposer moved to index 2. Getting that wrong aims every item
--- movement at the wrong machines, silently.
-check("deux transposers declares", #config.transposers, 2)
-check("le banc de genetique est le premier", config.machines.sampler.transposer, 1)
-check("le mutatron est passe au second", config.machines.mutatron.transposer, 2)
-check("le coffre a templates suit l'apiary", config.template_chest.transposer, 2)
-check("la source du banc de genetique", config.machines.imprinter.source, 4)
+-- Machines name their transposer by address, never by position. A third
+-- transposer joining the network renumbered every other one and would have
+-- aimed each machine at the wrong neighbour, silently.
+checkTruthy("aucune machine ne designe un transposer par position", (function()
+    for _, name in ipairs(config.enabledMachines()) do
+        if type(config.machines[name].transposer) ~= "string" then return false end
+    end
+    return type(config.template_chest.transposer) == "string"
+end)())
+
+check("les trois machines de genetique partagent un transposer",
+      config.machines.sampler.transposer, config.machines.imprinter.transposer)
+check("le mutatron est sur l'autre", config.machines.mutatron.transposer,
+      config.machines.breeding_apiary.transposer)
+checkTruthy("et ce ne sont pas les memes",
+            config.machines.sampler.transposer ~= config.machines.mutatron.transposer)
+check("le coffre a templates suit l'apiary", config.template_chest.transposer,
+      config.machines.breeding_apiary.transposer)
+check("la source des machines de genetique", config.machines.imprinter.source, 4)
+
+-- Every declared address must actually appear in the transposer list, or the
+-- lookup finds nothing and the machine is unreachable
+checkTruthy("chaque adresse citee existe", (function()
+    for _, name in ipairs(config.enabledMachines()) do
+        local wanted = config.machines[name].transposer
+        local found = false
+        for _, address in ipairs(config.transposers) do
+            if address:sub(1, #wanted) == wanted then found = true end
+        end
+        if not found then return false end
+    end
+    return true
+end)())
 
 -- The genetics machines hold four slots, driver 0 to 3. The documentation put
 -- labware at 3 and an output at 4: a slot that does not exist, where every

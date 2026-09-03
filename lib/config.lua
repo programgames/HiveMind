@@ -15,6 +15,12 @@
 
 local config = {}
 
+-- Machines name their transposer by ADDRESS, never by position: adding one
+-- transposer to the network renumbers every other one and silently aims each
+-- machine at the wrong neighbour. A prefix is enough to identify one.
+local GENETICS = "65d3da44"   -- sampler, genetic transposer, imprinter
+local BREEDING = "95625858"   -- mutatron, apiary, template chest
+
 -- Sides are resolved lazily: this module is loaded by desktop tests too, where
 -- the OpenComputers libraries do not exist.
 local sides = nil
@@ -62,24 +68,27 @@ config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b4
 -- Fill in an address once tools/discover reports it.
 -- A prefix is enough, and is all a component listing shows.
 config.interfaces = {
-    [2] = "4c447a5c",   -- breeding bench
-    -- [1] = "...",     -- genetics bench: needs an Adapter against its interface
+    [BREEDING] = "4c447a5c",   -- Mutatron and apiary
+    -- [GENETICS] = "...",     -- the three genetics machines: needs an Adapter
 }
 
 config.template_chest = {
-    transposer = 2,
+    transposer = BREEDING,
     side = 4,        -- west/right, found by tools/discover.lua
     slots = 27,
 }
 
 -- Transposer component addresses, in the order the machine links index them.
 -- Filled in from tools/discover.lua; the bootstrap resolves them to proxies.
+-- Machines name their transposer by ADDRESS, not by position: adding one
+-- transposer to the network renumbered every other one and silently aimed each
+-- machine at the wrong neighbour. A prefix is enough.
 config.transposers = {
-    -- Order matters: machines below name a transposer by index. 1 is the
-    -- genetics bench, 2 the breeding bench, as tools/discover reported them.
+    "04bac23d-d8eb-42e8-8847-91acb8ce2bee",   -- spare, touches only the imprinter
     "65d3da44-cb90-4812-a6fa-d28128c9a988",   -- sampler, transposer, imprinter
     "95625858-b606-4eb0-89cb-4f3b467c0c06",   -- mutatron, apiary, templates
 }
+
 
 -- ---------------------------------------------------------------------------
 -- Machine links
@@ -103,7 +112,7 @@ config.machines = {
     -- Driven through The Apiarist Terminal
     mutatron = {
         component = "advmutatron",
-        transposer = 2,
+        transposer = BREEDING,
         machine = 5,      -- east/left
         source = 2,       -- north/back, the ME Interface
         -- Slot layout reported by listSlots(); kept here as a fallback only,
@@ -113,7 +122,7 @@ config.machines = {
 
     breeding_apiary = {
         component = "industrial_apiary",
-        transposer = 2,
+        transposer = BREEDING,
         machine = 3,      -- south/front
         source = 2,
         slots = {queen = 0, drone = 1, outputs = {6, 7, 8, 9, 10, 11, 12, 13, 14}},
@@ -154,16 +163,16 @@ config.machines = {
     -- The remaining names are still hypotheses. tools/probe settles them by
     -- offering a known item to each slot and seeing what stays.
     sampler = {
-        transposer = 1, machine = 5, source = 4,
+        transposer = GENETICS, machine = 5, source = 4,
         -- driver 0 accepted a Blank Gene Sample when placed by hand
         slots = {blank = 0, labware = 1, input = 2, output = 3},
     },
     genetic_transposer = {
-        transposer = 1, machine = 3, source = 4,
+        transposer = GENETICS, machine = 3, source = 4,
         slots = {source = 0, labware = 1, destination = 2, output = 3},
     },
     imprinter = {
-        transposer = 1, machine = 2, source = 4,
+        transposer = GENETICS, machine = 2, source = 4,
         slots = {bee = 0, labware = 1, template = 2, output = 3},
     },
     replicator = {

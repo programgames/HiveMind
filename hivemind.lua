@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.33.0"
+hivemind.VERSION = "0.34.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -122,6 +122,14 @@ function hivemind.bootstrap(options)
     local transposers, transposerProblems = resolveTransposers()
     for _, problem in ipairs(transposerProblems) do table.insert(problems, problem) end
 
+    -- Keyed by their own address so a machine can name the transposer it sits
+    -- on. Positions shift the moment another transposer joins the network.
+    local transposersByAddress = {}
+    for address in component.list("transposer") do
+        local ok, proxy = pcall(component.proxy, address)
+        if ok and proxy then transposersByAddress[address] = proxy end
+    end
+
     local me = optional("me_interface") or optional("me_controller")
     if not me then table.insert(problems, "aucune interface ME (adapter sur la ME Interface ?)") end
 
@@ -135,7 +143,7 @@ function hivemind.bootstrap(options)
     end
 
     local byBench = {}
-    for index, address in pairs(config.interfaces or {}) do
+    for bench, address in pairs(config.interfaces or {}) do
         -- A prefix, because that is all a component listing shows and writing
         -- a full uuid from memory means writing one that does not exist
         local proxy = nil
@@ -144,9 +152,9 @@ function hivemind.bootstrap(options)
         end
 
         if proxy then
-            byBench[index] = proxy
+            byBench[bench] = proxy
         else
-            table.insert(problems, "interface ME du transposer " .. index
+            table.insert(problems, "interface ME du transposer " .. tostring(bench)
                 .. " introuvable (" .. tostring(address):sub(1, 8)
                 .. ") - un Adapter la touche-t-il ?")
         end
@@ -155,9 +163,11 @@ function hivemind.bootstrap(options)
     -- A bench with no interface of its own cannot be supplied at all, and the
     -- failure looks like a machine refusing every item
     for _, name in ipairs(config.enabledMachines()) do
-        local index = config.machines[name].transposer
-        if index and not byBench[index] and next(config.interfaces or {}) then
-            table.insert(problems, name .. " : aucune interface ME sur son banc")
+        local bench = config.machines[name].transposer
+        if bench and not byBench[bench] and next(config.interfaces or {}) then
+            table.insert(problems, name
+                .. " : aucune interface ME adressable sur son transposer "
+                .. tostring(bench) .. " (Adapter manquant ?)")
         end
     end
 
@@ -169,6 +179,7 @@ function hivemind.bootstrap(options)
     local layer = transport.new({
         me = me,
         interfaces = byBench,
+        byAddress = transposersByAddress,
         database = database or {address = nil},
         transposers = transposers,
         config = config.transport,

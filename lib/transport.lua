@@ -59,6 +59,9 @@ function transport.new(options)
         -- other's dock means the item never arrives -- which is exactly what a
         -- whole probe run reported, fifteen times over.
         interfaces = options.interfaces or {},
+        -- Proxies keyed by their own address, so a machine can name the
+        -- transposer it sits on instead of its position in a list
+        byAddress = options.byAddress or {},
         database = options.database,
         transposers = options.transposers or {},
         docks = settings.docks or {1, 2, 3, 4, 5, 6},
@@ -106,6 +109,16 @@ end
 --- @return table|nil transposer
 --- @return string|nil error
 function Transport:transposerFor(index)
+    -- An address prefix, not a position. Adding one transposer to the network
+    -- renumbered every other one and quietly aimed each machine at the wrong
+    -- neighbour; an address survives any rearrangement.
+    if type(index) == "string" then
+        for address, proxy in pairs(self.byAddress or {}) do
+            if address:sub(1, #index) == index then return proxy end
+        end
+        return nil, "transposer introuvable: " .. index
+    end
+
     local transposer = self.transposers[index or 1] or self.transposers[1]
     if not transposer then return nil, "aucun transposer configure" end
     return transposer
@@ -204,8 +217,20 @@ end
 --- @param link table|nil
 --- @return table|nil proxy
 function Transport:interfaceFor(link)
-    local index = link and link.transposer
-    return (index and self.interfaces[index]) or self.me
+    local key = link and link.transposer
+    if not key then return self.me end
+
+    if self.interfaces[key] then return self.interfaces[key] end
+
+    -- Declared by address prefix, same as the transposers
+    if type(key) == "string" then
+        for address, proxy in pairs(self.interfaces) do
+            if type(address) == "string"
+               and address:sub(1, #key) == key then return proxy end
+        end
+    end
+
+    return self.me
 end
 
 --- Docks are per interface: two benches both have a dock 1
