@@ -149,8 +149,13 @@ multiply.STEPS = {
                 if occupant then
                     apiary:unload(slot)
                     if labelInSlot(apiary, slot) then
-                        return false, role .. ": impossible de retirer "
+                        -- Gendustry machines refuse extraction from their input
+                        -- slots, so nothing automated can clear this. Naming the
+                        -- slot the player actually sees is the whole point.
+                        return false, role .. ": l'apiary refuse de rendre le slot "
+                            .. apiary:resolveSlot(slot) .. ", qui contient "
                             .. tostring(occupant)
+                            .. ". Retire-la a la main puis relance."
                     end
                 end
 

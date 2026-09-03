@@ -136,8 +136,13 @@ breeding.STEPS = {
                 if occupant then
                     mutatron:unload(slot)
                     if labelInSlot(mutatron, slot) then
-                        return false, role .. ": impossible de retirer "
-                            .. tostring(occupant) .. " du slot " .. tostring(slot)
+                        -- Gendustry machines refuse extraction from their input
+                        -- slots, so nothing automated can clear this. Naming the
+                        -- slot the player actually sees is the whole point.
+                        return false, role .. ": le Mutatron refuse de rendre le slot "
+                            .. mutatron:resolveSlot(slot) .. ", qui contient "
+                            .. tostring(occupant)
+                            .. ". Retire-la a la main puis relance." .. " du slot " .. tostring(slot)
                     end
                 end
 

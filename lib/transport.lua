@@ -169,6 +169,10 @@ function Transport:findAll(spec)
             local name_ok = not spec.name or item.name == spec.name
             local label_ok = true
 
+            -- find() has always honoured an exact label; findAll ignored it,
+            -- so a caller counting one species counted the whole item type.
+            if spec.label then label_ok = item.label == spec.label end
+
             if spec.labelContains and item.label then
                 label_ok = item.label:lower():find(spec.labelContains:lower(), 1, true) ~= nil
             elseif spec.labelContains then

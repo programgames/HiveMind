@@ -451,6 +451,30 @@ local unwired = transport.new({me = me, database = database, transposers = {}})
 check("aucun transposer configure", (unwired:transposerFor(1)), nil)
 
 print("")
+print("-- findAll filtre sur l'etiquette exacte --")
+
+-- Ignoring spec.label made a caller counting one species count the whole item
+-- type: a campaign holding four Common drones saw 37 and declared victory.
+world.network = {
+    {name = "forestry:bee_drone_ge", label = "Common Drone", size = 4},
+    {name = "forestry:bee_drone_ge", label = "Wintry Drone", size = 32},
+    {name = "forestry:bee_drone_ge", label = "Monastic Drone", size = 1},
+    {name = "forestry:bee_princess_ge", label = "Common Princess", size = 1},
+}
+
+local layer = newTransport()
+
+local commons = layer:findAll({name = "forestry:bee_drone_ge", label = "Common Drone"})
+check("une seule pile correspond", #commons, 1)
+check("la bonne quantite", commons[1] and commons[1].size, 4)
+
+local allDrones = layer:findAll({name = "forestry:bee_drone_ge"})
+check("sans etiquette, tout le type remonte", #allDrones, 3)
+
+local absent = layer:findAll({name = "forestry:bee_drone_ge", label = "Water Drone"})
+check("une etiquette absente ne remonte rien", #absent, 0)
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
