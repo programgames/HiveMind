@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.63.0"
+hivemind.VERSION = "0.64.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1509,10 +1509,15 @@ function hivemind.templateHelp(context)
                     tostring(genome.labelForSlot(slot) or slot), profile[slot]))
             end
         else
-            -- What to hunt next is the only thing worth printing here
+            -- What to hunt next, and where. A missing allele with no idea
+            -- which bee carries it is a list, not a plan.
+            local sources = config.gene_sources or {}
+
             for _, entry in ipairs(missing) do
-                print(string.format("  manque  %-22s %s",
-                    tostring(entry.chromosome or entry.slot), entry.allele))
+                local hint = sources[entry.slot]
+                print(string.format("  manque  %-22s %-10s %s",
+                    tostring(entry.chromosome or entry.slot), entry.allele,
+                    hint and ("<- " .. hint) or ""))
             end
         end
     end

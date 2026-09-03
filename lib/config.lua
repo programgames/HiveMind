@@ -304,6 +304,21 @@ config.profiles = {
     },
 }
 
+-- Where to go looking for each gene, from the same guide as the profiles.
+-- A missing allele with no idea which bee carries it is a list, not a plan.
+--
+-- Only what the guide actually names is here. The blanks are blanks on purpose:
+-- inventing a species would send someone breeding for nothing.
+config.gene_sources = {
+    [1]  = "Robotic (vitesse maximale)",
+    [2]  = "Temporal (longevite)",
+    [3]  = "Wintry (fertilite elevee)",
+    [4]  = "Cyan, Lime (tolerances)",
+    [6]  = "Cyan, Lime (tolerances)",
+    [7]  = "Rocky (tolere la pluie)",
+    [8]  = "Rocky (cavernicole)",
+}
+
 config.genetics = {
     sample_timeout_seconds = 120,
 }

@@ -167,6 +167,28 @@ check("Species reste hors des profils",
 check("l aide compare la bibliotheque aux profils",
       text:find("missingForProfile", 1, true) ~= nil)
 
+-- A missing allele with no idea which bee carries it is a list, not a plan
+check("chaque gene manquant peut nommer une espece",
+      settingsText:find("config.gene_sources", 1, true) ~= nil
+      and text:find("config.gene_sources", 1, true) ~= nil)
+
+-- Inventing a source would send someone breeding for nothing, so only what the
+-- guide actually names belongs there
+check("aucune source inventee pour les genes non documentes",
+      (function()
+          local block = settingsText:match("config%.gene_sources = {(.-)}")
+          if not block then return false end
+          for slot in block:gmatch("%[(%d+)%]") do
+              local index = tonumber(slot)
+              -- 5, 9, 10, 11, 12 are not attributed in the guide
+              if index == 5 or index == 9 or index == 10
+                 or index == 11 or index == 12 then
+                  return false
+              end
+          end
+          return true
+      end)())
+
 check("le coffre a templates est verifie au demarrage",
       text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)
 
