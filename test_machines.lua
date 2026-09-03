@@ -54,6 +54,8 @@ local function reset()
         errors = {},
         empty = false,
         automated = false,
+        canStart = false,
+        progress = 0,
         produced = nil,
         princessWaited = false,
         slots = {},
@@ -67,7 +69,9 @@ local mutatron_component = {
     getTank = callable(function()
         return {amount = state.mutagen, capacity = 10000}
     end),
-    canStart = callable(function() return state.mutagen > 0 end),
+    -- Reads false until a mutation is selected, which is the idle state
+    canStart = callable(function() return state.canStart == true end),
+    getProgress = callable(function() return state.progress or 0 end),
     getEnergyStored = callable(function() return state.energy end),
     getMaxEnergyStored = callable(function() return state.maxEnergy end),
     listMutations = callable(function()
@@ -162,7 +166,19 @@ check("selecteurs lus", #slots.selectors, 6)
 local amount, capacity = mutatron:tank()
 check("mutagene lu", amount, 8000)
 check("capacite lue", capacity, 10000)
-check("machine prete", (mutatron:isReady()), machines.READY)
+
+-- Reported from the game: a full tank with canStart() false must read as ready.
+-- canStart is documented to answer false before a mutation is selected, so
+-- gating on it made an idle machine look broken and retried forever.
+check("canStart faux n'empeche pas d'etre pret", (mutatron:isReady()), machines.READY)
+check("canStart reste consultable", mutatron:canStart(), false)
+
+-- A production actually under way is a real reason to wait
+state.progress = 0.4
+check("production en cours = occupe", (mutatron:isReady()), machines.BUSY)
+state.progress = 1.0
+check("progression a 1 = machine libre", (mutatron:isReady()), machines.READY)
+state.progress = 0
 
 local mutations = mutatron:mutations()
 check("une mutation proposee", #mutations, 1)

@@ -278,6 +278,14 @@ function Mutatron:mutationFor(speciesUid)
     return nil
 end
 
+--- Progress of the current operation, when the machine reports one
+--- @return number|nil progress 0..1
+function Mutatron:progress()
+    local ok, progress = invoke(self.component, "getProgress")
+    if not ok then return nil end
+    return tonumber(progress)
+end
+
 function Mutatron:isReady()
     if not self:hasEnergy() then return machines.NO_ENERGY, "energie insuffisante" end
 
@@ -286,14 +294,25 @@ function Mutatron:isReady()
         return machines.NO_RESOURCE, "reservoir de mutagene vide"
     end
 
-    local ok, can = invoke(self.component, "canStart")
-    if ok and can == false then
-        -- canStart is false before a selection is made too, so this is only a
-        -- hint: the caller decides whether that matters.
-        return machines.BUSY, "la machine ne peut pas demarrer en l'etat"
+    -- canStart() is deliberately NOT consulted here. Its own documentation says
+    -- it reads false before a mutation is selected, which is the normal state of
+    -- an idle machine; gating on it made a full tank look like a broken machine
+    -- and would have retried forever.
+    local progress = self:progress()
+    if progress and progress > 0 and progress < 1 then
+        return machines.BUSY, "production en cours"
     end
 
     return machines.READY
+end
+
+--- What the machine itself thinks about starting
+--- Informational only: false is the normal answer before a selection.
+--- @return boolean|nil
+function Mutatron:canStart()
+    local ok, can = invoke(self.component, "canStart")
+    if not ok then return nil end
+    return can == true
 end
 
 --- Run one mutation and wait for the result
