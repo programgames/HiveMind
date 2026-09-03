@@ -124,6 +124,13 @@ check("il verifie que le programme est assez recent",
 check("un appel impossible est signale",
       toolText:find("fonction absente de cette version", 1, true) ~= nil)
 
+-- Ten minutes of black screen looked exactly like a hang, because capture()
+-- redirected every print into the report and nothing reached the operator.
+check("la progression est aussi affichee a l'ecran",
+      toolText:find("real(line)", 1, true) ~= nil)
+check("chaque section s'annonce",
+      toolText:find('print("[" .. title .. "]")', 1, true) ~= nil)
+
 -- Every hivemind function autoreport calls must exist, same trap as the menu
 local called = {}
 for name in toolText:gmatch("hivemind%.([%w_]+)%s*[(,)]") do called[name] = true end

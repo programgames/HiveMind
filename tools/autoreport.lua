@@ -34,6 +34,10 @@ end
 local function section(title)
     say("")
     say("=== " .. title .. " ===")
+
+    -- On screen too: the run can spend ten minutes waiting on an apiary cycle,
+    -- and a black screen for all of it is indistinguishable from a crash.
+    print("[" .. title .. "]")
 end
 
 --- Run a function while capturing everything it prints
@@ -46,7 +50,14 @@ local function capture(fn, ...)
     print = function(...)
         local parts = {}
         for i = 1, select("#", ...) do parts[i] = tostring((select(i, ...))) end
-        say(table.concat(parts, "\t"))
+
+        local line = table.concat(parts, "\t")
+        say(line)
+
+        -- Echoed, not swallowed. Collecting the output into the report is the
+        -- point of this tool; hiding it from the person watching the screen was
+        -- an accident, and it made a ten-minute run look like a hang.
+        real(line)
     end
 
     local ok, err
