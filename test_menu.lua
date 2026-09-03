@@ -212,6 +212,12 @@ end
 check("il signale ce qui est sous le seuil",
       toolText:find("sous le seuil de securite", 1, true) ~= nil)
 
+-- Guessing item ids cost two rounds: gendustry:gene_template is refused by every
+-- machine and gendustry:gene_template_blank does not exist. The network knows
+-- the real names.
+check("le rapport enumere les items gendustry",
+      toolText:find("ITEMS GENDUSTRY DANS LE RESEAU", 1, true) ~= nil)
+
 -- The whole point of this tool is that a session fits in one command with no
 -- menu: a feature reachable only from the menu is a feature we cannot test
 -- together without a screenshot round trip.

@@ -409,6 +409,35 @@ local function main(args)
         end
     end
 
+    -- Guessing item ids has now cost two rounds: gendustry:gene_template is
+    -- refused by every machine and gendustry:gene_template_blank does not
+    -- exist. The network knows the real names, so ask it instead.
+    section("ITEMS GENDUSTRY DANS LE RESEAU")
+
+    local ok_items, everything = pcall(function()
+        return context.transport.me and context.transport.me.getItemsInNetwork()
+    end)
+
+    if not ok_items or type(everything) ~= "table" then
+        say("  inventaire illisible")
+    else
+        local found = {}
+
+        for _, item in pairs(everything) do
+            if type(item) == "table" and type(item.name) == "string"
+               and item.name:sub(1, 10) == "gendustry" then
+                table.insert(found, string.format("  %-38s %-28s x%d",
+                    item.name, tostring(item.label or "?"),
+                    tonumber(item.size) or 0))
+            end
+        end
+
+        table.sort(found)
+
+        if #found == 0 then say("  (aucun)") end
+        for _, line in ipairs(found) do say(line) end
+    end
+
     section("REGISTRE DES ESPECES")
     local known, source = context.species:list()
     local count, derived = 0, 0
