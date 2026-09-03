@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.57.0"
+hivemind.VERSION = "0.58.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1433,19 +1433,23 @@ function hivemind.writeTemplate(context)
 
     if not choice or not order[choice] then print("Annule.") return end
 
+    -- Every machine refused gendustry:gene_template on every slot, which makes
+    -- the one we hold the written kind. The blank is what a machine takes in.
     local blanks = 0
     for _, item in ipairs(context.transport:findAll(
-            {name = "gendustry:gene_template"}) or {}) do
+            {name = "gendustry:gene_template_blank"}) or {}) do
         blanks = blanks + (tonumber(item.size) or 0)
     end
 
     print("")
     print("  " .. order[choice])
-    print("  templates en stock : " .. blanks)
+    print("  templates vierges en stock : " .. blanks)
 
     if blanks == 0 then
         print("")
-        print("Aucun Gene Template. Mets-en en autocraft AE2.")
+        print("Aucun Blank Genetic Template dans le reseau.")
+        print("Les machines refusent 'Genetic Template': c'est le template ECRIT.")
+        print("Mets des templates VIERGES en autocraft AE2.")
         return
     end
 

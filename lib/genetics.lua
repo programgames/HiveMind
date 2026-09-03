@@ -558,7 +558,11 @@ function genetics.templateParams(options)
 
     return {
         gene = {name = gene.name or "gendustry:gene_sample", label = gene.label},
-        blank = options.blank or {name = "gendustry:gene_template"},
+        -- Every machine refused gendustry:gene_template, on every slot. Samples
+        -- come in two items -- gene_sample and gene_sample_blank -- and
+        -- templates almost certainly do too, which would make the one we hold
+        -- the written kind that machines take as output, not input.
+        blank = options.blank or {name = "gendustry:gene_template_blank"},
         labware = options.labware or {name = "gendustry:labware"},
         timeout = options.timeout,
     }

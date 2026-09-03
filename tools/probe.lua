@@ -28,7 +28,8 @@ local MARKERS = {
     {name = "forestry:bee_drone_ge",       role = "abeille"},
     {name = "gendustry:gene_sample_blank", role = "sample vierge"},
     {name = "gendustry:gene_sample",       role = "sample"},
-    {name = "gendustry:gene_template",     role = "template"},
+    {name = "gendustry:gene_template",       role = "template"},
+    {name = "gendustry:gene_template_blank", role = "template vierge"},
 }
 
 local report = {}

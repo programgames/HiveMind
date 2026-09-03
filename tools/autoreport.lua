@@ -361,7 +361,9 @@ local function main(args)
 
     section("CONSOMMABLES")
     for _, itemName in ipairs({"gendustry:labware", "gendustry:gene_sample",
-                               "gendustry:gene_template", "gendustry:gene_sample_blank"}) do
+                               "gendustry:gene_sample_blank",
+                               "gendustry:gene_template",
+                               "gendustry:gene_template_blank"}) do
         local found = context.transport:findAll({name = itemName})
         local total = 0
         for _, item in ipairs(found) do total = total + (tonumber(item.size) or 0) end

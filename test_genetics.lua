@@ -236,7 +236,7 @@ local transposerComponent = {
 
         local COPIES = {
             [oc(0)] = {["gendustry:gene_sample_blank"] = true,
-                       ["gendustry:gene_template"] = true},
+                       ["gendustry:gene_template_blank"] = true},
             [oc(1)] = {["gendustry:labware"] = true},
             [oc(2)] = {["gendustry:gene_sample"] = true},
         }
@@ -697,8 +697,8 @@ os.remove(QUEUE)
 reset()
 table.insert(world.network, {name = "gendustry:gene_sample",
                              label = "Bee Sample - Fertility: 2", size = 3})
-table.insert(world.network, {name = "gendustry:gene_template",
-                             label = "Gene Template", size = 5})
+table.insert(world.network, {name = "gendustry:gene_template_blank",
+                             label = "Blank Genetic Template", size = 5})
 
 queue, context = buildStack()
 queue:submit("template", genetics.templateParams(
@@ -713,12 +713,13 @@ check("le gene ecrit est note", queue:get(1).params.written,
 
 -- Where the template ends up matters more than anything else here
 local held = world.gtransposer[oc(0)]
-check("le template revient en entree", held and held.name, "gendustry:gene_template")
+check("le template revient en entree", held and held.name,
+      "gendustry:gene_template_blank")
 check("il porte le gene", held and held.label, "Bee Sample - Fertility: 2")
 check("la sortie est vide", world.gtransposer[oc(3)], nil)
 
 check("aucun template n'est parti au reseau",
-      table.concat(world.collected, ","):find("Gene Template", 1, true), nil)
+      table.concat(world.collected, ","):find("Genetic Template", 1, true), nil)
 
 print("")
 print("-- un second gene s'ecrit dans le meme template --")
@@ -730,10 +731,10 @@ queue:run(context, {maxSteps = 60})
 check("la seconde tache aboutit", queue:get(2).status, jobs.COMPLETE)
 check("le template est toujours en entree",
       world.gtransposer[oc(0)] and world.gtransposer[oc(0)].name,
-      "gendustry:gene_template")
+      "gendustry:gene_template_blank")
 check("un seul template consomme", (function()
     for _, item in ipairs(world.network) do
-        if item.name == "gendustry:gene_template" then return item.size end
+        if item.name == "gendustry:gene_template_blank" then return item.size end
     end
 end)(), 4)
 
@@ -743,7 +744,7 @@ print("-- parametres de template --")
 check("gene manquant refuse", (genetics.templateParams({})), nil)
 local templateDefaults = genetics.templateParams({gene = {label = "Bee Sample - Speed: Fast"}})
 check("template vierge par defaut", templateDefaults.blank.name,
-      "gendustry:gene_template")
+      "gendustry:gene_template_blank")
 
 print("")
 print("=== Resultats ===")
