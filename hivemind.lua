@@ -150,7 +150,20 @@ function hivemind.status(context)
     print("=== ETAT ===")
 
     local online, reason = context.transport:isOnline()
-    print("Reseau ME    : " .. (online and "en ligne" or ("HORS LIGNE - " .. tostring(reason))))
+
+    if online then
+        local items = context.transport:networkItemCount()
+        print("Reseau ME    : en ligne, " .. items .. " type(s) d'item visible(s)")
+
+        if items == 0 then
+            -- A powered network showing nothing usually means the interface is
+            -- on a subnetwork with no storage on it
+            print("  ATTENTION: aucun item visible. L'interface est-elle sur le")
+            print("  bon reseau, avec des cellules de stockage ?")
+        end
+    else
+        print("Reseau ME    : HORS LIGNE - " .. tostring(reason))
+    end
 
     local mutatron = context.machines.mutatron
     if mutatron then

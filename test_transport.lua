@@ -353,9 +353,27 @@ print("-- etat du reseau --")
 reset()
 layer = newTransport()
 checkTruthy("reseau en ligne", layer:isOnline())
+check("items du reseau comptes", layer:networkItemCount(), 4)
 
 local offline = transport.new({me = {}, database = database, transposers = {transposer}})
 check("interface injoignable", (offline:isOnline()), false)
+check("comptage sans interface", offline:networkItemCount(), 0)
+
+-- "Unpowered" alone sends you looking in the wrong place; the figures say where
+local unpowered = transport.new({
+    me = {
+        isNetworkPowered = callable(function() return false end),
+        getStoredPower = callable(function() return 0 end),
+        getMaxStoredPower = callable(function() return 20000 end),
+        getEnergyDemand = callable(function() return 12.5 end),
+    },
+    database = database, transposers = {transposer},
+})
+
+local up, why = unpowered:isOnline()
+check("hors tension detecte", up, false)
+checkTruthy("stockage rapporte", why and why:find("stockage 0/20000", 1, true))
+checkTruthy("demande rapportee", why and why:find("demande 12.5", 1, true))
 
 local unwired = transport.new({me = me, database = database, transposers = {}})
 check("aucun transposer configure", (unwired:transposerFor(1)), nil)

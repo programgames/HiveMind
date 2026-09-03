@@ -387,13 +387,58 @@ function Transport:matchesReference(link, slot, dbSlot, onMachineSide)
 end
 
 --- Is the ME network answering and powered
+--- The reason carries the actual figures: "unpowered" alone sends you looking
+--- at the wrong thing when the interface is simply on a subnetwork of its own.
 --- @return boolean online
 --- @return string|nil reason
 function Transport:isOnline()
     local ok, powered = invoke(self.me, "isNetworkPowered")
     if not ok then return false, "interface ME injoignable: " .. tostring(powered) end
-    if powered == false then return false, "reseau AE2 hors tension" end
+
+    if powered == false then
+        local details = {}
+
+        local stored_ok, stored = invoke(self.me, "getStoredPower")
+        local max_ok, maximum = invoke(self.me, "getMaxStoredPower")
+        if stored_ok and tonumber(stored) then
+            table.insert(details, string.format("stockage %.0f/%.0f",
+                tonumber(stored), (max_ok and tonumber(maximum)) or 0))
+        end
+
+        local demand_ok, demand = invoke(self.me, "getEnergyDemand")
+        if demand_ok and tonumber(demand) then
+            table.insert(details, string.format("demande %.1f", tonumber(demand)))
+        end
+
+        local usage_ok, usage = invoke(self.me, "getAvgPowerUsage")
+        local injection_ok, injection = invoke(self.me, "getAvgPowerInjection")
+        if usage_ok and injection_ok and tonumber(usage) and tonumber(injection) then
+            table.insert(details, string.format("conso %.1f, injection %.1f",
+                tonumber(usage), tonumber(injection)))
+        end
+
+        local reason = "reseau AE2 hors tension"
+        if #details > 0 then
+            reason = reason .. " (" .. table.concat(details, ", ") .. ")"
+        end
+
+        return false, reason
+    end
+
     return true
+end
+
+--- How many items the network can see
+--- Zero on a network that reports itself powered usually means the interface
+--- sits on a subnetwork with no storage attached.
+--- @return number count
+function Transport:networkItemCount()
+    local ok, items = invoke(self.me, "getItemsInNetwork")
+    if not ok or type(items) ~= "table" then return 0 end
+
+    local count = 0
+    for _ in pairs(items) do count = count + 1 end
+    return count
 end
 
 return transport
