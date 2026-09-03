@@ -95,6 +95,14 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   Fournir les consommables d'abord complète les besoins de la machine autour de
   l'abeille déjà présente, et elle démarre sur la mauvaise avant qu'on ait
   remarqué quoi que ce soit.
+- **Les gènes d'une abeille sont fixés à la naissance.** Croiser Wintry × Wintry
+  ne créera jamais un allèle qu'aucun parent ne porte. Un meilleur allèle vient
+  d'un autre individu sauvage ou d'une autre espèce — **une seule fois** : une
+  fois en sample, la bibliothèque le garde et l'Imprinter le propage à toute une
+  lignée.
+- **`x32 — 1 genome(s)` dans le rapport veut dire que les 32 sont identiques.**
+  Les échantillonner en boucle ne peut sortir que les mêmes treize allèles.
+  Lire le génome (option `g`) avant d'y dépenser treize abeilles.
 - **Le Sampler tire un chromosome au hasard sur 13** : ~13 drones par gène
   Species visé, mais les 12 tirages ratés enrichissent quand même le pool.
 - **`waitForPrincess()` échoue si l'apiary porte l'upgrade Automation.**

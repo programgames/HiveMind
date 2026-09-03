@@ -84,6 +84,18 @@ check("la recolte est atteignable depuis le menu", wired.harvestApiary == true)
 check("l'accumulation est atteignable depuis le menu",
       wired.accumulateDrones == true)
 check("l'extraction de gene est atteignable", wired.sampleGene == true)
+
+-- Sampling is a lottery: thirteen bees on average per chosen gene, and a
+-- species whose drones share one genome can never yield anything else however
+-- many are spent. Reading the genome first is one look instead.
+check("la lecture de genome est atteignable", wired.analyseBee == true)
+check("elle ne detruit pas l abeille",
+      text:find("Aucune abeille n est detruite", 1, true) ~= nil)
+check("elle refuse de lire si une princesse peut declencher un cycle",
+      text:find("slot reine de l apiary", 1, true) ~= nil)
+check("elle compare le genome aux profils",
+      text:find("context.library:has(slot, allele)", 1, true) ~= nil)
+
 check("la duplication est atteignable", wired.duplicateGene == true)
 check("la mise a l'abri est atteignable", wired.secureLibrary == true)
 

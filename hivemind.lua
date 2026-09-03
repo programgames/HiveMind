@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.65.0"
+hivemind.VERSION = "0.66.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1454,6 +1454,125 @@ function hivemind.imprintBee(context)
     print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
 end
 
+--- Read every chromosome of one bee, instead of guessing at thirteen of them
+--- Sampling is a lottery: thirteen bees on average to see one chosen gene, and
+--- a species whose drones all share a genome can never yield anything but the
+--- same thirteen alleles however many are spent. Reading the genome first turns
+--- "is Fertility 4 in there?" from thirteen destroyed bees into one look.
+---
+--- The apiary is the only machine that hands back a genome. A drone alone in
+--- the drone slot starts nothing: Forestry needs a princess for that.
+--- @param context table
+function hivemind.analyseBee(context)
+    print("")
+    print("=== LIRE LE GENOME D UNE ABEILLE ===")
+    print("Aucune abeille n est detruite: elle est posee, lue, puis rendue.")
+    print("")
+
+    local apiary = context.machines and context.machines.breeding_apiary
+    if not apiary then
+        print("Apiary absent de la configuration.")
+        return
+    end
+
+    local slots = apiary:slots()
+
+    -- A princess in the queen slot plus this drone would start a cycle, and the
+    -- bee would be consumed instead of read
+    if apiary:slot(slots.queen) then
+        print("Une abeille occupe le slot reine de l apiary.")
+        print("Vide-le d abord (option 7, ou a la main) sinon un cycle demarre.")
+        return
+    end
+
+    local occupant = apiary:slot(slots.drone)
+    if occupant then
+        print("Le slot drone contient deja " .. tostring(occupant.label) .. ".")
+        print("Il sera rendu au reseau avant la lecture.")
+        apiary:unload(slots.drone)
+
+        if apiary:slot(slots.drone) then
+            print("Impossible de le retirer. Sors-le a la main puis reessaie.")
+            return
+        end
+    end
+
+    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
+    if not beeSpec then print("Annule.") return end
+
+    local ok, reason = apiary:load(beeSpec, slots.drone, 1)
+    if not ok then
+        print("Impossible de poser l abeille: " .. tostring(reason))
+        return
+    end
+
+    local bee = apiary:bees().drone
+    local parsed = bee and bee.genome
+
+    if not parsed then
+        print("Genome illisible. L abeille reste dans l apiary.")
+        apiary:unload(slots.drone)
+        return
+    end
+
+    print("")
+    print(beeSpec.label .. " :")
+    print("")
+
+    -- Both alleles matter: a recessive one is invisible in the bee but passes
+    -- to its offspring, and the Sampler can draw either
+    for slot = 0, 12 do
+        local active, inactive = genome.alleles(parsed, slot)
+
+        if active then
+            local name = genome.labelForSlot(slot) or tostring(slot)
+            local pretty = tostring(active):match("([^.]+)$") or active
+
+            if inactive and inactive ~= active then
+                local other = tostring(inactive):match("([^.]+)$") or inactive
+                print(string.format("  %-22s %-18s (recessif: %s)",
+                    name, pretty, other))
+            else
+                print(string.format("  %-22s %s", name, pretty))
+            end
+        end
+    end
+
+    -- The whole point: which of these are worth spending bees on
+    local wanted = {}
+    for name, profile in pairs(config.profiles or {}) do
+        for slot, allele in pairs(profile) do
+            local active, inactive = genome.alleles(parsed, slot)
+            local carries = (active and tostring(active):find(allele, 1, true))
+                or (inactive and tostring(inactive):find(allele, 1, true))
+
+            if carries and not context.library:has(slot, allele) then
+                table.insert(wanted, string.format("  %-22s %-12s (profil %s)",
+                    tostring(genome.labelForSlot(slot) or slot), allele, name))
+            end
+        end
+    end
+
+    print("")
+    if #wanted > 0 then
+        print("Cette abeille porte des genes que tes profils veulent et que la")
+        print("bibliotheque n a pas :")
+        for _, line in ipairs(wanted) do print(line) end
+        print("")
+        print("Une campagne sur cette espece vaut donc le coup.")
+    else
+        print("Rien ici que tes profils veuillent et que tu n aies pas deja.")
+        print("Inutile d y depenser des abeilles: cherche une autre espece.")
+    end
+
+    apiary:unload(slots.drone)
+
+    if apiary:slot(slots.drone) then
+        print("")
+        print("ATTENTION: l abeille est restee dans l apiary, retire-la.")
+    end
+end
+
 --- Show what each genetic profile still needs, and how a template is built
 --- Templates are not made in a machine. The mod's own text says so: "Genetic
 --- Samples can be added to a Template. Combine them in any crafting table."
@@ -1798,6 +1917,8 @@ local ENTRIES = {
      hint = "stocks, machines, genes, file", action = "status"},
     {key = "2", label = "Diagnostic des slots",
      hint = "ce que chaque machine tient vraiment", action = "slotDiagnostic"},
+    {key = "g", label = "Lire le genome d une abeille",
+     hint = "13 alleles d un coup, sans la detruire", action = "analyseBee"},
 
     {group = "Produire"},
     {key = "3", label = "Accumuler des drones",
