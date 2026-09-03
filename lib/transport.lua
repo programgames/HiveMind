@@ -198,12 +198,40 @@ function Transport:releaseDock(dock)
     self.reserved[dock] = nil
 end
 
+--- Wait until a dock holds nothing
+--- Clearing an interface configuration does not instantly hand the stocked item
+--- back to the network; AE2 takes a few ticks. Reusing the dock before then
+--- leaves the previous item sitting there, and a size check cannot tell the
+--- difference between a leftover and what was asked for.
+--- @param link table Machine link, for the source side
+--- @param dock number
+--- @return boolean emptied
+--- @return string|nil occupant
+function Transport:awaitDockEmpty(link, dock)
+    local transposer = self:transposerFor(link.transposer)
+    if not transposer then return false end
+
+    local deadline = self.clock() + self.stockTimeout
+    local occupant = nil
+
+    repeat
+        local ok, stack = invoke(transposer, "getStackInSlot", link.source, dock)
+        if not ok or type(stack) ~= "table" then return true end
+
+        occupant = stack.label or stack.name
+        self.sleep(self.pollInterval)
+    until self.clock() > deadline
+
+    return false, occupant
+end
+
 --- Stage an item in the interface so a transposer can pick it up
 --- @param spec table {name, label}
 --- @param count number|nil
+--- @param link table Machine link, needed to watch the dock
 --- @return number|nil dock
 --- @return string|nil error
-function Transport:stage(spec, count)
+function Transport:stage(spec, count, link)
     count = count or 1
 
     local entry, find_err = self:find(spec)
@@ -211,6 +239,18 @@ function Transport:stage(spec, count)
 
     local dock, dock_err = self:reserveDock()
     if not dock then return nil, dock_err end
+
+    -- Hand back whatever the previous operation left, and wait for it to go
+    if link then
+        invoke(self.me, "setInterfaceConfiguration", dock)
+
+        local emptied, occupant = self:awaitDockEmpty(link, dock)
+        if not emptied then
+            self:releaseDock(dock)
+            return nil, "le quai " .. dock .. " ne se vide pas (contient encore '"
+                .. tostring(occupant) .. "')"
+        end
+    end
 
     -- Pin the exact stack, NBT included, into the database
     local stored, store_err = invoke(self.me, "store",
@@ -233,25 +273,40 @@ function Transport:stage(spec, count)
 end
 
 --- Wait until the interface physically holds the staged item
+--- Identity is checked, not just quantity: a leftover from a previous operation
+--- satisfies a size check while being an entirely different item, which is how
+--- a Labware once got fed to the Mutatron as a princess.
 --- @param link table Machine link, giving the transposer and the source side
 --- @param dock number
 --- @param count number
+--- @param expectedLabel string|nil Label the dock must end up holding
 --- @return boolean ok
 --- @return string|nil error
-function Transport:awaitStock(link, dock, count)
+function Transport:awaitStock(link, dock, count, expectedLabel)
     local transposer, err = self:transposerFor(link.transposer)
     if not transposer then return false, err end
 
     local deadline = self.clock() + self.stockTimeout
+    local seen = nil
 
     repeat
-        local ok, size = invoke(transposer, "getSlotStackSize", link.source, dock)
-        if ok and (tonumber(size) or 0) >= count then
-            return true
+        local ok, stack = invoke(transposer, "getStackInSlot", link.source, dock)
+
+        if ok and type(stack) == "table" then
+            seen = stack.label or stack.name
+            local enough = (tonumber(stack.size) or 0) >= count
+            local right = not expectedLabel or seen == expectedLabel
+
+            if enough and right then return true end
         end
 
         self.sleep(self.pollInterval)
     until self.clock() > deadline
+
+    if seen and expectedLabel and seen ~= expectedLabel then
+        return false, "le quai contient '" .. seen .. "' au lieu de '"
+            .. expectedLabel .. "'"
+    end
 
     return false, "AE2 n'a pas fourni l'item dans le delai imparti"
 end
@@ -269,10 +324,10 @@ function Transport:deliver(spec, link, slot, count)
     local transposer, transposer_err = self:transposerFor(link.transposer)
     if not transposer then return false, transposer_err end
 
-    local dock, stage_err = self:stage(spec, count)
+    local dock, stage_err = self:stage(spec, count, link)
     if not dock then return false, stage_err end
 
-    local stocked, stock_err = self:awaitStock(link, dock, count)
+    local stocked, stock_err = self:awaitStock(link, dock, count, spec.label)
     if not stocked then
         self:releaseDock(dock)
         return false, stock_err

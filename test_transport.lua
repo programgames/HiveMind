@@ -60,6 +60,7 @@ local function reset(options)
         neverStocks = options.neverStocks,
         moveShort = options.moveShort,
         numericTransfer = options.numericTransfer,
+        stickyDock = options.stickyDock,
     }
 
     calls = {store = 0, configure = 0, transfer = 0, cleared = {}}
@@ -92,7 +93,12 @@ local me = {
         calls.configure = calls.configure + 1
 
         if not address then
-            world.interface[dock] = nil
+            -- AE2 does not hand the stocked item back instantly. world.stickyDock
+            -- reproduces a dock that keeps its previous contents, which is what
+            -- once sent a Labware to the Mutatron labelled as a princess.
+            if not world.stickyDock then
+                world.interface[dock] = nil
+            end
             table.insert(calls.cleared, dock)
             return true
         end
@@ -272,16 +278,38 @@ checkTruthy("le slot vise est nomme", move_err and move_err:find("slot 1", 1, tr
 checkTruthy("le contenu du slot est rapporte", move_err and move_err:find("contient", 1, true))
 check("quai libere malgre l'echec", next(layer.reserved), nil)
 
--- AE2 stocks whatever its filter matched, which is not always what was asked
+-- A dock that never releases its contents is caught before anything is moved,
+-- rather than after the wrong item has been fed to a machine
 reset()
 layer = newTransport()
 world.interfaceOverride = {label = "Cobblestone", name = "minecraft:cobblestone", size = 1}
 local wrong, wrong_err = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 1)
-check("mauvais item sur le quai detecte", wrong, false)
-checkTruthy("les deux etiquettes sont citees",
-            wrong_err and wrong_err:find("Cobblestone", 1, true)
-                      and wrong_err:find("Speed: Fastest", 1, true))
+check("quai bloque detecte", wrong, false)
+checkTruthy("l'occupant est nomme", wrong_err and wrong_err:find("Cobblestone", 1, true))
+check("rien n'a ete livre", world.machine[1], nil)
 check("quai libere", next(layer.reserved), nil)
+
+-- The real failure: a dock still holding the previous operation's item. Its
+-- size satisfies a naive check, and a Labware gets delivered as a princess.
+reset({stickyDock = true})
+layer = newTransport()
+world.interface[1] = {stack = {label = "Genetics Labware", name = "gendustry:labware"}, count = 1}
+
+local sticky, sticky_err = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 1)
+check("quai encombre detecte", sticky, false)
+checkTruthy("le reliquat est nomme",
+            sticky_err and sticky_err:find("Genetics Labware", 1, true))
+check("rien n'a ete livre", world.machine[1], nil)
+check("quai libere", next(layer.reserved), nil)
+
+-- And once the dock does empty, the delivery goes through
+reset()
+layer = newTransport()
+world.interface[1] = {stack = {label = "Genetics Labware"}, count = 1}
+local recovered = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 2)
+checkTruthy("livraison apres liberation du quai", recovered)
+check("bon item arrive", world.machine[2] and world.machine[2].label,
+      "Bee Sample - Speed: Fastest")
 
 reset()
 layer = newTransport()
