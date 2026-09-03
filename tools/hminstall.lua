@@ -172,7 +172,15 @@ local function write(path, body)
 end
 
 local function main(args)
-    local branch = args[1] or DEFAULT_BRANCH
+    -- Set when this pass is the automatic second one, so it cannot recurse
+    local again = false
+    local positional = {}
+
+    for _, arg in ipairs(args) do
+        if arg == "--again" then again = true else table.insert(positional, arg) end
+    end
+
+    local branch = positional[1] or DEFAULT_BRANCH
     local base = REPOSITORY .. branch .. "/"
 
     print("HiveMind - installation depuis la branche " .. branch)
@@ -234,10 +242,28 @@ local function main(args)
             end
         end
 
-        if updatedItself then
+        if updatedItself and not again then
+            -- The old list has just been applied, and the new one may name
+            -- modules this pass never fetched: that is how a fresh hivemind met
+            -- a lib/ module that did not exist yet. Asking the operator to run
+            -- the same command twice was a ritual, not an explanation.
+            print("")
+            print("L'installeur s'est mis a jour; nouvelle passe avec sa liste...")
+            print("")
+
+            local chunk = load(ownBody, "=" .. tostring(running))
+            if chunk then
+                local ok, err = pcall(chunk, branch, "--again")
+                if ok then return end
+                print("Seconde passe impossible: " .. tostring(err))
+                print("Relance 'hminstall' a la main.")
+                return
+            end
+
+            print("Relance 'hminstall' une fois: la liste de fichiers a change.")
+        elseif updatedItself then
             print("")
             print("L'installeur s'est mis a jour lui-meme.")
-            print("Relance 'hminstall' une fois: la liste de fichiers a change.")
         elseif updateError then
             -- Staying silent here is how the previous failure hid for so long
             print("")

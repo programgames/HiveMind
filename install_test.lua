@@ -24,11 +24,23 @@ package.loaded["internet"] = {
             return function() return nil end
         end
 
+        -- The installer re-executes the copy it just downloaded, so that copy
+        -- has to be the real thing or the second pass runs a comment and the
+        -- recursion guard is never exercised.
+        local body = "-- contenu de " .. url
+        if url:find("tools/hminstall.lua", 1, true) then
+            local real = io.open("tools/hminstall.lua", "r")
+            if real then
+                body = real:read("*all")
+                real:close()
+            end
+        end
+
         local done = false
         return function()
             if done then return nil end
             done = true
-            return "-- contenu de " .. url
+            return body
         end
     end,
 }
@@ -186,8 +198,18 @@ for _, prefix in ipairs({"=", "@"}) do
 
     check("la copie lancee est reecrite (prefixe " .. prefix .. ")",
           table.concat(written, " "):find("/home/hminstall.lua=", 1, true) ~= nil)
-    check("la relance est demandee (prefixe " .. prefix .. ")",
-          text:find("Relance 'hminstall'", 1, true) ~= nil)
+
+    -- The old list has just been applied and the new one may name modules this
+    -- pass never fetched: that is how a fresh hivemind met a lib/ module that
+    -- did not exist. It runs the second pass itself instead of asking.
+    check("une seconde passe est enchainee (prefixe " .. prefix .. ")",
+          text:find("nouvelle passe avec sa liste", 1, true) ~= nil)
+    check("et l'operateur n'a rien a relancer (prefixe " .. prefix .. ")",
+          text:find("Relance 'hminstall' une fois", 1, true) == nil)
+
+    -- Twice, not forever: the second pass must not chain a third
+    local passes = select(2, text:gsub("HiveMind %- installation depuis", ""))
+    check("exactement deux passes (prefixe " .. prefix .. ")", passes == 2, passes)
 end
 
 -- Launched from tools/ itself, the download already wrote the file: rewriting it
