@@ -111,8 +111,25 @@ end
 local READS_BEFORE_DEATH = 3
 
 local function tickQueen()
-    local queen = world.apiary[oc(0)]
-    if not queen then return end
+    -- A princess alone is not a queen and does not die: Forestry merges her
+    -- with a drone first. Killing anything parked in the slot made the mock
+    -- swallow bees the program was about to hand back to the network.
+    local occupant = world.apiary[oc(0)]
+    if not occupant then return end
+
+    local label = occupant.label or ""
+
+    if not label:find(" Queen", 1, true) then
+        if not world.apiary[oc(1)] then return end
+
+        -- The pair becomes a queen, which is what the game does within a tick
+        local species = label:gsub("%s+%a+$", "")
+        world.apiary[oc(0)] = {name = "forestry:bee_queen_ge",
+                               label = species .. " Queen", size = 1}
+        world.apiary[oc(1)] = nil
+        world.queenReads = 0
+        return
+    end
 
     world.queenReads = (world.queenReads or 0) + 1
     if world.queenReads < READS_BEFORE_DEATH then return end
@@ -120,7 +137,7 @@ local function tickQueen()
     world.queenReads = 0
     world.cycleRuns = world.cycleRuns + 1
 
-    local species = (queen.label or ""):gsub("%s+%a+$", "")
+    local species = label:gsub("%s+%a+$", "")
     world.apiary[oc(0)] = nil
     world.apiary[oc(1)] = nil
 
@@ -487,6 +504,34 @@ check("la tache se termine apres reprise", resumed:get(1).status, jobs.COMPLETE)
 checkTruthy("le compteur de cycles a survecu au disque",
             resumed:get(1).params.cycles > before)
 checkTruthy("objectif atteint", droneStock() >= 12)
+
+print("")
+print("-- une reine d'une autre tache occupe l'apiary --")
+
+-- There is one apiary and a breeding job puts its own queen in the same slot.
+-- Accepting any occupant made this campaign wait on someone else's cycle and
+-- then count their drones; pulling it out would have sent a queen back to the
+-- network, where AE2 shows no genome and it is lost among its kind.
+os.remove(QUEUE)
+reset()
+world.apiary[oc(0)] = {name = "forestry:bee_queen_ge",
+                       label = "Cultivated Queen", size = 1}
+
+queue, context = buildStack()
+queue:submit("multiply", waterParams({target = 4}))
+queue:run(context, {maxSteps = 30})
+
+check("la campagne attend", queue:get(1).status, jobs.PENDING)
+checkTruthy("elle dit qui occupe la machine",
+            queue:get(1).error and queue:get(1).error:find("Cultivated Queen"))
+check("la reine etrangere est intacte",
+      world.apiary[oc(0)] and world.apiary[oc(0)].label, "Cultivated Queen")
+checkTruthy("aucun cycle vole", world.cycleRuns == 0)
+
+-- Once the machine is free the campaign proceeds on its own
+world.apiary[oc(0)] = nil
+queue:run(context, {maxSteps = 200})
+check("elle repart seule", queue:get(1).status, jobs.COMPLETE)
 
 print("")
 print("-- parametres --")

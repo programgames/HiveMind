@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.25.0"
+hivemind.VERSION = "0.26.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -793,10 +793,18 @@ function hivemind.harvestApiary(context)
 
     local collected = 0
     for _, output in ipairs(waiting) do
+        -- The driver sometimes reports a stack with no label, and "?" tells the
+        -- operator nothing. The transposer sees the same slot and does name it.
+        local label = output.label
+        if not label then
+            local stack = apiary:slot(output.slot)
+            label = stack and stack.label or nil
+        end
+
         local moved = apiary:unload(output.slot)
         collected = collected + (tonumber(moved) or 0)
         print(string.format("  %-28s %s",
-            tostring(output.label or "?"),
+            tostring(label or "(sans etiquette)"),
             (tonumber(moved) or 0) > 0 and "recolte" or "NON DEPLACE"))
     end
 

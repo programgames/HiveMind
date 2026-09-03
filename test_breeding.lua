@@ -108,8 +108,25 @@ end
 local READS_BEFORE_DEATH = 3
 
 local function tickQueen()
-    local queen = world.apiary[oc(0)]
-    if not queen then return end
+    -- A princess alone is not a queen and does not die: Forestry merges her
+    -- with a drone first. Killing anything parked in the slot made the mock
+    -- swallow bees the program was about to hand back to the network.
+    local occupant = world.apiary[oc(0)]
+    if not occupant then return end
+
+    local label = occupant.label or ""
+
+    if not label:find(" Queen", 1, true) then
+        if not world.apiary[oc(1)] then return end
+
+        -- The pair becomes a queen, which is what the game does within a tick
+        local species = label:gsub("%s+%a+$", "")
+        world.apiary[oc(0)] = {name = "forestry:bee_queen_ge",
+                               label = species .. " Queen", size = 1}
+        world.apiary[oc(1)] = nil
+        world.queenReads = 0
+        return
+    end
 
     world.queenReads = (world.queenReads or 0) + 1
     if world.queenReads < READS_BEFORE_DEATH then return end
@@ -117,7 +134,7 @@ local function tickQueen()
     world.queenReads = 0
     world.cycleRuns = world.cycleRuns + 1
 
-    local species = (queen.label or ""):gsub("%s+%a+$", "")
+    local species = label:gsub("%s+%a+$", "")
     world.apiary[oc(0)] = nil
     world.apiary[oc(1)] = nil
 

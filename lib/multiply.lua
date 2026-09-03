@@ -96,6 +96,19 @@ local function satisfied(job, context)
     return stock(context, job.params.drone) >= job.params.target
 end
 
+--- Does this label name a bee of the species this campaign is breeding
+--- "Common Princess" and "Common Queen" both belong to the Common campaign;
+--- "Cultivated Queen" does not, however occupied the slot looks.
+--- @param job table
+--- @param label string|nil
+--- @return boolean
+local function isOurs(job, label)
+    if not label then return false end
+
+    local species = job.params.species
+    return label:sub(1, #species + 1) == species .. " "
+end
+
 multiply.STEPS = {
     -- -----------------------------------------------------------------------
     {
@@ -131,14 +144,27 @@ multiply.STEPS = {
 
             -- Forestry merges the pair into a queen within a tick, so an
             -- occupied queen slot means the step succeeded even though neither
-            -- label matches the princess any more.
-            return apiary:slot(apiary:slots().queen) ~= nil
+            -- label matches the princess any more. It must still be OUR bee:
+            -- there is one apiary and a breeding job puts its own queen in the
+            -- same slot. Accepting any occupant made this job wait on someone
+            -- else's cycle and then count their drones as its own.
+            return isOurs(job, labelInSlot(apiary, apiary:slots().queen))
         end,
         run = function(job, context)
             local apiary, err = machineOf(context, "breeding_apiary")
             if not apiary then return jobs.FAILED, err end
 
             local slots = apiary:slots()
+
+            -- One apiary, several jobs. A queen that belongs to a breeding job
+            -- is in the middle of its cycle; pulling it out would send it back
+            -- to the network where AE2 shows no genome and it is lost among its
+            -- kind. Wait instead.
+            local occupied = labelInSlot(apiary, slots.queen)
+            if occupied and not isOurs(job, occupied)
+               and occupied:find(" Queen", 1, true) then
+                return jobs.RETRY, "l'apiary travaille deja sur " .. occupied
+            end
 
             -- A leftover from another species blocks the delivery silently:
             -- two different bees never share a slot.
