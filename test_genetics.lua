@@ -310,7 +310,7 @@ queue:submit("sample", genetics.sampleParams({bee = {label = "Meadows Drone"}}))
 local outcome = queue:run(context, {maxSteps = 40})
 
 check("tache terminee", queue:get(1).status, jobs.COMPLETE)
-check("quatre etapes", outcome.steps, 4)
+check("cinq etapes", outcome.steps, 5)
 check("la machine a tourne une fois", world.runs, 1)
 check("le sampler est vide a la fin", next(world.sampler), nil)
 
@@ -385,8 +385,11 @@ check("les consommables en place sont reutilises",
       end)(), 70)
 
 print("")
-print("-- une entree occupee par le mauvais item demande une main --")
+print("-- une entree occupee est consommee, pas signalee a l'operateur --")
 
+-- Nothing can pull an input slot back out, so a job that demanded an empty
+-- machine had to ask for a human. Letting the machine eat what is there clears
+-- the slot and yields a gene we wanted anyway.
 os.remove(QUEUE)
 reset()
 world.sampler[oc(2)] = {name = "forestry:bee_drone_ge",
@@ -394,13 +397,21 @@ world.sampler[oc(2)] = {name = "forestry:bee_drone_ge",
 
 queue, context = buildStack()
 queue:submit("sample", genetics.sampleParams({bee = {label = "Meadows Drone"}}))
-queue:run(context, {maxSteps = 40})
+queue:run(context, {maxSteps = 60})
 
-check("la tache attend", queue:get(1).status, jobs.PENDING)
-checkTruthy("elle nomme l'intrus",
-            queue:get(1).error and queue:get(1).error:find("Wintry Drone"))
-checkTruthy("et demande un retrait manuel",
-            queue:get(1).error and queue:get(1).error:find("a la main"))
+check("la tache aboutit sans intervention", queue:get(1).status, jobs.COMPLETE)
+check("la machine a tourne deux fois", world.runs, 2)
+checkTruthy("le travail engage est signale",
+            table.concat(log, " | "):find("travail engage a finir", 1, true))
+checkTruthy("et son resultat recupere",
+            table.concat(log, " | "):find("recupere au passage", 1, true))
+
+-- Two samples reached the network: the intruder's and this job's own
+local reached = 0
+for _, label in ipairs(world.collected) do
+    if label:find("Bee Sample", 1, true) then reached = reached + 1 end
+end
+check("deux genes recoltes", reached, 2)
 
 print("")
 print("-- un consommable manquant fait attendre, pas echouer --")
@@ -451,7 +462,7 @@ queue:submit("duplicate", genetics.duplicateParams(
 local report = queue:run(context, {maxSteps = 40})
 
 check("tache terminee", queue:get(1).status, jobs.COMPLETE)
-check("quatre etapes", report.steps, 4)
+check("cinq etapes", report.steps, 5)
 check("la machine a copie une fois", world.copies, 1)
 check("la copie porte le meme gene",
       queue:get(1).params.copied, "Bee Sample - Fertility: 2")
@@ -484,6 +495,28 @@ check("la tache attend", queue:get(1).status, jobs.PENDING)
 checkTruthy("elle nomme la source manquante",
             queue:get(1).error and queue:get(1).error:find("sample source"))
 check("rien n'a ete copie", world.copies, nil)
+
+print("")
+print("-- un sample etranger dans le transposer est copie, puis on continue --")
+
+os.remove(QUEUE)
+reset()
+world.gtransposer[oc(2)] = {name = "gendustry:gene_sample",
+                            label = "Bee Sample - Flowering: Slower", size = 1}
+table.insert(world.network, {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Fertility: 2", size = 1})
+
+queue, context = buildStack()
+queue:submit("duplicate", genetics.duplicateParams(
+    {sample = {label = "Bee Sample - Fertility: 2"}}))
+queue:run(context, {maxSteps = 60})
+
+check("la tache aboutit sans intervention", queue:get(1).status, jobs.COMPLETE)
+check("deux copies faites", world.copies, 2)
+check("la copie demandee est la bonne",
+      queue:get(1).params.copied, "Bee Sample - Fertility: 2")
+checkTruthy("l'intrus est copie au passage, pas jete",
+            table.concat(world.collected, ","):find("Flowering: Slower", 1, true))
 
 print("")
 print("=== Resultats ===")

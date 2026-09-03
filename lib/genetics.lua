@@ -58,6 +58,88 @@ local function drainOutput(machine)
     return moved, machine:slot(slot) == nil
 end
 
+--- A step that lets a machine consume whatever is already in its input
+--- Gendustry will not let anything pull an input slot back out, so a job that
+--- demanded an empty machine had to ask for a human. But there is a second way
+--- to empty an input: let the machine eat it. Handed the missing consumables it
+--- finishes the work, the slot clears itself, and the result is a gene we
+--- wanted anyway -- one labware and one blank for a job that no longer blocks.
+---
+--- The Mutatron is deliberately excluded: running a mutation on the wrong
+--- parents can produce nothing at all, so there the hands are still needed.
+--- @param machineName string
+--- @param inputKey string Slot key holding what the machine reads
+--- @param wantedLabel function(job) -> string|nil
+--- @return table step
+local function finishLoadedStep(machineName, inputKey, wantedLabel)
+    local function foreign(job, machine)
+        local slots = machine.link.slots
+        local occupant = machine:slot(slots[inputKey])
+
+        if not occupant then return nil end
+        if occupant.label == wantedLabel(job) then return nil end
+
+        return occupant
+    end
+
+    return {
+        name = "finir-le-travail-engage",
+        verify = function(job, context)
+            local machine = machineOf(context, machineName)
+            if not machine then return false end
+            return foreign(job, machine) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, machineName)
+            if not machine then return jobs.FAILED, err end
+
+            local occupant = foreign(job, machine)
+            if not occupant then return jobs.DONE end
+
+            report(context, "travail engage a finir: " .. tostring(occupant.label))
+
+            local slots = machine.link.slots
+
+            -- Only the consumables: the machine already holds what it reads
+            for _, entry in ipairs({
+                {spec = job.params.blank,   slot = slots.blank or slots.destination},
+                {spec = job.params.labware, slot = slots.labware},
+            }) do
+                if entry.slot and not machine:slot(entry.slot) then
+                    local ok, reason = machine:load(entry.spec, entry.slot, 1)
+                    if not ok then
+                        return jobs.RETRY,
+                            "impossible de finir le travail engage: " .. tostring(reason)
+                    end
+                end
+            end
+
+            local wait = job.params.timeout
+                or (context.config and context.config.genetics
+                    and context.config.genetics.sample_timeout_seconds)
+                or 120
+
+            local stack = machine:awaitOutput(slots.output, wait)
+            if not stack then
+                return jobs.RETRY, "la machine ne finit pas le travail engage"
+            end
+
+            if stack.label then
+                report(context, "recupere au passage: " .. stack.label)
+            end
+
+            machine:unload(slots.output)
+
+            if foreign(job, machine) then
+                -- One pass was not enough; coming back costs nothing
+                return jobs.RETRY, "entree toujours occupee, nouvelle passe"
+            end
+
+            return jobs.DONE
+        end,
+    }
+end
+
 --- Build and check the parameters of a sampling job
 --- @param options table {bee}
 --- @return table|nil params
@@ -105,6 +187,9 @@ genetics.SAMPLE_STEPS = {
     },
 
     -- -----------------------------------------------------------------------
+    finishLoadedStep("sampler", "input", function(job) return job.params.bee.label end),
+
+    -- -----------------------------------------------------------------------
     {
         name = "charger-le-sampler",
         verify = function(job, context)
@@ -139,12 +224,13 @@ genetics.SAMPLE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    -- Gendustry will not let anything pull this back out, so
-                    -- naming the slot the player sees is all we can offer
-                    return jobs.RETRY, entry.role .. ": le sampler contient deja "
+                    -- The previous step exists to make this impossible; if it
+                    -- still happens, something is stuck in a way no machine
+                    -- cycle clears
+                    return jobs.RETRY, entry.role .. ": le sampler tient encore "
                         .. tostring(occupant.label) .. " dans le slot "
                         .. sampler:resolveSlot(entry.slot)
-                        .. ". Retire-le a la main puis relance."
+                        .. ", que la machine ne consomme pas. Retire-le a la main."
                 end
             end
 
@@ -288,6 +374,10 @@ genetics.DUPLICATE_STEPS = {
     },
 
     -- -----------------------------------------------------------------------
+    finishLoadedStep("genetic_transposer", "source",
+                     function(job) return job.params.sample.label end),
+
+    -- -----------------------------------------------------------------------
     {
         name = "charger-le-transposer",
         verify = function(job, context)
@@ -318,11 +408,14 @@ genetics.DUPLICATE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
+                    -- The previous step exists to make this impossible; if it
+                    -- still happens, something is stuck in a way no machine
+                    -- cycle clears
                     return jobs.RETRY, entry.role
-                        .. ": le transposer contient deja "
+                        .. ": le transposer tient encore "
                         .. tostring(occupant.label) .. " dans le slot "
                         .. machine:resolveSlot(entry.slot)
-                        .. ". Retire-le a la main puis relance."
+                        .. ", que la machine ne consomme pas. Retire-le a la main."
                 end
             end
 
