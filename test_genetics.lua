@@ -149,6 +149,13 @@ local transposerComponent = {
         if not stack then return false end
 
         if toSide == SIDE_INTERFACE then
+            -- Gendustry refuses automated extraction from input slots, exactly
+            -- as the Mutatron does. A mock that allowed it made a job asking
+            -- for the impossible look correct.
+            if fromSide == SIDE_SAMPLER and fromSlot ~= oc(3) then
+                return false
+            end
+
             table.insert(world.collected, stack.label)
             from[fromSlot] = nil
             return true
@@ -314,6 +321,50 @@ checkTruthy("l'ancien sample est rendu au reseau",
             table.concat(world.collected, ","):find("Species: Wintry", 1, true))
 check("le gene rapporte est bien le nouveau",
       queue:get(1).params.obtained.chromosome, "Territory")
+
+print("")
+print("-- des consommables restes en entree servent au run suivant --")
+
+-- Gendustry will not let anything pull these out, so a job that insisted on an
+-- empty machine could never start. They are also exactly what is needed.
+os.remove(QUEUE)
+reset()
+world.sampler[oc(0)] = {name = "gendustry:gene_sample_blank",
+                        label = "Blank Gene Sample", size = 1}
+world.sampler[oc(1)] = {name = "gendustry:labware",
+                        label = "Genetics Labware", size = 1}
+
+queue, context = buildStack()
+queue:submit("sample", genetics.sampleParams({bee = {label = "Meadows Drone"}}))
+queue:run(context, {maxSteps = 40})
+
+check("tache terminee", queue:get(1).status, jobs.COMPLETE)
+check("la machine a tourne", world.runs, 1)
+-- Reused, not re-delivered: the network still holds all seventy blanks
+check("les consommables en place sont reutilises",
+      (function()
+          for _, item in ipairs(world.network) do
+              if item.name == "gendustry:gene_sample_blank" then return item.size end
+          end
+      end)(), 70)
+
+print("")
+print("-- une entree occupee par le mauvais item demande une main --")
+
+os.remove(QUEUE)
+reset()
+world.sampler[oc(2)] = {name = "forestry:bee_drone_ge",
+                        label = "Wintry Drone", size = 1}
+
+queue, context = buildStack()
+queue:submit("sample", genetics.sampleParams({bee = {label = "Meadows Drone"}}))
+queue:run(context, {maxSteps = 40})
+
+check("la tache attend", queue:get(1).status, jobs.PENDING)
+checkTruthy("elle nomme l'intrus",
+            queue:get(1).error and queue:get(1).error:find("Wintry Drone"))
+checkTruthy("et demande un retrait manuel",
+            queue:get(1).error and queue:get(1).error:find("a la main"))
 
 print("")
 print("-- un consommable manquant fait attendre, pas echouer --")

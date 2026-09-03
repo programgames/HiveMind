@@ -71,9 +71,15 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   `database.computeHash` (SHA-256). Ils ne doivent **jamais** entrer dans le
   réseau ME.
 - **Les slots d'entrée des machines Gendustry refusent l'extraction
-  automatisée.** Une abeille laissée dans l'entrée du Mutatron par une tâche
-  échouée ne peut être retirée que **à la main**. C'est une contrainte du mod,
-  pas un bug à corriger.
+  automatisée.** Vrai sur le Mutatron **et sur les trois machines de
+  génétique** : seule la sortie peut être vidée. Un job qui exige une machine
+  entièrement vide demande l'impossible et échoue alors qu'il a réussi. Ce qui
+  reste en entrée n'est d'ailleurs pas un déchet : un labware ou un sample
+  vierge laissé là est exactement ce dont le run suivant a besoin.
+- **Toujours inspecter toutes les entrées avant d'en charger une seule.**
+  Fournir les consommables d'abord complète les besoins de la machine autour de
+  l'abeille déjà présente, et elle démarre sur la mauvaise avant qu'on ait
+  remarqué quoi que ce soit.
 - **Le Sampler tire un chromosome au hasard sur 13** : ~13 drones par gène
   Species visé, mais les 12 tirages ratés enrichissent quand même le pool.
 - **`waitForPrincess()` échoue si l'apiary porte l'upgrade Automation.**

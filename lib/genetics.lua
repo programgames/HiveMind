@@ -38,26 +38,24 @@ local function machineOf(context, name)
     return machine
 end
 
---- Empty every slot of a machine back into the network
---- Anything left in a machine is invisible to the ME network, so a job looking
---- for it reports it missing while it sits two blocks away. Draining first also
---- means a previous run's output is never mistaken for this one's.
+--- Empty a machine's OUTPUT back into the network
+--- Gendustry refuses automated extraction from input slots -- the same rule the
+--- Mutatron enforces -- so trying to empty everything asks for the impossible
+--- and fails a step that had actually succeeded. Only the output can be taken.
+---
+--- What sits in an input is not rubbish anyway: a labware or a blank sample
+--- left there is exactly what the next run needs.
 --- @param machine table
 --- @return number moved
---- @return number remaining
-local function drain(machine)
-    local moved, remaining = 0, 0
+--- @return boolean cleared
+local function drainOutput(machine)
+    local slot = machine.link.slots.output
+    if not slot then return 0, true end
 
-    for _, slot in pairs(machine.link.slots or {}) do
-        if type(slot) == "number" then
-            if machine:slot(slot) then
-                moved = moved + (machine:unload(slot) or 0)
-            end
-            if machine:slot(slot) then remaining = remaining + 1 end
-        end
-    end
+    if not machine:slot(slot) then return 0, true end
 
-    return moved, remaining
+    local moved = machine:unload(slot) or 0
+    return moved, machine:slot(slot) == nil
 end
 
 --- Build and check the parameters of a sampling job
@@ -83,7 +81,7 @@ end
 genetics.SAMPLE_STEPS = {
     -- -----------------------------------------------------------------------
     {
-        name = "vider-le-sampler",
+        name = "vider-la-sortie-du-sampler",
         verify = function(job, context)
             local sampler = machineOf(context, "sampler")
             if not sampler then return false end
@@ -93,13 +91,13 @@ genetics.SAMPLE_STEPS = {
             local sampler, err = machineOf(context, "sampler")
             if not sampler then return jobs.FAILED, err end
 
-            local moved, remaining = drain(sampler)
+            local moved, cleared = drainOutput(sampler)
             if moved > 0 then
-                report(context, "sampler vide: " .. moved .. " item(s) rendus")
+                report(context, "sortie du sampler recoltee: " .. moved .. " item(s)")
             end
 
-            if remaining > 0 then
-                return jobs.RETRY, remaining .. " slot(s) du sampler ne se vident pas"
+            if not cleared then
+                return jobs.RETRY, "la sortie du sampler ne se vide pas"
             end
 
             return jobs.DONE
@@ -131,6 +129,24 @@ genetics.SAMPLE_STEPS = {
                 {spec = job.params.labware, slot = slots.labware, role = "labware"},
                 {spec = job.params.bee,     slot = slots.input,   role = "abeille"},
             }
+
+            -- Inspect everything BEFORE loading anything. Feeding the
+            -- consumables in first completes the machine's requirements around
+            -- whatever bee is already sitting there, and it runs on the wrong
+            -- one before the mismatch is ever noticed.
+            for _, entry in ipairs(order) do
+                local occupant = sampler:slot(entry.slot)
+
+                if occupant and entry.spec.label
+                   and occupant.label ~= entry.spec.label then
+                    -- Gendustry will not let anything pull this back out, so
+                    -- naming the slot the player sees is all we can offer
+                    return jobs.RETRY, entry.role .. ": le sampler contient deja "
+                        .. tostring(occupant.label) .. " dans le slot "
+                        .. sampler:resolveSlot(entry.slot)
+                        .. ". Retire-le a la main puis relance."
+                end
+            end
 
             for _, entry in ipairs(order) do
                 if not sampler:slot(entry.slot) then
@@ -229,6 +245,6 @@ function genetics.sampleHandler()
 end
 
 -- Exposed for the tests and for tools that need to tidy a machine
-genetics.drain = drain
+genetics.drainOutput = drainOutput
 
 return genetics
