@@ -24,6 +24,19 @@
 
 local transport = {}
 
+--- Real seconds since the computer started
+--- os.time() on OpenOS returns Minecraft world time, which runs about 72 times
+--- faster than real time: a twenty second timeout expired in under half a real
+--- second, long before AE2 could react. computer.uptime() is the real clock.
+--- @return function clock
+local function realClock()
+    local ok, computer = pcall(require, "computer")
+    if ok and type(computer) == "table" and computer.uptime then
+        return computer.uptime
+    end
+    return os.clock
+end
+
 local Transport = {}
 Transport.__index = Transport
 
@@ -51,7 +64,7 @@ function transport.new(options)
             local ok, os_sleep = pcall(function() return os.sleep end)
             if ok and os_sleep then os_sleep(seconds) end
         end,
-        clock = options.clock or os.time,
+        clock = options.clock or realClock(),
     }, Transport)
 end
 
@@ -252,21 +265,45 @@ function Transport:stage(spec, count, link)
         end
     end
 
-    -- Pin the exact stack, NBT included, into the database
-    local stored, store_err = invoke(self.me, "store",
+    -- Drop any previous entry: a stale one would be stocked instead, and the
+    -- interface would faithfully deliver the wrong item.
+    invoke(self.database, "clear", dock)
+
+    -- Pin the exact stack, NBT included, into the database.
+    -- invoke() answers (pcall succeeded, method result); reading only the first
+    -- treats a store() that returned false as a success, which is how a stale
+    -- database entry once had AE2 deliver a Labware labelled as a princess.
+    local called, stored = invoke(self.me, "store",
         {name = entry.name, label = entry.label}, self.database.address, dock, 1)
 
-    if not stored then
+    if not called then
         self:releaseDock(dock)
-        return nil, "store() a echoue: " .. tostring(store_err)
+        return nil, "store() injoignable: " .. tostring(stored)
     end
 
-    local configured, config_err = invoke(self.me, "setInterfaceConfiguration",
+    -- Trust nothing: read the entry back and check it is what was asked for
+    local read_ok, written = invoke(self.database, "get", dock)
+    local writtenLabel = (read_ok and type(written) == "table")
+        and (written.label or written.name) or nil
+
+    if not writtenLabel then
+        self:releaseDock(dock)
+        return nil, "store() n'a rien ecrit dans la database pour '"
+            .. tostring(spec.label or spec.name) .. "'"
+    end
+
+    if spec.label and writtenLabel ~= spec.label then
+        self:releaseDock(dock)
+        return nil, "la database contient '" .. writtenLabel
+            .. "' au lieu de '" .. spec.label .. "' (filtre AE2 inadapte ?)"
+    end
+
+    local config_called, configured = invoke(self.me, "setInterfaceConfiguration",
         dock, self.database.address, dock, count)
 
-    if not configured then
+    if not config_called or configured == false then
         self:releaseDock(dock)
-        return nil, "configuration du quai impossible: " .. tostring(config_err)
+        return nil, "configuration du quai impossible: " .. tostring(configured)
     end
 
     return dock

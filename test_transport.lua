@@ -61,6 +61,7 @@ local function reset(options)
         moveShort = options.moveShort,
         numericTransfer = options.numericTransfer,
         stickyDock = options.stickyDock,
+        storeRefuses = options.storeRefuses,
     }
 
     calls = {store = 0, configure = 0, transfer = 0, cleared = {}}
@@ -78,8 +79,13 @@ local me = {
         return world.network
     end),
 
+    -- Returns false when the filter matches nothing, and leaves the database
+    -- slot untouched. Reading only pcall's success would take that for a win.
     store = callable(function(filter, address, slot, count)
         calls.store = calls.store + 1
+
+        if world.storeRefuses then return false end
+
         for _, item in ipairs(world.network) do
             if item.label == filter.label then
                 world.database[slot] = item
@@ -176,6 +182,7 @@ local transposer = {
 
 local database = {
     address = "db-0000",
+    clear = callable(function(slot) world.database[slot] = nil return true end),
     get = callable(function(slot) return world.database[slot] end),
     computeHash = callable(function(slot)
         local stack = world.database[slot]
@@ -277,6 +284,27 @@ checkTruthy("l'item refuse est nomme", move_err and move_err:find("Speed: Fastes
 checkTruthy("le slot vise est nomme", move_err and move_err:find("slot 1", 1, true))
 checkTruthy("le contenu du slot est rapporte", move_err and move_err:find("contient", 1, true))
 check("quai libere malgre l'echec", next(layer.reserved), nil)
+
+-- store() answering false must not pass for success. A stale database entry is
+-- then stocked instead, and AE2 delivers the wrong item with total confidence.
+reset({storeRefuses = true})
+layer = newTransport()
+world.database[1] = {label = "Genetics Labware", name = "gendustry:labware"}
+
+local stale, stale_err = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 1)
+check("store() refuse -> echec", stale, false)
+checkTruthy("la cause est nommee", stale_err and stale_err:find("database", 1, true))
+check("aucune livraison du mauvais item", world.machine[1], nil)
+check("quai libere", next(layer.reserved), nil)
+
+-- The entry left over from a previous staging must not be reused either
+reset()
+layer = newTransport()
+world.database[1] = {label = "Genetics Labware", name = "gendustry:labware"}
+local fresh = layer:deliver({label = "Bee Sample - Speed: Fastest"}, LINK, 3)
+checkTruthy("l'entree perimee est remplacee", fresh)
+check("bon item livre", world.machine[3] and world.machine[3].label,
+      "Bee Sample - Speed: Fastest")
 
 -- A dock that never releases its contents is caught before anything is moved,
 -- rather than after the wrong item has been fed to a machine

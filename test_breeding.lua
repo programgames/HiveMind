@@ -76,6 +76,7 @@ local function reset(options)
             {name = "gendustry:labware", label = "Labware", size = 64},
         },
         interface = {},
+        staged = {},      -- the Database upgrade
         mutatron = {},
         apiary = {},
         mutagen = options.mutagen or 8000,
@@ -111,10 +112,11 @@ local me = {
         end
         return world.network
     end),
+    -- Writes into the database only on a match, and answers false otherwise.
+    -- Taking that for success is what once had AE2 stock a stale entry.
     store = callable(function(filter, address, slot)
         for _, item in ipairs(world.network) do
             if item.label == filter.label then
-                world.staged = world.staged or {}
                 world.staged[slot] = item
                 return true
             end
@@ -123,8 +125,10 @@ local me = {
     end),
     setInterfaceConfiguration = callable(function(dock, address, entry, count)
         if not address then world.interface[dock] = nil return true end
-        local item = world.staged and world.staged[entry]
-        if item then world.interface[dock] = {label = item.label, name = item.name, size = count or 1} end
+        local item = world.staged[entry]
+        if item then
+            world.interface[dock] = {label = item.label, name = item.name, size = count or 1}
+        end
         return true
     end),
     isNetworkPowered = callable(function() return true end),
@@ -132,7 +136,8 @@ local me = {
 
 local database = {
     address = "db",
-    get = callable(function() return nil end),
+    clear = callable(function(slot) world.staged[slot] = nil return true end),
+    get = callable(function(slot) return world.staged[slot] end),
     computeHash = callable(function() return "hash" end),
 }
 

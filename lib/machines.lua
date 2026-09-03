@@ -26,6 +26,18 @@ machines.NO_RESOURCE = "no_resource"
 machines.ERROR = "error"
 machines.OFFLINE = "offline"
 
+--- Real seconds since the computer started
+--- os.time() on OpenOS returns Minecraft world time, which runs about 72 times
+--- faster than real time: waiting "sixty seconds" on it lasts under a second.
+--- @return function clock
+local function realClock()
+    local ok, computer = pcall(require, "computer")
+    if ok and type(computer) == "table" and computer.uptime then
+        return computer.uptime
+    end
+    return os.clock
+end
+
 --- Call a component method without ever aborting the caller
 --- @return boolean ok
 --- @return any result
@@ -62,7 +74,7 @@ local function newMachine(options, metatable)
             local ok, os_sleep = pcall(function() return os.sleep end)
             if ok and os_sleep then os_sleep(seconds) end
         end,
-        clock = options.clock or os.time,
+        clock = options.clock or realClock(),
     }, metatable or Machine)
 end
 
