@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.9.0"
+hivemind.VERSION = "0.9.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -501,6 +501,54 @@ function hivemind.slotDiagnostic(context)
     print("les livraisons. Vide-le a la main dans la ME Interface si besoin.")
 end
 
+--- Cancel a job or clear out the finished ones
+--- A job whose target turned out to be impossible sits in the queue blocking
+--- everything behind it, and there was no way to get rid of it.
+--- @param context table
+function hivemind.manageQueue(context)
+    local all = context.queue:list()
+
+    if #all == 0 then
+        print("La file est vide.")
+        return
+    end
+
+    print("")
+    for _, line in ipairs(context.queue:describe()) do print("  " .. line) end
+
+    print("")
+    print("  a = annuler une tache")
+    print("  p = purger les taches terminees et annulees")
+    print("  vide = retour")
+    io.write("Choix: ")
+
+    local answer = io.read()
+    if not answer then return end
+    answer = answer:gsub("%s+", ""):lower()
+
+    if answer == "p" then
+        print(context.queue:prune() .. " tache(s) purgee(s).")
+        return
+    end
+
+    if answer ~= "a" then return end
+
+    io.write("Numero de la tache a annuler: ")
+    local id = tonumber(io.read())
+
+    if not id then
+        print("Annule.")
+        return
+    end
+
+    local ok, err = context.queue:cancel(id)
+    if ok then
+        print("Tache #" .. id .. " annulee.")
+    else
+        print("Impossible: " .. tostring(err))
+    end
+end
+
 --- Run the queue until it stops making progress
 --- @param context table
 function hivemind.runQueue(context)
@@ -538,6 +586,7 @@ local function menu(context)
         print("4. Executer la file")
         print("5. Quitter")
         print("6. Diagnostic des slots")
+        print("7. Gerer la file (annuler, purger)")
         io.write("Choix: ")
 
         local choice = io.read()
@@ -551,6 +600,7 @@ local function menu(context)
         elseif choice == "4" then hivemind.runQueue(context)
         elseif choice == "5" then print("Au revoir.") return
         elseif choice == "6" then hivemind.slotDiagnostic(context)
+        elseif choice == "7" then hivemind.manageQueue(context)
         else print("Choix invalide.") end
     end
 end
