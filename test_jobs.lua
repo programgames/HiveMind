@@ -98,6 +98,15 @@ local FLAKY = {
     }},
 }
 
+-- Waits forever without ever failing: the shape of a job blocked on a bee the
+-- network does not hold yet
+local WAITING = {
+    steps = {{
+        name = "attend-toujours",
+        run = function() return jobs.RETRY, "attend quelque chose" end,
+    }},
+}
+
 local THROWING = {
     steps = {{
         name = "throws",
@@ -108,7 +117,8 @@ local THROWING = {
 local function newQueue()
     return jobs.new({
         path = PATH,
-        handlers = {breed = BREED, flaky = FLAKY, throwing = THROWING},
+        handlers = {breed = BREED, flaky = FLAKY, throwing = THROWING,
+                    waiting = WAITING},
         clock = clock,
     })
 end
@@ -256,6 +266,49 @@ managed:run({})
 check("la tache restante s'execute", managed:get(a).status, jobs.COMPLETE)
 check("2 taches purgees", managed:prune(), 2)
 check("file vide apres purge", #managed:list(), 0)
+
+print("")
+print("-- une tache en attente ne bloque pas les suivantes --")
+
+-- The queue used to abort the whole pass on the first RETRY. In game that meant
+-- a job waiting for a drone kept the campaign meant to produce that drone from
+-- ever starting.
+os.remove(PATH)
+freshWorld()
+
+local shared = newQueue()
+local blockedId = shared:submit("waiting", {})
+local followerId = shared:submit("breed", {target = "Common"})
+
+local pass = shared:run(context, {maxSteps = 40})
+
+check("la tache en attente reste en attente",
+      shared:get(blockedId).status, jobs.PENDING)
+check("la tache suivante va au bout",
+      shared:get(followerId).status, jobs.COMPLETE)
+checkTruthy("la passe est signalee comme bloquee", pass.blocked)
+checkTruthy("l'attente est comptee", pass.retried >= 1)
+
+-- And it must not spin on the parked job to get there
+checkTruthy("aucune boucle sur la tache en attente", pass.steps < 40)
+
+print("")
+print("-- une panne definitive arrete quand meme la passe --")
+
+os.remove(PATH)
+freshWorld()
+FLAKY_ATTEMPTS = 0
+
+local halting = jobs.new({path = PATH,
+                          handlers = {flaky = FLAKY, breed = BREED},
+                          clock = clock, maxAttempts = 1})
+local brokenId = halting:submit("flaky", {})
+local afterId = halting:submit("breed", {target = "Common"})
+
+halting:run(context, {maxSteps = 40})
+
+check("la tache en panne est en erreur", halting:get(brokenId).status, jobs.ERROR)
+check("la suivante n'a pas ete entamee", halting:get(afterId).step, 1)
 
 print("")
 print("-- persistance de la file --")

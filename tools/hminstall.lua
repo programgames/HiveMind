@@ -97,6 +97,26 @@ end
 --- @param url string
 --- @return string|nil body
 --- @return string|nil error
+--- A value that differs on every run, to defeat the CDN cache
+--- GitHub serves raw files through a cache that keeps handing out the previous
+--- version for minutes after a push, per file and with independent expiry. That
+--- produced an install mixing a fresh tool with a three-versions-old program,
+--- which then failed in ways that had nothing to do with the actual code. A
+--- query string the cache has never seen forces a fresh fetch.
+--- @return string
+local counter = 0
+local function cacheBuster()
+    counter = counter + 1
+
+    local seconds = 0
+    local ok, computer = pcall(require, "computer")
+    if ok and computer and computer.uptime then
+        seconds = math.floor((tonumber(computer.uptime()) or 0) * 1000)
+    end
+
+    return tostring(os.time()) .. "-" .. tostring(seconds) .. "-" .. counter
+end
+
 local function fetch(url)
     local ok, internet = pcall(require, "internet")
     if not ok then return nil, "bibliotheque internet indisponible" end
@@ -105,7 +125,8 @@ local function fetch(url)
         return nil, "aucune carte Internet dans l'ordinateur"
     end
 
-    local requested, handle = pcall(internet.request, url)
+    local requested, handle = pcall(internet.request,
+        url .. "?nocache=" .. cacheBuster())
     if not requested then return nil, tostring(handle) end
 
     local chunks = {}

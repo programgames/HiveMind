@@ -311,8 +311,17 @@ function Queue:run(context, options)
     local report = {steps = 0, completed = 0, retried = 0, failed = 0, blocked = false}
     local limit = options.maxSteps or 1000
 
+    -- A job that answered RETRY is waiting, not failing, and there is usually
+    -- other work behind it. Stopping the whole pass on it meant one bee missing
+    -- from the network kept every later job from moving, including the campaign
+    -- meant to produce that very bee.
+    local parked = {}
+
     while report.steps < limit do
-        local job = self:pending()[1]
+        local job = nil
+        for _, candidate in ipairs(self:pending()) do
+            if not parked[candidate.id] then job = candidate break end
+        end
         if not job then break end
 
         local before_step = job.step
@@ -327,22 +336,23 @@ function Queue:run(context, options)
             if job.status == jobs.COMPLETE then report.completed = report.completed + 1 end
         elseif outcome == jobs.RETRY then
             report.retried = report.retried + 1
-            -- A job asking to wait must not be retried immediately in the same
-            -- pass, or the loop spins on it. Stop and let the caller come back.
+            -- Set aside for this pass rather than retried immediately, which
+            -- would spin, or aborting everything, which would starve the rest
             report.blocked = true
-            break
+            parked[job.id] = true
         else
             report.failed = report.failed + 1
+            -- A permanent failure is the one thing worth stopping for: the
+            -- operator has to see it rather than find it buried under later work
             if job.status == jobs.ERROR then break end
-            -- Not permanently failed: it will be retried on the next pass
             report.blocked = true
-            break
+            parked[job.id] = true
         end
 
         -- Safety net against a verify/run pair that never advances
         if job.step == before_step and job.status ~= jobs.COMPLETE then
             report.blocked = true
-            break
+            parked[job.id] = true
         end
     end
 

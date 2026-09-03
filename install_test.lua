@@ -126,6 +126,22 @@ end
 check("tous les modules requis sont telecharges", allListed)
 
 check("branche par defaut utilisee", requested[1]:find("industrial-genetics", 1, true) ~= nil)
+
+-- GitHub's raw CDN kept serving a stale copy for minutes after a push, which
+-- once produced an install mixing a fresh tool with a three-versions-old
+-- program. A query the cache has never seen forces a real fetch.
+local busted, distinct, seen = true, true, {}
+for _, url in ipairs(requested) do
+    local token = url:match("nocache=([^&]+)$")
+    if not token then busted = false end
+    if token then
+        if seen[token] then distinct = false end
+        seen[token] = true
+    end
+end
+
+check("chaque telechargement contourne le cache", busted)
+check("aucun jeton de cache reutilise", distinct)
 check("hivemind telecharge", requested[1]:find("hivemind.lua", 1, true) ~= nil)
 
 local writes = table.concat(written, " ")

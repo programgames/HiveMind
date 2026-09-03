@@ -48,8 +48,21 @@ local function capture(fn, ...)
         say(table.concat(parts, "\t"))
     end
 
-    local ok, err = pcall(fn, ...)
+    local ok, err
+    if type(fn) ~= "function" then
+        ok, err = false, "fonction absente de cette version du programme"
+    else
+        ok, err = pcall(fn, ...)
+    end
+
     print = real
+
+    -- An empty section is the worst answer: it reads as "nothing to report"
+    -- when it actually means the call never happened.
+    if not ok then
+        say("  ECHEC: " .. tostring(err))
+        say("  (relance hminstall si la fonction est absente)")
+    end
 
     return ok, err
 end
@@ -148,6 +161,23 @@ local function main(args)
 
     say("HiveMind - rapport automatique")
     say("version " .. tostring(hivemind.VERSION))
+
+    -- The CDN can serve a fresh tool next to a stale program. Saying so here
+    -- beats a report full of empty sections that look like good news.
+    local absent = {}
+    for _, name in ipairs({"bootstrap", "status", "slotDiagnostic", "runQueue",
+                           "harvestApiary"}) do
+        if type(hivemind[name]) ~= "function" then table.insert(absent, name) end
+    end
+
+    if #absent > 0 then
+        say("")
+        say("ATTENTION: hivemind.lua est plus ancien que cet outil.")
+        say("  manquant: " .. table.concat(absent, ", "))
+        say("  Relance hminstall: le cache de GitHub a servi une vieille copie.")
+        print("hivemind.lua est trop ancien (" .. table.concat(absent, ", ") .. ").")
+        print("Relance hminstall, puis recommence.")
+    end
 
     section("COMPOSANTS")
     for address, kind in component.list() do
