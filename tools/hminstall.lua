@@ -3,13 +3,18 @@
 -- Downloads every file the program needs, creating directories as it goes.
 -- Re-run it any time to update: existing files are overwritten.
 --
--- The OpenOS shell has no loops, so nine wget lines by hand is the alternative.
+-- The OpenOS shell has no loops, so a dozen wget lines by hand is the
+-- alternative.
+--
+-- Named hminstall and not install: OpenOS already ships an "install" command,
+-- the one that copies OpenOS onto a hard drive. Which of the two ran would
+-- depend on the PATH order, and getting that wrong is not a small mistake.
 --
 -- Requires an Internet Card and internet.enableHttp (on by default).
 --
 -- Usage:
---   install                 install from the default branch
---   install <branch>        install from another branch
+--   hminstall                 install from the default branch
+--   hminstall <branch>        install from another branch
 
 local component = require("component")
 
@@ -31,6 +36,7 @@ local FILES = {
     "tools/calibrate.lua",
     "tools/discover.lua",
     "tools/upload.lua",
+    "tools/hminstall.lua",
 }
 
 --- Turn a path into an absolute one
@@ -196,6 +202,9 @@ local function main(args)
     print("")
     print("Lance le programme avec :  hivemind")
     print("Outils disponibles      :  calibrate, discover, upload")
+    print("Mise a jour             :  hminstall")
+    print("")
+    print("Les fichiers sont dans le repertoire courant; lance-les depuis ici.")
 end
 
 main({...})
