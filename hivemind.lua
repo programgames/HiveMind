@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.59.0"
+hivemind.VERSION = "0.60.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -270,7 +270,6 @@ function hivemind.bootstrap(options)
     register("sample",    genetics, "sampleHandler",    "lib/genetics.lua")
     register("duplicate", genetics, "duplicateHandler", "lib/genetics.lua")
     register("campaign",  genetics, "campaignHandler",  "lib/genetics.lua")
-    register("template",  genetics, "templateHandler",  "lib/genetics.lua")
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
@@ -1392,80 +1391,83 @@ function hivemind.duplicateGene(context)
     print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
 end
 
---- Queue the writing of one gene into a template
---- A template is what the Imprinter applies to a bee: without one the library
---- is a museum. It is built in the Genetic Transposer and never leaves that
---- bench, because AE2 cannot tell a written template from a blank one.
+--- Explain how a template is actually built, and what is available for one
+--- Templates are not made in a machine. The mod's own text says so: "Genetic
+--- Samples can be added to a Template. Combine them in any crafting table.
+--- Multiple samples can be added at once." No slot of any machine accepts a
+--- Genetic Template, which is exactly what the probe found.
+---
+--- So this lists what a template could be built from rather than pretending to
+--- build one. Everything it needs is a crafting table, or an AE2 pattern.
 --- @param context table
-function hivemind.writeTemplate(context)
+function hivemind.templateHelp(context)
     print("")
-    print("=== ECRIRE UN GENE DANS UN TEMPLATE ===")
-    print("Le template reste dans le Genetic Transposer: le reseau ME ne sait")
-    print("pas distinguer un template ecrit d un vierge, il y serait perdu.")
+    print("=== CONSTRUIRE UN TEMPLATE ===")
+    print("Les templates ne se font pas dans une machine. Le mod le dit:")
+    print("  'Genetic Samples can be added to a Template. Combine them in any")
+    print("   crafting table. Multiple samples can be added at once.'")
+    print("")
+    print("Table de craft: un Genetic Template + tes Gene Samples, ensemble.")
+    print("Plusieurs samples d'un coup. En AE2, un motif de craft fait pareil.")
     print("")
 
-    local samples = context.transport:findAll({name = "gendustry:gene_sample"})
-
-    if #samples == 0 then
-        print("Aucun gene en stock. Utilise d abord l option a.")
-        return
-    end
-
-    local merged, order = {}, {}
-    for _, item in ipairs(samples) do
-        local label = tostring(item.label or "?")
-        if not merged[label] then
-            merged[label] = 0
-            table.insert(order, label)
-        end
-        merged[label] = merged[label] + (tonumber(item.size) or 0)
-    end
-    table.sort(order)
-
-    for index, label in ipairs(order) do
-        print(string.format("%3d. %-44s x%d", index, label, merged[label]))
-    end
-
-    print("")
-    io.write("Choisis le gene a ecrire (numero, ou vide pour annuler): ")
-    local answer = io.read()
-    local choice = tonumber(answer and answer:gsub("%s+", ""))
-
-    if not choice or not order[choice] then print("Annule.") return end
-
-    -- Every machine refused gendustry:gene_template on every slot, which makes
-    -- the one we hold the written kind. The blank is what a machine takes in.
-    local blanks = 0
+    local templates = 0
     for _, item in ipairs(context.transport:findAll(
-            {name = "gendustry:gene_template_blank"}) or {}) do
-        blanks = blanks + (tonumber(item.size) or 0)
+            {name = "gendustry:gene_template"}) or {}) do
+        templates = templates + (tonumber(item.size) or 0)
+    end
+
+    print("Genetic Template en stock : " .. templates)
+    print("")
+
+    context.library:scan()
+    local genes = context.library:allGenes()
+
+    local lines = {}
+    for slot, chromosome in pairs(genes) do
+        for allele, entry in pairs(chromosome) do
+            table.insert(lines, {
+                slot = slot,
+                text = string.format("  %-22s %-24s x%d",
+                    tostring(genome.labelForSlot(slot) or slot),
+                    tostring(allele), tonumber(entry.count) or 0),
+            })
+        end
+    end
+
+    table.sort(lines, function(a, b) return a.slot < b.slot end)
+
+    if #lines == 0 then
+        print("Aucun gene en bibliotheque. Utilise l'option d pour en recolter.")
+        return
+    end
+
+    print("Genes disponibles pour un template :")
+    for _, line in ipairs(lines) do print(line.text) end
+
+    -- Thirteen chromosomes exist; a template carrying all of them is the one
+    -- that makes any bee perfect in a single imprint
+    local held = {}
+    for slot in pairs(genes) do held[slot] = true end
+
+    local missing = {}
+    for slot = 0, 12 do
+        if not held[slot] then
+            table.insert(missing, tostring(genome.labelForSlot(slot) or slot))
+        end
     end
 
     print("")
-    print("  " .. order[choice])
-    print("  templates vierges en stock : " .. blanks)
-
-    if blanks == 0 then
-        print("")
-        print("Aucun Blank Genetic Template dans le reseau.")
-        print("Les machines refusent 'Genetic Template': c'est le template ECRIT.")
-        print("Mets des templates VIERGES en autocraft AE2.")
-        return
+    if #missing == 0 then
+        print("Les treize chromosomes sont couverts.")
+    else
+        print(#missing .. " chromosome(s) encore absent(s) :")
+        print("  " .. table.concat(missing, ", "))
     end
 
-    local params, err = genetics.templateParams({gene = {label = order[choice]}})
-    if not params then
-        print("Parametres invalides: " .. tostring(err))
-        return
-    end
-
-    local id, submit_err = context.queue:submit("template", params)
-    if not id then
-        print("Impossible de creer la tache: " .. tostring(submit_err))
-        return
-    end
-
-    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+    print("")
+    print("Note: l'Imprinter refuse un template vide. Il faut y mettre au moins")
+    print("un gene avant qu'il l'accepte, ce qui expliquera son slot template.")
 end
 
 --- Queue a run of extractions until a gene comes up
@@ -1738,8 +1740,8 @@ local ENTRIES = {
      hint = "copie tout ce qui est en un seul exemplaire", action = "secureLibrary"},
     {key = "d", label = "Campagne de genes",
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
-    {key = "e", label = "Ecrire un gene dans un template",
-     hint = "le template reste dans la machine", action = "writeTemplate"},
+    {key = "e", label = "Construire un template",
+     hint = "ce qui manque, et comment le faire", action = "templateHelp"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",

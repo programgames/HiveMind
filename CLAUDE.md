@@ -128,6 +128,17 @@ aucune erreur. Tout se désigne par préfixe d'adresse.
 bloc adressable comme composant. Une ME Interface sans Adapter est invisible, et
 chaque livraison échoue en donnant l'impression que la machine refuse l'objet.
 
+**Un template se remplit dans une TABLE DE CRAFT, pas dans une machine.** Le
+mod le dit lui-même (`gendustry.label.template.crafting`) : « Genetic Samples
+can be added to a Template. Combine them in any crafting table. Multiple samples
+can be added at once. » C'est pourquoi aucun slot d'aucune machine n'accepte un
+`gendustry:gene_template`, et pourquoi il n'existe **pas** d'item « template
+vierge » : un template vierge est un template à zéro chromosome. Un seul item :
+`gendustry:gene_template`.
+
+L'Imprinter refuse un template **vide** — d'où les deux slots qui « refusent
+tout » à la sonde. Il faudra un template rempli pour identifier son slot.
+
 **Un template ne doit jamais entrer dans le réseau ME** — même id, même
 étiquette, il y serait perdu parmi les vierges. Pas besoin de coffre pour
 autant : les trois machines de génétique partagent un transposer, donc le
