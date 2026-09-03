@@ -155,8 +155,12 @@ prober:close()
 check("le sondage ne bouge rien sans --yes",
       probeText:find("Rien n", 1, true) ~= nil
       and probeText:find("ete deplace", 1, true) ~= nil)
-check("il rend chaque marqueur",
-      probeText:find("context.transport:retrieve", 1, true) ~= nil)
+-- Returned to the dock rather than to the network: the same single item is
+-- offered to the next slot, instead of paying another ME round trip
+check("il reprend chaque marqueur",
+      probeText:find("link.machine, link.source, 64, raw, dock", 1, true) ~= nil)
+check("et libere le quai a la fin",
+      probeText:find("transport:releaseDock(dock)", 1, true) ~= nil)
 check("il ignore les marqueurs absents du reseau",
       probeText:find("ABSENT, ignore", 1, true) ~= nil)
 check("il ne sonde que les machines sans driver",
