@@ -215,6 +215,21 @@ local function main(args)
         print(dropped .. " module(s) en cache vide(s).")
     end
 
+    -- GitHub serves raw files through a CDN that can hand out the previous
+    -- version for a few minutes after a push. Showing what was actually
+    -- downloaded turns "did my update land?" into a glance.
+    local downloaded = io.open("hivemind.lua", "r")
+    if downloaded then
+        local body = downloaded:read("*all")
+        downloaded:close()
+
+        local version = body:match('VERSION%s*=%s*"([^"]+)"')
+        print("")
+        print("Version installee : " .. (version or "inconnue"))
+        print("Si elle n'a pas change alors qu'elle devrait, le CDN de GitHub")
+        print("sert encore l'ancienne: attends une minute et relance hminstall.")
+    end
+
     print("")
     print("Lance le programme avec :  hivemind")
     print("Outils disponibles      :  calibrate, discover, upload")

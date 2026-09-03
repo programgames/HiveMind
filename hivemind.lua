@@ -41,6 +41,12 @@ local genome = require("lib.genome")
 
 local hivemind = {}
 
+-- Printed at startup so "am I running the version we just fixed?" is answerable
+-- without counting bytes. raw.githubusercontent.com serves through a CDN that
+-- can hand out the previous file for a few minutes after a push, which has
+-- already cost one round of confusion.
+hivemind.VERSION = "0.5.0"
+
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
 --- @return table|nil proxy
@@ -328,7 +334,7 @@ local function menu(context)
 end
 
 function hivemind.main()
-    print("HiveMind - demarrage")
+    print("HiveMind v" .. hivemind.VERSION .. " - demarrage")
     print("")
 
     local context, problems = hivemind.bootstrap()
