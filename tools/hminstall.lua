@@ -211,7 +211,19 @@ local function main(args)
         else table.insert(positional, arg) end
     end
 
-    local branch = positional[1] or DEFAULT_BRANCH
+    -- An option this version does not know is not a branch name. Passing
+    -- "--clean" to an older copy made it fetch a branch of that name: seventeen
+    -- failed downloads and a listing that looked like a network problem.
+    local branch = positional[1]
+
+    if branch and branch:sub(1, 2) == "--" then
+        print("Option inconnue de cette version : " .. branch)
+        print("Ta copie de hminstall est plus ancienne que le depot.")
+        print("Lance 'tools/hminstall' : c'est celle qui vient d'etre telechargee.")
+        return
+    end
+
+    branch = branch or DEFAULT_BRANCH
     local base = REPOSITORY .. branch .. "/"
 
     print("HiveMind - installation depuis la branche " .. branch)
@@ -262,6 +274,25 @@ local function main(args)
         local running = source:match("^[@=](.*)$")
 
         local updatedItself, updateError = false, nil
+
+        -- Keep the launcher copy in step with the downloaded one. They drifted:
+        -- /home/hminstall.lua sat at a seventeen-file list while tools/ had
+        -- twenty, so "hminstall" and "tools/hminstall" installed different
+        -- things and lib/genetics.lua was in only one of them.
+        local launcher = absolute("hminstall.lua")
+        if running and absolute(running) == absolute("tools/hminstall.lua") then
+            local existing_copy = io.open(launcher, "r")
+            local existing_body = existing_copy and existing_copy:read("*all") or nil
+            if existing_copy then existing_copy:close() end
+
+            if existing_body and existing_body ~= ownBody then
+                local synced = write(launcher, ownBody)
+                if synced then
+                    print("")
+                    print("Copie de lancement remise a niveau : " .. launcher)
+                end
+            end
+        end
 
         if running and absolute(running) ~= absolute("tools/hminstall.lua") then
             local current = io.open(running, "r")

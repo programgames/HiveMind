@@ -257,11 +257,39 @@ end
 -- Launched from tools/ itself, the download already wrote the file: rewriting it
 -- and demanding a re-run would loop forever.
 requested, written, out = {}, {}, {}
+
+-- An out-of-date launcher copy sitting next to hivemind: exactly the drift that
+-- had "hminstall" and "tools/hminstall" installing different file lists
+for path in pairs(contents) do contents[path] = nil end
+contents["/home/hminstall.lua"] = "-- une vieille copie"
+
 capture()
 pcall(assert(load(body, "=/home/tools/hminstall.lua")))
 release()
 check("pas de relance quand il tourne depuis tools/",
       table.concat(out, "\n"):find("Relance 'hminstall'", 1, true) == nil)
+
+-- They drifted: /home/hminstall.lua sat at a seventeen-file list while tools/
+-- had twenty, so the two commands installed different things and
+-- lib/genetics.lua was in only one of them
+check("la copie de lancement est remise a niveau",
+      table.concat(written, " "):find("/home/hminstall.lua=", 1, true) ~= nil)
+
+-- An option an older copy does not know is not a branch name. Passing
+-- "--clean" to one made it fetch a branch of that name: seventeen failed
+-- downloads that looked like a network problem.
+requested, written, out = {}, {}, {}
+for path in pairs(contents) do contents[path] = nil end
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")), "--inconnue")
+release()
+
+check("une option inconnue n'est pas prise pour une branche",
+      table.concat(out, " "):find("Option inconnue", 1, true) ~= nil)
+check("et rien n'est telecharge", #requested == 0)
+check("elle renvoie vers la copie fraiche",
+      table.concat(out, " "):find("tools/hminstall", 1, true) ~= nil)
+
 
 -- The command has to carry the tools/ prefix: that directory is not on the
 -- OpenOS PATH, so a bare name answers "file not found".
