@@ -39,10 +39,13 @@ end
 
 local WINTRY = '{IsAnalyzed:0b,Health:30,MaxH:30,Genome:{Chromosomes:['
     .. '{Slot:0b,UID0:"forestry.speciesWintry",UID1:"forestry.speciesWintry"},'
-    .. '{Slot:1b,UID0:"forestry.speedSlower",UID1:"forestry.speedSlower"}]}}'
+    .. '{Slot:1b,UID0:"forestry.speedSlower",UID1:"forestry.speedSlower"},'
+    -- Chromosome 9 is the flower the apiary will demand
+    .. '{Slot:9b,UID0:"forestry.flowersVanilla",UID1:"forestry.flowersVanilla"}]}}'
 
 local COMMON = '{IsAnalyzed:0b,Genome:{Chromosomes:['
-    .. '{Slot:0b,UID0:"forestry.speciesCommon",UID1:"forestry.speciesCommon"}]}}'
+    .. '{Slot:0b,UID0:"forestry.speciesCommon",UID1:"forestry.speciesCommon"},'
+    .. '{Slot:9b,UID0:"forestry.flowersCacti",UID1:"forestry.flowersCacti"}]}}'
 
 local state
 
@@ -369,6 +372,26 @@ check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3
 check("source commune = ME Interface", config.machines.mutatron.source, 2)
 check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
 check("un transposer declare", #config.transposers, 1)
+
+print("")
+print("-- la fleur exigee par l'abeille chargee --")
+
+-- An apiary that lacks the right flower complains "no flower" and never says
+-- which one. The genome does, and reading it turns a hunt into a two-minute fix.
+reset()
+state.slots = {}
+apiary = build(apiary_component, config.machines.breeding_apiary)
+
+local allele, flowerName = apiary:flowerRequirement()
+check("allele brut lu", allele, "forestry.flowersVanilla")
+check("nom lisible", flowerName, "Vanilla")
+
+check("role explicite respecte", (apiary:flowerRequirement("drone")),
+      "forestry.flowersCacti")
+
+state.empty = true
+check("aucune abeille chargee: rien a dire", (apiary:flowerRequirement()), nil)
+state.empty = false
 
 print("")
 print("-- aucun appel de driver ne bloque le serveur --")

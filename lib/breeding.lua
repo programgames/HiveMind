@@ -293,6 +293,15 @@ breeding.STEPS = {
                     table.insert(detail, "upgrades: " .. table.concat(upgrades, ", "))
                 end
 
+                -- The apiary only ever says "no flower", never which one. The
+                -- genome of the bee sitting in it does say.
+                if apiary.flowerRequirement then
+                    local _, flower = apiary:flowerRequirement()
+                    if flower then
+                        table.insert(detail, "fleur requise: " .. flower)
+                    end
+                end
+
                 return jobs.RETRY, table.concat(detail, " | ")
             end
 

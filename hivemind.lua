@@ -67,7 +67,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.21.0"
+hivemind.VERSION = "0.22.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -235,6 +235,11 @@ function hivemind.status(context)
         for role, bee in pairs(bees) do
             local uid = bee.genome and genome.species(bee.genome) or "?"
             print(string.format("  %s: %s (%s)", role, bee.label or "?", uid))
+        end
+
+        local _, flower = apiary:flowerRequirement()
+        if flower then
+            print("  fleur requise par l'abeille chargee : " .. flower)
         end
 
         local blocking = apiary:environmentErrors()

@@ -432,6 +432,31 @@ function Apiary:speciesIn(role)
     return bee and bee.genome and genome.species(bee.genome) or nil
 end
 
+--- Which flower the loaded bee demands, read from its genome
+--- An apiary refuses to work without the right flower, and the complaint it
+--- raises says only "no flower" -- never which one. The genome does say, and
+--- reading it before the cycle stalls is the difference between a two-minute
+--- fix and a hunt.
+--- @param role string|nil "queen" or "drone"; the queen is tried first
+--- @return string|nil allele Raw allele uid, e.g. "forestry.flowersVanilla"
+--- @return string|nil name Readable form, e.g. "Vanilla"
+function Apiary:flowerRequirement(role)
+    local bees = self:bees()
+    local bee = role and bees[role] or (bees.queen or bees.drone)
+
+    if not (bee and bee.genome) then return nil, nil end
+
+    local allele = genome.alleles(bee.genome, genome.slotForKey("FLOWER_PROVIDER"))
+    if not allele then return nil, nil end
+
+    -- "forestry.flowersCacti" reads as "Cacti" once the namespace and the
+    -- category prefix are gone
+    local last = allele:match("([^.]+)$") or allele
+    local stripped = last:match("^flowers(.+)$") or last
+
+    return allele, (stripped:gsub("^%l", string.upper))
+end
+
 --- Non-empty output slots
 --- @return table[] outputs
 function Apiary:outputs()
