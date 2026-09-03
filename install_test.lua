@@ -1,0 +1,226 @@
+-- Harness for tools/hminstall.lua: no network, no writes outside memory.
+
+local requested, written = {}, {}
+local mode = "ok"
+
+package.loaded["component"] = {
+    isAvailable = function(kind) return mode ~= "no_card" and kind == "internet" end,
+}
+
+package.loaded["internet"] = {
+    request = function(url)
+        table.insert(requested, url)
+
+        if mode == "html" then
+            local done = false
+            return function()
+                if done then return nil end
+                done = true
+                return "<!DOCTYPE html><html>404</html>"
+            end
+        end
+
+        if mode == "empty" then
+            return function() return nil end
+        end
+
+        local done = false
+        return function()
+            if done then return nil end
+            done = true
+            return "-- contenu de " .. url
+        end
+    end,
+}
+
+-- The filesystem library only accepts absolute paths; the shell is what
+-- resolves the working directory. Refusing a relative one here reproduces the
+-- failure seen in game, where lib/ worked only because it existed already.
+local existing = {}
+
+package.loaded["filesystem"] = {
+    exists = function(path) return existing[path] == true end,
+    makeDirectory = function(path)
+        if path:sub(1, 1) ~= "/" then
+            error("chemin relatif refuse: " .. path)
+        end
+        existing[path] = true
+        table.insert(written, "dir:" .. path)
+        return true
+    end,
+}
+
+package.loaded["shell"] = {
+    resolve = function(path)
+        if path:sub(1, 1) == "/" then return path end
+        return "/home/" .. path
+    end,
+    getWorkingDirectory = function() return "/home" end,
+}
+
+local real_open, real_print = io.open, print
+local out = {}
+
+local function capture()
+    io.open = function(path, m)
+        if m == "w" then
+            return {write = function(_, body) table.insert(written, path .. "=" .. #body) end,
+                    close = function() end}
+        end
+        return real_open(path, m)
+    end
+    io.write = function() end
+    print = function(...)
+        local parts = {}
+        for i = 1, select("#", ...) do parts[i] = tostring((select(i, ...))) end
+        table.insert(out, table.concat(parts, "\t"))
+    end
+end
+
+local function release()
+    io.open, print = real_open, real_print
+end
+
+local failed = false
+local function check(label, condition)
+    real_print((condition and "  OK     " or "  ECHEC  ") .. label)
+    if not condition then failed = true end
+end
+
+-- Nominal install
+capture()
+local ok = pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+
+check("installation sans exception", ok)
+
+local text = table.concat(out, "\n")
+check("17 fichiers installes", text:find("17/17", 1, true) ~= nil)
+
+-- Every module hivemind requires must be in the installer's list, or the
+-- program dies on a require with an empty message
+local sources = io.open("hivemind.lua"):read("*all")
+local requiredModules = {}
+for name in sources:gmatch('need%("(lib%.[%w_]+)"%)') do
+    table.insert(requiredModules, (name:gsub("%.", "/")) .. ".lua")
+end
+
+local listed = table.concat(requested, " ")
+local allListed = #requiredModules > 0
+for _, module in ipairs(requiredModules) do
+    if not listed:find(module, 1, true) then
+        real_print("    absent de l'installeur : " .. module)
+        allListed = false
+    end
+end
+check("tous les modules requis sont telecharges", allListed)
+
+check("branche par defaut utilisee", requested[1]:find("industrial-genetics", 1, true) ~= nil)
+check("hivemind telecharge", requested[1]:find("hivemind.lua", 1, true) ~= nil)
+
+local writes = table.concat(written, " ")
+-- Directories must be created with absolute paths, which is what failed in game
+check("repertoire lib cree en absolu", writes:find("dir:/home/lib ", 1, true) ~= nil)
+check("repertoire lib/data cree en absolu", writes:find("dir:/home/lib/data", 1, true) ~= nil)
+check("repertoire tools cree en absolu", writes:find("dir:/home/tools", 1, true) ~= nil)
+check("mutations ecrite", writes:find("lib/data/mutations.lua=", 1, true) ~= nil)
+check("calibrate ecrit", writes:find("tools/calibrate.lua=", 1, true) ~= nil)
+-- The running copy lives where it was first fetched, not in tools/. Without a
+-- self-update it reports an old file count forever and omits new modules.
+check("l'installeur se met a jour lui-meme",
+      writes:find("tools/hminstall.lua=", 1, true) ~= nil)
+
+-- Run from where the user actually launches it, not from tools/. That copy is
+-- the one that never updated itself, so it kept reporting an old file count and
+-- silently omitting newly added modules.
+--
+-- Both chunk-name prefixes are exercised on purpose. OpenOS loads programs with
+-- load(..., "=" .. path) while desktop loadfile uses "@", and testing only "@"
+-- is exactly how the broken self-update passed for weeks.
+local body = real_open("tools/hminstall.lua"):read("*all")
+
+for _, prefix in ipairs({"=", "@"}) do
+    requested, written, out = {}, {}, {}
+    local elsewhere = assert(load(body, prefix .. "/home/hminstall.lua"))
+
+    capture()
+    pcall(elsewhere)
+    release()
+    text = table.concat(out, "\n")
+
+    check("la copie lancee est reecrite (prefixe " .. prefix .. ")",
+          table.concat(written, " "):find("/home/hminstall.lua=", 1, true) ~= nil)
+    check("la relance est demandee (prefixe " .. prefix .. ")",
+          text:find("Relance 'hminstall'", 1, true) ~= nil)
+end
+
+-- Launched from tools/ itself, the download already wrote the file: rewriting it
+-- and demanding a re-run would loop forever.
+requested, written, out = {}, {}, {}
+capture()
+pcall(assert(load(body, "=/home/tools/hminstall.lua")))
+release()
+check("pas de relance quand il tourne depuis tools/",
+      table.concat(out, "\n"):find("Relance 'hminstall'", 1, true) == nil)
+
+-- The command has to carry the tools/ prefix: that directory is not on the
+-- OpenOS PATH, so a bare name answers "file not found".
+requested, written, out = {}, {}, {}
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+check("la commande du rapport est lancable telle quelle",
+      table.concat(out, "\n"):find("tools/autoreport --run --upload", 1, true) ~= nil)
+
+-- Another branch
+requested, written, out = {}, {}, {}
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")), "main")
+release()
+check("branche personnalisee respectee",
+      requested[1]:find("/HiveMind/main/", 1, true) ~= nil)
+
+-- GitHub answers 404 with HTML; writing that as a .lua file would fail much later
+requested, written, out = {}, {}, {}
+mode = "html"
+capture()
+pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+text = table.concat(out, "\n")
+check("page HTML refusee", text:find("HTML", 1, true) ~= nil)
+check("rien n'est ecrit", #written == 0 or table.concat(written, " "):find("=") == nil)
+check("zero fichier installe", text:find("0/17", 1, true) ~= nil)
+
+-- No internet card
+requested, written, out = {}, {}, {}
+mode = "no_card"
+capture()
+local degraded = pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+text = table.concat(out, "\n")
+check("absence de carte geree sans exception", degraded)
+check("carte Internet signalee", text:find("carte Internet", 1, true) ~= nil)
+
+-- A write failure must not be reported as a network problem
+requested, written, out = {}, {}, {}
+mode = "ok"
+existing = {}
+package.loaded["filesystem"] = {
+    exists = function() return false end,
+    makeDirectory = function() error("disque plein") end,
+}
+capture()
+local write_fail = pcall(assert(loadfile("tools/hminstall.lua")))
+release()
+text = table.concat(out, "\n")
+
+check("echec d'ecriture gere sans exception", write_fail)
+check("les ecritures echouees sont distinguees",
+      text:find("Ecritures echouees", 1, true) ~= nil)
+check("le reseau est explicitement disculpe",
+      text:find("le reseau n'est pas en cause", 1, true) ~= nil)
+check("aucune accusation de carte Internet",
+      text:find("Verifie la carte Internet", 1, true) == nil)
+check("une solution concrete est donnee", text:find("mkdir /home/", 1, true) ~= nil)
+
+os.exit(failed and 1 or 0)

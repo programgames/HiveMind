@@ -87,11 +87,35 @@ local function main(args)
         if arg == "--upload" then doUpload = true end
     end
 
-    -- Required as a module so it does not start its own menu
+    -- Loaded as a module, never as a program: hivemind starts its menu unless it
+    -- receives a module name, and a menu is the one thing this tool must avoid.
+    --
+    -- require() searches "./?.lua", which resolves against the working directory
+    -- and not against this script. Launched as tools/autoreport from anywhere
+    -- but /home it would fail, so the sibling path is tried too.
     local ok, hivemind = pcall(require, "hivemind")
+
+    if not ok or type(hivemind) ~= "table" then
+        local source = debug.getinfo(1, "S").source or ""
+        local directory = source:match("^[@=](.*)/[^/]*$")
+
+        for _, candidate in ipairs({directory and (directory .. "/../hivemind.lua"),
+                                    directory and (directory .. "/hivemind.lua"),
+                                    "/home/hivemind.lua"}) do
+            local chunk = candidate and loadfile(candidate)
+            if chunk then
+                local loaded, value = pcall(chunk, "hivemind")
+                if loaded and type(value) == "table" then
+                    ok, hivemind = true, value
+                    break
+                end
+            end
+        end
+    end
+
     if not ok or type(hivemind) ~= "table" then
         print("hivemind.lua introuvable ou illisible: " .. tostring(hivemind))
-        print("Lance 'hminstall' puis reessaie.")
+        print("Lance 'hminstall' puis reessaie depuis le repertoire de hivemind.")
         return
     end
 

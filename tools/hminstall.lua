@@ -188,17 +188,25 @@ local function main(args)
     -- installer never updates itself: it reports an old file count forever and
     -- silently omits newly added modules.
     if ownBody then
-        local running = debug.getinfo(1, "S").source:match("^@(.*)$")
-        local updatedItself = false
+        -- OpenOS loads programs with load(..., "=" .. path), so the source
+        -- carries a "=" prefix and not the "@" that loadfile uses on a desktop
+        -- Lua. Matching only "@" left `running` nil and silently skipped every
+        -- self-update: the installer kept announcing an old file count and
+        -- omitting newly added modules, run after run.
+        local source = debug.getinfo(1, "S").source or ""
+        local running = source:match("^[@=](.*)$")
 
-        if running and running ~= "tools/hminstall.lua" then
+        local updatedItself, updateError = false, nil
+
+        if running and absolute(running) ~= absolute("tools/hminstall.lua") then
             local current = io.open(running, "r")
             local body = current and current:read("*all") or nil
             if current then current:close() end
 
             if body ~= ownBody then
-                local ok = write(running, ownBody)
+                local ok, err = write(running, ownBody)
                 updatedItself = ok
+                if not ok then updateError = err end
             end
         end
 
@@ -206,6 +214,11 @@ local function main(args)
             print("")
             print("L'installeur s'est mis a jour lui-meme.")
             print("Relance 'hminstall' une fois: la liste de fichiers a change.")
+        elseif updateError then
+            -- Staying silent here is how the previous failure hid for so long
+            print("")
+            print("L'installeur n'a PAS pu se mettre a jour : " .. tostring(updateError))
+            print("Copie-le a la main :  cp tools/hminstall.lua " .. tostring(running))
         end
     end
 
@@ -276,9 +289,13 @@ local function main(args)
         print("sert encore l'ancienne: attends une minute et relance hminstall.")
     end
 
+    -- The tools land in tools/, which is not on the OpenOS PATH. Naming them
+    -- bare invited "autoreport: file not found"; the path is part of the
+    -- command, so it belongs in the command shown.
     print("")
     print("Lance le programme avec :  hivemind")
-    print("Outils disponibles      :  calibrate, discover, upload")
+    print("Rapport automatique     :  tools/autoreport --run --upload")
+    print("Autres outils           :  tools/calibrate, tools/discover, tools/upload")
     print("Mise a jour             :  hminstall")
     print("")
     print("Les fichiers sont dans le repertoire courant; lance-les depuis ici.")
