@@ -199,6 +199,22 @@ local function main(args)
         return
     end
 
+    -- OpenOS caches required modules for the whole session, so the files just
+    -- written would be ignored until something drops them. hivemind does that
+    -- for its own modules at startup; clearing here covers anything already
+    -- loaded by another program in this session.
+    local dropped = 0
+    for name in pairs(package.loaded) do
+        if type(name) == "string" and name:match("^lib%.") then
+            package.loaded[name] = nil
+            dropped = dropped + 1
+        end
+    end
+
+    if dropped > 0 then
+        print(dropped .. " module(s) en cache vide(s).")
+    end
+
     print("")
     print("Lance le programme avec :  hivemind")
     print("Outils disponibles      :  calibrate, discover, upload")

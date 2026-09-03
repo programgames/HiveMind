@@ -15,6 +15,17 @@ do
     if here and not package.path:find(here, 1, true) then
         package.path = here .. "/?.lua;" .. here .. "/?/init.lua;" .. package.path
     end
+
+    -- OpenOS keeps required modules in package.loaded for the whole session.
+    -- This file is re-read on every launch, but lib/* would stay at whatever
+    -- version was loaded first, so an update silently has no effect until a
+    -- reboot: a new program driving stale modules. Dropping ours makes
+    -- "hminstall then hivemind" enough.
+    for name in pairs(package.loaded) do
+        if type(name) == "string" and name:match("^lib%.") then
+            package.loaded[name] = nil
+        end
+    end
 end
 
 local component = require("component")
