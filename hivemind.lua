@@ -45,7 +45,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.8.0"
+hivemind.VERSION = "0.8.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -457,6 +457,48 @@ function hivemind.slotDiagnostic(context)
 
     print("Lis la ligne d'un item que tu as pose toi-meme : si son role ne")
     print("correspond pas, ajuste config.slot_offset dans lib/config.lua.")
+
+    -- The ME Interface is the one inventory the program cannot see through the
+    -- machine links, and it is where staging goes wrong: a dock that keeps the
+    -- previous item looks exactly like a delivery that never happened.
+    print("")
+    print("=== ME INTERFACE (les quais de chargement) ===")
+
+    local link = config.machines.mutatron
+    local anything = false
+
+    for slot = 1, 9 do
+        local stack = context.transport:inspect(
+            {transposer = link.transposer, machine = link.source}, slot)
+
+        local configured = "?"
+        local ok, entry = pcall(function()
+            return context.transport.me
+                and context.transport.me.getInterfaceConfiguration(slot)
+        end)
+
+        if ok and type(entry) == "table" then
+            configured = entry.label or entry.name or "(configure)"
+        elseif ok then
+            configured = "(vide)"
+        end
+
+        if stack or configured ~= "(vide)" then
+            anything = true
+            print(string.format("  quai %d : contenu=%-28s configuration=%s",
+                slot,
+                stack and (stack.label or stack.name or "?") or "vide",
+                configured))
+        end
+    end
+
+    if not anything then
+        print("  aucun quai occupe ni configure")
+    end
+
+    print("")
+    print("Un quai dont le contenu ne correspond pas a sa configuration bloque")
+    print("les livraisons. Vide-le a la main dans la ME Interface si besoin.")
 end
 
 --- Run the queue until it stops making progress
