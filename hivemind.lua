@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.94.0"
+hivemind.VERSION = "0.95.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1763,49 +1763,85 @@ function hivemind.buildBase(context)
         end
     end
 
-    -- What the network holds, in either role: a princess is as good as a drone
-    -- for "do I have this species at all"
-    local owned = {}
-    for _, itemName in ipairs({"forestry:bee_drone_ge", "forestry:bee_princess_ge",
-                               "forestry:bee_queen_ge"}) do
+    -- Counted by ROLE, never as one number. Only a drone can be spent: the
+    -- Sampler destroys what it reads, and drone accumulation needs a princess
+    -- AND a drone of the same species to start a cycle. Adding 57 princesses
+    -- to 1 drone and printing "58 en stock" promises 58 usable bees and
+    -- delivers one -- the same mistake that once left a plan stuck on "Water
+    -- Drone introuvable" with three Water princesses in store.
+    local drones, princesses = {}, {}
+
+    for _, item in ipairs(context.transport:findAll(
+            {name = "forestry:bee_drone_ge"}) or {}) do
+        local name = tostring(item.label or ""):gsub("%s+Drone$", "")
+        if name ~= "" then
+            drones[name] = (drones[name] or 0) + (tonumber(item.size) or 0)
+        end
+    end
+
+    for _, itemName in ipairs({"forestry:bee_princess_ge", "forestry:bee_queen_ge"}) do
         for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
-            local label = tostring(item.label or "")
-            local name = label:gsub("%s+Drone$", ""):gsub("%s+Princess$", "")
-                              :gsub("%s+Queen$", "")
+            local name = tostring(item.label or ""):gsub("%s+Princess$", "")
+                                                   :gsub("%s+Queen$", "")
             if name ~= "" then
-                owned[name] = (owned[name] or 0) + (tonumber(item.size) or 0)
+                princesses[name] = (princesses[name] or 0) + (tonumber(item.size) or 0)
             end
         end
+    end
+
+    local function held(name)
+        return (drones[name] or 0) + (princesses[name] or 0) > 0
     end
 
     context.library:scan()
     local saved = context.library:speciesGenes()
 
-    local toCatch, toSave, done = {}, {}, 0
+    -- Three piles, not two. A species held only as princesses cannot be
+    -- sampled and cannot even be multiplied, so putting it next to one with
+    -- sixty drones under a single heading is what makes the screen lie.
+    local toCatch, canHunt, needDrones, done = {}, {}, {}, 0
 
     for _, entry in ipairs(base) do
-        if not owned[entry.name] then
+        if not held(entry.name) then
             table.insert(toCatch, entry)
-        elseif not saved[entry.name] then
-            table.insert(toSave, entry)
-        else
+        elseif saved[entry.name] then
             done = done + 1
+        elseif (drones[entry.name] or 0) >= 2 then
+            table.insert(canHunt, entry)
+        else
+            table.insert(needDrones, entry)
         end
     end
 
     print("")
     print(#base .. " especes de base — " .. done .. " sauvegardee(s), "
-        .. #toSave .. " a sauvegarder, " .. #toCatch .. " a attraper")
+        .. #canHunt .. " chassable(s), " .. #needDrones .. " sans drone, "
+        .. #toCatch .. " a attraper")
 
-    if #toSave > 0 then
+    if #canHunt > 0 then
         print("")
-        print("TU LES AS DEJA, LEUR GENE N EST PAS SAUVE :")
-        for _, entry in ipairs(toSave) do
-            print(string.format("  %-22s %d en stock, debloque %d espece(s)",
-                entry.name, owned[entry.name], entry.unlocks))
+        print("CHASSABLES MAINTENANT — tu as les drones :")
+        for _, entry in ipairs(canHunt) do
+            print(string.format("  %-22s %3d drone(s), debloque %2d espece(s)",
+                entry.name, drones[entry.name] or 0, entry.unlocks))
         end
         print("")
-        print("Choisis i (sous 9) pour mettre toutes ces chasses en file d un coup.")
+        print("Choisis i (sous 9) pour mettre ces chasses en file d un coup.")
+    end
+
+    if #needDrones > 0 then
+        print("")
+        print("TU LES AS, MAIS SANS DRONE — rien ne peut demarrer :")
+        for _, entry in ipairs(needDrones) do
+            print(string.format("  %-22s %3d princesse(s), %d drone(s), debloque %2d",
+                entry.name, princesses[entry.name] or 0,
+                drones[entry.name] or 0, entry.unlocks))
+        end
+        print("")
+        print("Le Sampler DETRUIT ce qu il lit, et l accumulation exige une")
+        print("princesse ET un drone de la meme espece. Une princesse seule ne")
+        print("lance rien: croise-la avec le drone d une autre espece, les")
+        print("descendants porteront son gene et le Sampler peut le tirer.")
     end
 
     if #toCatch > 0 then

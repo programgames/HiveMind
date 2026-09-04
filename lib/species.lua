@@ -94,6 +94,53 @@ function Registry:save()
     return state.save(self.cachePath, self.cache)
 end
 
+--- Readable name derived from a species uid
+--- listAllSpecies does not return every species: getBeeParents references uids
+--- absent from it, and a species the registry has never heard of is a species
+--- the planner declares missing even when it sits in the network. Deriving a
+--- name from the uid is a guess, but a far better one than the raw uid.
+--- @param uid string
+--- @return string name
+local function deriveName(uid)
+    local last = uid:match("([^.]+)$") or uid
+
+    -- "speciesMystical" -> "Mystical", "water" -> "Water"
+    local stripped = last:match("^species(.+)$") or last:match("^bee(.+)$") or last
+
+    return (stripped:gsub("^%l", string.upper))
+end
+
+--- Does this "name" look like a lang key the pack never translated
+--- The game answers "gendustry.bees.species.Apothecary" when no translation
+--- exists, and that is not a name: printed as-is it fills a screen with lines
+--- nobody can read, and it is the string every later lookup would build an item
+--- label from.
+--- @param name any
+--- @return boolean
+local function looksLikeLangKey(name)
+    return type(name) == "string"
+        and name:find("%.") ~= nil
+        and name:find("%s") == nil
+end
+
+--- The best readable name available for a species
+--- @param uid string
+--- @param reported string|nil What the game called it
+--- @return string name
+--- @return boolean derived True when this is our guess, not the game's answer
+local function bestName(uid, reported)
+    if type(reported) == "string" and reported ~= "" and reported ~= uid
+       and not looksLikeLangKey(reported) then
+        return reported, false
+    end
+
+    -- The last segment of the lang key is what the pack itself calls it, and a
+    -- better guess than the uid. Nothing more is invented: no camel case is
+    -- split, because "TreeOfLife" may well be the item label.
+    local source = looksLikeLangKey(reported) and reported or uid
+    return deriveName(source), true
+end
+
 --- Pull the full species list from the game
 --- @return number|nil count Species learned
 --- @return string|nil error
@@ -111,7 +158,8 @@ function Registry:refresh()
         if type(entry) == "table" and entry.uid then
             -- Index on uid: some names are unresolved lang keys such as
             -- "gendustry.bees.species.NerdySpider", uid never is.
-            learned[entry.uid] = {uid = entry.uid, name = entry.name or entry.uid}
+            local name, derived = bestName(entry.uid, entry.name)
+            learned[entry.uid] = {uid = entry.uid, name = name, derived = derived}
             count = count + 1
         end
     end
@@ -149,22 +197,6 @@ function Registry:list()
     return {}, "vide"
 end
 
---- Readable name derived from a species uid
---- listAllSpecies does not return every species: getBeeParents references uids
---- absent from it, and a species the registry has never heard of is a species
---- the planner declares missing even when it sits in the network. Deriving a
---- name from the uid is a guess, but a far better one than the raw uid.
---- @param uid string
---- @return string name
-local function deriveName(uid)
-    local last = uid:match("([^.]+)$") or uid
-
-    -- "speciesMystical" -> "Mystical", "water" -> "Water"
-    local stripped = last:match("^species(.+)$") or last:match("^bee(.+)$") or last
-
-    return (stripped:gsub("^%l", string.upper))
-end
-
 --- Record a species the registry had not seen
 --- @param self table
 --- @param uid string
@@ -175,13 +207,13 @@ local function remember(self, uid, name)
 
     -- normalizeParents falls back to the uid when the game reports no name, so
     -- a name equal to the uid means "unnamed", not "named after itself"
-    local reported = (type(name) == "string" and name ~= "" and name ~= uid) and name or nil
+    local resolved, derived = bestName(uid, name)
 
     self.cache.species[uid] = {
         uid = uid,
-        name = reported or deriveName(uid),
+        name = resolved,
         -- The name is inferred, not reported by the game
-        derived = reported == nil,
+        derived = derived,
     }
 end
 

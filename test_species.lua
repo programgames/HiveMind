@@ -96,10 +96,21 @@ check("4 especes apprises (" .. tostring(err) .. ")", count, 4)
 local all, source = registry:list()
 check("source vivante", source, "live")
 check("indexation sur uid", all["magicbees.speciesNickel"].name, "Nickel")
-checkTruthy("cle de langue non resolue conservee telle quelle",
+checkTruthy("une espece sans traduction reste indexee sur son uid",
             all["gendustry.bee.NerdySpider"])
-check("nom non traduit garde pour affichage",
-      all["gendustry.bee.NerdySpider"].name, "gendustry.bees.species.NerdySpider")
+
+-- Le jeu rend "gendustry.bees.species.NerdySpider" quand le pack n a pas de
+-- traduction. Ce n est pas un nom: affiche tel quel il remplit un ecran de
+-- lignes illisibles, et c est la chaine dont chaque recherche d objet fera
+-- une etiquette. Le dernier segment est ce que le pack appelle lui-meme
+-- l espece, et rien de plus n est invente -- le camel case n est pas coupe,
+-- parce que "TreeOfLife" est peut-etre l etiquette reelle.
+check("la cle de langue devient lisible",
+      all["gendustry.bee.NerdySpider"].name, "NerdySpider")
+check("et le nom est marque comme devine",
+      all["gendustry.bee.NerdySpider"].derived, true)
+check("un vrai nom n est pas touche", all["magicbees.speciesNickel"].name, "Nickel")
+check("ni marque comme devine", all["magicbees.speciesNickel"].derived, false)
 
 print("")
 print("-- chemins de mutation --")
