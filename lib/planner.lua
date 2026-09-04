@@ -181,7 +181,7 @@ function planner.planMany(options)
 
     local steps, seenStep = {}, {}
     local missing, seenMissing = {}, {}
-    local outcomes = {}
+    local outcomes, blocked = {}, {}
 
     for _, target in ipairs(targets) do
         local plan, err = planner.plan({
@@ -193,12 +193,27 @@ function planner.planMany(options)
 
         if not plan then return nil, err end
 
-        for _, step in ipairs(plan.steps) do
-            if not seenStep[step.target] then
-                seenStep[step.target] = true
-                table.insert(steps, step)
-                produced[step.target] = true
+        -- Only a reachable target contributes runnable steps. Merging the rest
+        -- put crosses in the queue that can never run: the plan itself said
+        -- "Lime INATTEIGNABLE, il manque Tropical" and then offered
+        -- "Tropical + Valiant -> Natural" three lines below. Queued, those park
+        -- for ever on a bee nothing can produce.
+        if plan.reachable then
+            for _, step in ipairs(plan.steps) do
+                if not seenStep[step.target] then
+                    seenStep[step.target] = true
+                    table.insert(steps, step)
+                    produced[step.target] = true
+                end
             end
+        else
+            -- Kept, not thrown away: seeing the chain is how the player learns
+            -- that one wild bee stands between them and this carrier.
+            table.insert(blocked, {
+                uid = target,
+                steps = plan.steps,
+                missing = plan.missing,
+            })
         end
 
         for _, entry in ipairs(plan.missing) do
@@ -218,7 +233,10 @@ function planner.planMany(options)
 
     return {
         targets = outcomes,
+        -- Runnable, in order, and nothing else
         steps = steps,
+        -- The chains that need a bee nobody can breed, one entry per target
+        blocked = blocked,
         missing = missing,
         reachable = #missing == 0,
     }

@@ -343,10 +343,25 @@ function checkup.fluids(readings)
                     .. " avant de lancer une longue file",
             })
         else
+            local amount = reading.amount or 0
+            local capacity = tonumber(reading.capacity) or 0
+
+            -- "mutagene : 10000" leaves the reader asking "out of what".
+            local level = capacity > 0
+                and string.format("%d/%d", amount, capacity)
+                or tostring(amount)
+
+            local detail = tostring(reading.fluid) .. " : " .. level
+
+            -- A tank that FILLS is empty when the machine has nothing waiting,
+            -- which is the normal state. A bare zero on a checkup screen reads
+            -- as a fault, so it says which zero this is.
+            if reading.fills and amount == 0 then
+                detail = detail .. "  (rien a transferer, c est normal)"
+            end
+
             table.insert(findings, {
-                name = reading.machine, status = checkup.OK,
-                detail = string.format("%s : %d", tostring(reading.fluid),
-                    reading.amount or 0),
+                name = reading.machine, status = checkup.OK, detail = detail,
             })
         end
     end

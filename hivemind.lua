@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.97.0"
+hivemind.VERSION = "0.98.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1676,6 +1676,25 @@ function hivemind.buildTemplate(context)
         print("Choisis 2 pour voir ou elles se trouvent.")
     end
 
+    -- Shown, never queued. The chain says exactly what one missing wild bee
+    -- costs, and hiding it would leave "INATTEIGNABLE" with no explanation.
+    for _, chain in ipairs(plan.blocked or {}) do
+        print("")
+        print("Chaine vers " .. naming(chain.uid) .. " — BLOQUEE, "
+            .. screen.count(#chain.steps, "croisement")
+            .. " qui ne peuvent pas tourner :")
+
+        for index, step in ipairs(chain.steps) do
+            print(string.format("  %2d. %s + %s -> %s", index,
+                naming(step.princess.uid), naming(step.drone.uid),
+                naming(step.target)))
+        end
+
+        for _, entry in ipairs(chain.missing) do
+            print("  Il manque " .. naming(entry.uid) .. " (" .. entry.reason .. ")")
+        end
+    end
+
     if #plan.steps == 0 then
         print("")
         print("Rien a croiser maintenant.")
@@ -1871,11 +1890,29 @@ function hivemind.buildBase(context)
         print("")
         print(#toSave .. " A SAUVEGARDER — tu as la princesse et le drone")
 
+        -- The hunt destroys the drone it reads and draws one chromosome out of
+        -- thirteen, so option i refuses a species with fewer than two. Saying
+        -- "choisis i" over a line it will silently skip is two screens
+        -- contradicting each other, and the one that promises is the wrong one.
+        local tooTight = 0
+
         for _, entry in ipairs(toSave) do
-            print("  " .. screen.fit(entry.name, 16) .. pair(entry))
+            local note = ""
+            if (drones[entry.name] or 0) < 2 then
+                note = "  accumule d abord"
+                tooTight = tooTight + 1
+            end
+
+            print("  " .. screen.fit(entry.name, 22) .. pair(entry) .. note)
         end
 
-        print("  Choisis 9 puis i pour lancer ces chasses.")
+        if tooTight > 0 then
+            print("")
+            print("  " .. tooTight .. " " .. screen.plural(tooTight, "espece")
+                .. " " .. screen.plural(tooTight, "n a", "n ont")
+                .. " qu un drone: la chasse le detruirait")
+            print("  douze fois sur treize. Accumule d abord, option 3 sous 9.")
+        end
     end
 
     if #toFind > 0 then
@@ -1894,21 +1931,24 @@ function hivemind.buildBase(context)
             -- A gene already saved does not make the species held: it means
             -- one was sampled before the pair was lost.
             if saved[entry.name] then
-                lacking = lacking .. ", gene deja sauve"
+                -- Short on purpose: this sits at the end of the widest line
+                lacking = lacking .. " (gene sauve)"
             end
 
             -- Only what is actually held. "0 D" next to "il manque le drone"
             -- is the same fact twice, and "0 P 0 D" next to "rien en stock" is
             -- it three times.
+            -- Spelled out: "64 P" on one table and "10 princesses" on the
+            -- one above is two notations for the same thing, on one screen
             local counts = ""
-            if p > 0 then counts = string.format("%4d P", p) end
+            if p > 0 then counts = screen.count(p, "princesse") end
             if d > 0 then
-                counts = counts .. string.format("%s%4d D",
-                    p > 0 and " " or "", d)
+                counts = counts .. (p > 0 and ", " or "")
+                    .. screen.count(d, "drone")
             end
 
-            print("  " .. screen.fit(entry.name, 16)
-                .. screen.fit(counts, 13) .. lacking)
+            print("  " .. screen.fit(entry.name, 22)
+                .. screen.fit(counts, 20) .. lacking)
         end
     end
 
@@ -1923,6 +1963,16 @@ function hivemind.buildBase(context)
         for _, line in ipairs(screen.wrap(table.concat(names, ", "), 72)) do
             print("  " .. line)
         end
+    end
+
+    -- Repeated at the bottom. The one action of this screen sat on line
+    -- twelve, and twenty-six lines of listing pushed it out of sight: a reader
+    -- who goes to the end finishes on "Water - il manque le drone" with
+    -- nothing to do.
+    if #toSave > 0 then
+        print("")
+        print("A FAIRE MAINTENANT: 9 puis i, pour sauver le gene de celles")
+        print("du haut qui ont assez de drones.")
     end
 
     if #toFind == 0 and #toSave == 0 then
@@ -3169,10 +3219,17 @@ function hivemind.harvestProfile(context)
             table.insert(alreadyGoing, chromosome .. " = " .. entry.allele)
         else
             -- Prefer the carrier we hold most of: a campaign spends bees, and
-            -- running out mid-way parks the job for nothing
+            -- running out mid-way parks the job for nothing.
+            --
+            -- And never the last one or two. The Sampler destroys what it
+            -- reads and draws one chromosome out of thirteen, so a hunt on a
+            -- single drone is a 1-in-13 lottery whose losing ticket is the
+            -- last individual of that species. speciesSweep has refused this
+            -- from the start; this function was written later and did not.
+            local RISKY = 2
             local best, bestStock
             for _, one in ipairs(carriers) do
-                if (stock[one] or 0) > (bestStock or 0) then
+                if (stock[one] or 0) >= RISKY and (stock[one] or 0) > (bestStock or 0) then
                     best, bestStock = one, stock[one]
                 end
             end
@@ -3184,10 +3241,19 @@ function hivemind.harvestProfile(context)
                     slot = entry.slot,
                 })
             else
+                -- Why this carrier is out: none at all, or too few to risk
+                local why = "porteur inconnu"
+                if #carriers > 0 then
+                    local counts = {}
+                    for _, one in ipairs(carriers) do
+                        table.insert(counts, one .. " ("
+                            .. screen.count(stock[one] or 0, "drone") .. ")")
+                    end
+                    why = table.concat(counts, " ou ")
+                end
+
                 table.insert(toHunt, string.format("%s = %s  <- %s",
-                    chromosome, entry.allele,
-                    #carriers > 0 and table.concat(carriers, " ou ")
-                                  or "porteur inconnu"))
+                    chromosome, entry.allele, why))
             end
         end
     end
@@ -3199,8 +3265,11 @@ function hivemind.harvestProfile(context)
 
     if #toHunt > 0 then
         print("")
-        print("A ATTRAPER D ABORD (aucun drone en stock) :")
+        print("PAS ASSEZ DE DRONES — accumule-les d abord (option 3) :")
         for _, line in ipairs(toHunt) do print("  " .. line) end
+        print("  Le Sampler detruit ce qu il lit et tire un chromosome sur 13:")
+        print("  chasser sur un seul drone, c est le perdre douze fois sur")
+        print("  treize. Il en faut au moins deux.")
     end
 
     if #plan == 0 then
@@ -3687,8 +3756,16 @@ function hivemind.advice(context)
 
     if #lines == 0 then
         if #pending == 0 then
-            table.insert(lines, "Rien en file. Choisis 4 pour viser une abeille,"
-                .. " ou 2 pour constituer la base.")
+            -- It used to say "Choisis 4 pour viser une abeille". Option 4
+            -- REFUSES until the breeding template is assembled, so the first
+            -- line a new player reads sent them at a closed door. Knowing
+            -- which step is really next would cost a library scan and a
+            -- network sweep on every menu redraw; naming the path in order
+            -- costs nothing and is never wrong.
+            table.insert(lines, "Rien en file. Le parcours va dans l ordre:"
+                .. " 1 pour verifier l installation,")
+            table.insert(lines, "puis 2, 3 et 4. Chaque option dit ce qui lui"
+                .. " manque si tu la prends trop tot.")
         else
             table.insert(lines, #pending .. " tache(s) prete(s). Choisis 6 pour"
                 .. " les faire tourner.")
@@ -3724,8 +3801,16 @@ local function headline(context)
         if job.error then blocked = blocked + 1 end
     end
 
-    table.insert(parts, #pending .. " tache(s)"
-        .. (blocked > 0 and (", " .. blocked .. " bloquee(s)") or ""))
+    local held = 0
+    pcall(function() held = #context.queue:waiting() end)
+
+    table.insert(parts, screen.count(#pending, "tache")
+        .. (blocked > 0 and (", " .. blocked .. " "
+                             .. screen.plural(blocked, "bloquee")) or "")
+        -- A job stopped on a gesture is not pending and not failed: without
+        -- this the banner says "0 tache" while the queue waits on a hand.
+        .. (held > 0 and (", " .. held .. " "
+                          .. screen.plural(held, "en attente de toi")) or ""))
 
     print(table.concat(parts, "  |  "))
 

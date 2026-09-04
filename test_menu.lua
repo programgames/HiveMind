@@ -930,6 +930,35 @@ do
 end
 
 print("")
+print("-- jamais le dernier drone d une espece --")
+
+do
+    -- Le Sampler DETRUIT ce qu il lit et tire un chromosome sur treize. Une
+    -- chasse lancee sur un seul drone perd cette abeille douze fois sur
+    -- treize, et si c est la derniere, l espece entiere est a refaire.
+    -- speciesSweep refusait deja; harvestProfile, ecrite plus tard, non --
+    -- elle aurait brule le dernier drone Rocky du joueur.
+    local from = text:find("function hivemind.harvestProfile", 1, true)
+    local stop = text:find("\nend\n", from or 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("harvestProfile ecarte les especes trop justes",
+          body:find("RISKY", 1, true) ~= nil)
+    check("et dit pourquoi au lieu de les taire",
+          body:find("PAS ASSEZ DE DRONES", 1, true) ~= nil)
+
+    -- Et la chaine bloquee ne doit jamais atterrir dans la file
+    local from2 = text:find("function hivemind.buildTemplate", 1, true)
+    local stop2 = text:find("\nend\n", from2 or 1, true) or #text
+    local body2 = from2 and text:sub(from2, stop2) or ""
+
+    check("les chaines bloquees sont affichees",
+          body2:find("BLOQUEE", 1, true) ~= nil)
+    check("mais seules plan.steps partent en file",
+          body2:find("queueChain(context, registry, plan.steps", 1, true) ~= nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

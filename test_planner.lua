@@ -267,6 +267,57 @@ do
 end
 
 print("")
+print("-- une cible inatteignable n empoisonne pas le plan --")
+
+do
+    -- Reproduit le cas rencontre en jeu: le programme annonce "Lime
+    -- INATTEIGNABLE, il manque Tropical" et propose trois lignes plus bas
+    -- "Tropical + Valiant -> Natural". Mises en file, ces taches se garent
+    -- pour toujours sur une abeille que rien ne peut produire, et elles
+    -- depensent des abeilles en chemin.
+    local blockedTree = {
+        Common = {{"Forest", "Meadows"}},
+        Cultivated = {{"Common", "Meadows"}},
+        -- Tropical est une espece de base: rien ne la produit
+        Natural = {{"Tropical", "Valiant"}},
+        Lime = {{"Natural", "Valiant"}},
+    }
+
+    local reg = registryFor(blockedTree)
+    local have = heldSet({"Forest", "Meadows", "Valiant"})
+
+    local many = planner.planMany({
+        registry = reg, available = have,
+        targets = {"Cultivated", "Lime"},
+    })
+
+    checkTruthy("un plan sort quand meme", many ~= nil)
+
+    local runnable = {}
+    for _, step in ipairs(many.steps) do runnable[step.target] = true end
+
+    checkTruthy("les etapes de la cible atteignable sont la", runnable.Cultivated)
+    check("aucune etape de la chaine bloquee n est melangee", runnable.Lime, nil)
+    check("ni son intermediaire", runnable.Natural, nil)
+
+    check("la cible bloquee est signalee a part", #many.blocked, 1)
+    check("et nommee", many.blocked[1].uid, "Lime")
+    checkTruthy("sa chaine reste consultable",
+                #many.blocked[1].steps > 0)
+    check("avec ce qui la bloque", many.blocked[1].missing[1].uid, "Tropical")
+
+    -- Deux cibles atteignables continuent de fusionner comme avant
+    local both = planner.planMany({
+        registry = registry,
+        available = heldSet({"Forest", "Meadows"}),
+        targets = {"Cultivated", "Majestic"},
+    })
+    check("deux cibles atteignables ne produisent aucun blocage",
+          #both.blocked, 0)
+    checkTruthy("et leurs etapes fusionnent toujours", #both.steps > 0)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
