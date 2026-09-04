@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.84.2"
+hivemind.VERSION = "0.85.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1184,7 +1184,7 @@ function hivemind.runQueue(context, options)
         budget = options.budget,
         onProgress = function(job, outcome, detail)
             print(string.format("  #%d %s etape %d : %s%s",
-                job.id, job.kind, job.step, outcome,
+                job.id, jobs.label(job.kind), job.step, outcome,
                 detail and ("  " .. detail) or ""))
         end,
     })

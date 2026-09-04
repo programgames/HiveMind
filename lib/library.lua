@@ -601,8 +601,13 @@ function Library:describe()
 
     local shortages = self:shortages()
     if #shortages > 0 then
-        table.insert(lines, string.format("A dupliquer : %d allele(s) en dessous de %d copies",
+        table.insert(lines, string.format(
+            "A securiser : %d gene(s) en moins de %d exemplaires",
             #shortages, self.minimumCopies))
+        table.insert(lines,
+            "  un gene en un seul exemplaire disparait avec lui, et le")
+        table.insert(lines,
+            "  retrouver coute une treizaine d abeilles. Option c pour copier.")
     end
 
     -- A count answers "how many" and never "which one", and which one is the

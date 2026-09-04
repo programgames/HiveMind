@@ -364,7 +364,9 @@ check("compteur d'id conserve", reread:submit("breed", {}), 2)
 
 local lines = reread:describe()
 check("une ligne par tache", #lines, 2)
-checkTruthy("la ligne nomme le type", lines[1]:find("breed", 1, true))
+checkTruthy("la ligne nomme le type en clair",
+            lines[1]:find("croisement", 1, true))
+checkTruthy("et son etat aussi", lines[1]:find("en attente", 1, true))
 
 os.remove(PATH)
 
@@ -402,6 +404,37 @@ check("les autres taches passent quand meme",
       orphaned:get(companion).status, jobs.COMPLETE)
 
 print("")
+print("")
+print("-- ce que la file dit a l'ecran --")
+
+do
+    -- "campaign etape 6/7" tells a reader neither what the machine is doing nor
+    -- why it stopped. Every internal name gets a French one.
+    check("chaque type de tache a un nom lisible",
+          jobs.label("campaign"), "chasse a un gene")
+    check("et chaque etat aussi", jobs.label("pending"), "en attente")
+
+    -- A kind added later must show its own name rather than vanish
+    check("un type inconnu se nomme lui-meme",
+          jobs.label("quelque_chose"), "quelque_chose")
+    check("et nil ne casse rien", jobs.label(nil), "nil")
+
+    local every = {"breed", "multiply", "sample", "duplicate", "campaign",
+                   "imprint", "replicate", "extract"}
+    local missing = {}
+    for _, kind in ipairs(every) do
+        if jobs.LABELS[kind] == nil then table.insert(missing, kind) end
+    end
+    check("aucun type de tache n'est oublie: "
+          .. (#missing > 0 and table.concat(missing, " ") or "-"), #missing, 0)
+
+    for _, state in ipairs({jobs.PENDING, jobs.RUNNING, jobs.COMPLETE,
+                            jobs.CANCELLED, jobs.FAILED}) do
+        if jobs.LABELS[state] == nil then table.insert(missing, state) end
+    end
+    check("ni aucun etat", #missing, 0)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

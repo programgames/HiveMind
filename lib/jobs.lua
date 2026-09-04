@@ -30,6 +30,35 @@ jobs.COMPLETE = "complete"
 jobs.ERROR = "error"
 jobs.CANCELLED = "cancelled"
 
+--- What each kind and each state is called on screen
+--- The keys are internal names -- "campaign", "pending" -- and they were being
+--- printed raw. Nobody reading "campaign etape 6/7" learns what the machine is
+--- doing or why it is stopped.
+jobs.LABELS = {
+    breed     = "croisement",
+    multiply  = "accumulation de drones",
+    sample    = "extraction d un gene",
+    duplicate = "copie d un gene",
+    campaign  = "chasse a un gene",
+    imprint   = "impression sur abeille",
+    replicate = "replication d une reine",
+    extract   = "abeilles -> ADN",
+
+    pending   = "en attente",
+    running   = "en cours",
+    complete  = "terminee",
+    cancelled = "annulee",
+    failed    = "echouee",
+}
+
+--- Name something for a human, falling back to the internal name
+--- A kind added later shows its own name rather than disappearing.
+--- @param key string|nil
+--- @return string
+function jobs.label(key)
+    return jobs.LABELS[key] or tostring(key)
+end
+
 jobs.DEFAULT_MAX_ATTEMPTS = 3
 
 local Queue = {}
@@ -387,8 +416,9 @@ function Queue:describe()
     for _, job in ipairs(self.data.queue) do
         local handler = self.handlers[job.kind]
         local total = handler and handler.steps and #handler.steps or "?"
-        table.insert(lines, string.format("#%d %-22s %-9s etape %s/%s%s",
-            job.id, job.kind, job.status, tostring(job.step), tostring(total),
+        table.insert(lines, string.format("#%-3d %-24s %-11s etape %s/%s%s",
+            job.id, jobs.label(job.kind), jobs.label(job.status),
+            tostring(job.step), tostring(total),
             job.error and ("  (" .. job.error .. ")") or ""))
     end
 
