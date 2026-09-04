@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.1.0"
+hivemind.VERSION = "1.2.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1655,7 +1655,9 @@ function hivemind.buildTemplate(context)
 
     -- Which of those we already hold, in either role -- and how many drones,
     -- because only a drone can be spent at the Sampler
-    local owned, droneStock = {}, {}
+    -- Counted by role: a cycle needs a princess AND a drone, and the pair is
+    -- what makes a species drawable for ever.
+    local owned, droneStock, princessStock = {}, {}, {}
 
     for _, itemName in ipairs({"forestry:bee_drone_ge", "forestry:bee_princess_ge"}) do
         for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
@@ -1664,10 +1666,12 @@ function hivemind.buildTemplate(context)
 
             if name ~= "" then
                 owned[name] = true
+                local size = tonumber(item.size) or 0
 
                 if itemName == "forestry:bee_drone_ge" then
-                    droneStock[name] = (droneStock[name] or 0)
-                        + (tonumber(item.size) or 0)
+                    droneStock[name] = (droneStock[name] or 0) + size
+                else
+                    princessStock[name] = (princessStock[name] or 0) + size
                 end
             end
         end
@@ -1832,28 +1836,27 @@ function hivemind.buildTemplate(context)
     -- The extractions this template needs are launched HERE. Sending the
     -- player to another menu for the second half of one goal is how a guided
     -- path stops guiding.
-    local TARGET_DRONES = (config.genetics or {}).extraction_target or 29
-
-    local ready, tooFew = {}, {}
+    -- Nothing to stockpile. An apiary cycle nets one drone and the Sampler
+    -- destroys one, so a species held as a princess AND a drone can be drawn
+    -- from for ever without the pair being touched: one cycle, one draw, and
+    -- it stops at the first hit instead of committing to thirty cycles first.
+    local ready, noPair = {}, {}
 
     for _, entry in ipairs(missing) do
         local list = carriers[entry.slot .. "/" .. entry.allele] or {}
 
         for _, one in ipairs(list) do
             if owned[one] then
-                -- Never the last drone: the Sampler destroys what it reads, so
-                -- one is always kept back and the species can never be lost.
-                local stock = droneStock[one] or 0
-                local usable = math.max(0, stock - 1)
-
-                local wanted = {species = one, stock = stock, usable = usable,
+                local wanted = {species = one,
+                                drones = droneStock[one] or 0,
+                                princesses = princessStock[one] or 0,
                                 chromosome = entry.chromosome,
                                 allele = entry.allele, slot = entry.slot}
 
-                if usable >= TARGET_DRONES then
+                if wanted.princesses > 0 and wanted.drones > 0 then
                     table.insert(ready, wanted)
                 else
-                    table.insert(tooFew, wanted)
+                    table.insert(noPair, wanted)
                 end
                 break
             end
@@ -1862,50 +1865,30 @@ function hivemind.buildTemplate(context)
 
     if #ready > 0 then
         print("")
-        print("A EXTRAIRE MAINTENANT")
+        print("A EXTRAIRE — un cycle d apiary par tirage, la paire reste intacte")
         for _, item in ipairs(ready) do
             print("  " .. screen.fit(item.chromosome .. " " .. item.allele, 30)
-                .. item.species .. ", " .. screen.count(item.usable, "drone")
-                .. " utilisables")
+                .. "sur " .. item.species)
         end
     end
 
-    if #tooFew > 0 then
-        -- Grouped by species: Rocky carries two of the missing genes and was
-        -- printed twice, which also meant two accumulations queued for one bee.
+    if #noPair > 0 then
+        -- Grouped by species: one bee can carry two of the missing genes
         local order, byName = {}, {}
-        for _, item in ipairs(tooFew) do
+        for _, item in ipairs(noPair) do
             if not byName[item.species] then
-                byName[item.species] = {usable = item.usable, genes = {}}
+                byName[item.species] = item
                 table.insert(order, item.species)
             end
-            table.insert(byName[item.species].genes,
-                item.chromosome .. " " .. item.allele)
         end
 
         print("")
-        print("A ACCUMULER D ABORD")
-
+        print("PAIRE INCOMPLETE — il faut une princesse ET un drone")
         for _, name in ipairs(order) do
             local item = byName[name]
             print("  " .. screen.fit(name, 12)
-                .. screen.count(item.usable, "drone") .. " "
-                .. screen.plural(item.usable, "utilisable")
-                .. ", il en faut " .. TARGET_DRONES)
-            print("    " .. table.concat(item.genes, ", ")
-                .. " " .. screen.plural(#item.genes, "suivra", "suivront")
-                .. " tout " .. screen.plural(#item.genes, "seul", "seuls"))
-        end
-    end
-
-    -- Species, not genes: Rocky carries two of the missing genes and is bred
-    -- once, so it counts once in the cost and once in the summary.
-    local speciesToGrow = {}
-    local growCount = 0
-    for _, item in ipairs(tooFew) do
-        if not speciesToGrow[item.species] then
-            speciesToGrow[item.species] = true
-            growCount = growCount + 1
+                .. (item.princesses == 0 and "il manque la princesse"
+                                          or "il manque le drone"))
         end
     end
 
@@ -1918,31 +1901,27 @@ function hivemind.buildTemplate(context)
         if chance > 0 then crossCycles = crossCycles + math.ceil(100 / chance) end
     end
 
-    local growCycles = 0
-    for name in pairs(speciesToGrow) do
-        growCycles = growCycles + math.max(0,
-            (TARGET_DRONES + 1) - (droneStock[name] or 0))
-    end
+    -- An extraction costs one apiary cycle per draw, and thirteen draws give a
+    -- 65% chance. It stops at the first hit, so this is the order of magnitude
+    -- and not a bill.
+    local drawCycles = #ready * 13
 
     print("")
-    if crossCycles + growCycles > 0 then
-        print("Cout: au moins " .. (crossCycles + growCycles)
+    if crossCycles + drawCycles > 0 then
+        print("Cout: environ " .. (crossCycles + drawCycles)
             .. " cycles d apiary.")
         print("  " .. crossCycles .. " pour les croisements, "
-            .. growCycles .. " pour les accumulations.")
-        print("  Au moins: un croisement dont le parent n existe qu en")
-        print("  princesses en ajoute d autres.")
+            .. drawCycles .. " pour les extractions.")
+        print("  Une extraction s arrete des que le gene sort: treize tirages")
+        print("  donnent deux chances sur trois, et souvent moins suffisent.")
     end
 
     local actions = {}
     if #plan.steps > 0 then
         table.insert(actions, screen.count(#plan.steps, "croisement"))
     end
-    if growCount > 0 then
-        table.insert(actions, screen.count(growCount, "accumulation"))
-    end
-    if #ready + #tooFew > 0 then
-        table.insert(actions, screen.count(#ready + #tooFew, "extraction"))
+    if #ready > 0 then
+        table.insert(actions, screen.count(#ready, "extraction"))
     end
 
     local summary = table.concat(actions, ", ")
@@ -1968,36 +1947,26 @@ function hivemind.buildTemplate(context)
     -- and starts over, because "obtiens-moi ce gene" is a goal, not a try.
     local launched = 0
 
-    local grown = {}
+    for _, item in ipairs(ready) do
+        -- The extraction runs its own apiary cycles: nothing is accumulated
+        -- ahead of it, and the budget is only a ceiling on a loop that stops
+        -- at the first hit.
+        local params = genetics.campaignParams({
+            bee = {label = item.species .. " Drone"},
+            chromosome = item.chromosome,
+            allele = item.allele,
+            bees = 60,
+        })
 
-    for _, list in ipairs({ready, tooFew}) do
-        for _, item in ipairs(list) do
-            if item.usable < TARGET_DRONES and not grown[item.species] then
-                grown[item.species] = true
-
-                local grow = multiply.params({
-                    species = item.species, target = TARGET_DRONES + 1,
-                })
-                if grow then context.queue:submit("multiply", grow) end
-            end
-
-            local params = genetics.campaignParams({
-                bee = {label = item.species .. " Drone"},
-                chromosome = item.chromosome,
-                allele = item.allele,
-                bees = math.max(1, item.usable),
-                refill = TARGET_DRONES + 1,
-            })
-
-            if params and context.queue:submit("campaign", params) then
-                launched = launched + 1
-            end
+        if params and context.queue:submit("campaign", params) then
+            launched = launched + 1
         end
     end
 
     if launched > 0 then
-        print(screen.count(launched, "extraction") .. " en file. "
-            .. "Elles recommenceront d elles-memes tant que le gene ne sort pas.")
+        print(screen.count(launched, "extraction") .. " en file. Chacune fait"
+            .. " tourner l apiary entre deux tirages,")
+        print("jusqu a ce que le gene sorte.")
     end
 
     print("Choisis 6 pour tout faire tourner.")

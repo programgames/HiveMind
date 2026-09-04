@@ -475,17 +475,11 @@ config.genetics = {
     -- than on the check screen.
     supply_floor = {labware = 16, blank = 16},
     -- Une espece obtenue une fois ne doit plus jamais etre a refaire: des
-    -- qu un croisement reussit, la chasse a son gene Species part en file.
-    -- Sous ce nombre de drones la chasse s arreterait faute d abeilles, donc
-    -- elle attend le prochain passage plutot que d encombrer la file.
+    -- qu un croisement reussit, l extraction de son gene Species part en file.
+    -- Elle exige seulement la PAIRE princesse + drone -- ce qu un croisement
+    -- reussi laisse -- parce qu elle fait tourner l apiary entre deux tirages
+    -- au lieu d exiger un stock constitue d avance.
     autosave_species = true,
-    autosave_min_drones = 4,
-    -- Combien de drones utilisables avant de tenter une extraction ciblee.
-    -- Le Sampler tire un chromosome sur treize: 29 donnent 90 % de chances,
-    -- 13 en donnent 65. En dessous, le programme accumule d abord -- et une
-    -- extraction ne prend JAMAIS le dernier drone, donc une espece ne peut
-    -- pas etre perdue par le programme.
-    extraction_target = 29,
     -- Drones kept per species before any are fed to the DNA Extractor. A bee is
     -- cheap to keep and expensive to re-obtain, and the extractor destroys
     -- what it takes.

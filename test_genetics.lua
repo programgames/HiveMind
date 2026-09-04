@@ -930,13 +930,13 @@ end
 
 
 print("")
-print("-- une chasse qui echoue recommence, elle n abandonne pas --")
+print("-- un cycle d apiary par tirage, sans rien accumuler d avance --")
 
 do
-    -- "Obtiens-moi ce gene" est un objectif qui persiste. Le budget est ce
-    -- qu on peut depenser SANS prendre le dernier drone; quand il s epuise, la
-    -- reponse est d en elever d autres et de revenir, pas de renoncer a un
-    -- gene dont le template a besoin.
+    -- Un cycle d apiary rend UN drone net, et le Sampler en detruit un. Une
+    -- espece tenue en princesse + drone se tire donc indefiniment sans que la
+    -- paire soit touchee, et il n y a rien a stocker d avance: un cycle, un
+    -- tirage, et on s arrete au premier bon au lieu d engager trente cycles.
     os.remove(QUEUE)
     reset()
 
@@ -950,10 +950,16 @@ do
     -- programmer sa propre accumulation en a besoin.
     context.queue = queue
 
+    -- Un seul drone en stock: c est la paire, rien de depensable. Et la
+    -- princesse, sans laquelle l apiary ne produit rien de cette espece.
+    world.network[1].size = 1
+    table.insert(world.network, {name = "forestry:bee_princess_ge",
+                                 label = "Meadows Princess", size = 1})
+
     local params = genetics.campaignParams({
         bee = {label = "Meadows Drone"},
         chromosome = "Species", allele = "Cultivated",
-        bees = 2, refill = 29,
+        bees = 20,
     })
 
     queue:submit("campaign", params)
@@ -964,11 +970,58 @@ do
         if job.kind == "multiply" then grow = job end
     end
 
-    checkTruthy("une accumulation est mise en file", grow)
-    check("jusqu au seuil demande", grow and grow.params.target, 29)
+    checkTruthy("un cycle d apiary est mis en file", grow)
+    check("pour un seul drone de plus, pas un stock",
+          grow and grow.params.target, 2)
     check("sur la bonne espece", grow and grow.params.species, "Meadows")
     checkTruthy("et la chasse n est pas abandonnee",
                 queue:get(1).status ~= jobs.COMPLETE)
+
+    -- Un seul cycle EN COURS a la fois: en programmer un par passe remplirait
+    -- la file du meme travail.
+    local pending = 0
+    for _, job in ipairs(queue:list()) do
+        if job.kind == "multiply" and job.status ~= jobs.COMPLETE then
+            pending = pending + 1
+        end
+    end
+    checkTruthy("jamais deux cycles en attente pour la meme espece", pending <= 1)
+
+    -- Et un apiary qui ne produit rien -- pas de fleur, pas de lumiere -- ne
+    -- doit pas faire tourner cette boucle indefiniment
+    for _ = 1, 60 do queue:run(context, {maxSteps = 60}) end
+    check("une boucle qui n avance pas finit par s arreter",
+          queue:get(1).status, jobs.ERROR)
+    checkTruthy("en disant ou regarder",
+                queue:get(1).error and queue:get(1).error:find("apiary"))
+
+    os.remove(QUEUE)
+end
+
+print("")
+print("-- sans princesse, le programme ne peut rien et le dit --")
+
+do
+    -- Un cycle d apiary exige une princesse ET un drone. Sans princesse, rien
+    -- ne produit de drone de cette espece, et aucun code n y changera quoi que
+    -- ce soit: c est un geste, pas une panne.
+    os.remove(QUEUE)
+    reset()
+    world.network[1].size = 1
+
+    queue, context = buildStack()
+    context.queue = queue
+
+    queue:submit("campaign", genetics.campaignParams({
+        bee = {label = "Meadows Drone"},
+        chromosome = "Species", allele = "Cultivated", bees = 20,
+    }))
+    queue:run(context, {maxSteps = 20})
+
+    check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
+    checkTruthy("et demande la princesse qui manque",
+                queue:get(1).action
+                and queue:get(1).action:find("Meadows Princess", 1, true))
 
     os.remove(QUEUE)
 end
@@ -984,7 +1037,7 @@ do
     local job = {params = {
         bee = {label = "Rocky Drone"},
         chromosome = "Lifespan", allele = "Shortest",
-        budget = 99, spent = 0, obtainedList = {}, refill = 29,
+        budget = 99, spent = 0, obtainedList = {},
         wrongAllele = 2,
         obtained = {chromosome = "Lifespan", allele = "Shorter"},
     }}

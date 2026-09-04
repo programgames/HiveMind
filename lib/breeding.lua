@@ -455,26 +455,29 @@ breeding.STEPS = {
                 return jobs.DONE
             end
 
-            -- A campaign with no bees to spend parks itself immediately, so it
-            -- is not queued at all: the cross that just ran usually leaves one
-            -- drone, and one drone is a coin flip.
-            local minimum = tonumber(settings.autosave_min_drones) or 4
-            local stock = droneStock(context, name)
+            -- The pair is the criterion, not a stock. An apiary cycle nets one
+            -- drone and the Sampler destroys one, so a species held as a
+            -- princess and a drone can be drawn from for ever; the extraction
+            -- runs its own cycles and needs nothing accumulated first. A cross
+            -- that just succeeded leaves exactly that pair.
+            local genetics = require("lib.genetics")
+            local drones = genetics.droneCount(context, name .. " Drone")
+            local princesses = genetics.princessCount(context, name)
 
-            if stock < minimum then
+            if drones == 0 or princesses == 0 then
                 report(context, "gene d espece de " .. name .. " a sauver plus"
-                    .. " tard: " .. stock .. " drone(s), il en faut " .. minimum)
+                    .. " tard: " .. (princesses == 0 and "aucune princesse"
+                                                     or "aucun drone"))
                 return jobs.DONE
             end
 
             if alreadyHunting(context, name) then return jobs.DONE end
 
-            local genetics = require("lib.genetics")
             local params = genetics.campaignParams({
                 bee = {label = name .. " Drone"},
                 chromosome = "Species",
                 allele = name,
-                bees = math.min(13, stock),
+                bees = 60,
             })
 
             if not params or not context.queue then return jobs.DONE end

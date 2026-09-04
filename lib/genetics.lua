@@ -167,6 +167,56 @@ local function finishLoadedStep(machineName, inputKey, wantedLabel)
     }
 end
 
+--- How many drones of a species the network holds
+--- @param context table
+--- @param label string Full item label, "Meadows Drone"
+--- @return number
+function genetics.droneCount(context, label)
+    if not context or not context.transport then return 0 end
+
+    local ok, items = pcall(function()
+        return context.transport:findAll({name = "forestry:bee_drone_ge"})
+    end)
+
+    if not ok or type(items) ~= "table" then return 0 end
+
+    local count = 0
+    for _, item in ipairs(items) do
+        if item.label == label then count = count + (tonumber(item.size) or 0) end
+    end
+
+    return count
+end
+
+--- How many princesses of a species the network holds
+--- Without one the apiary produces nothing of that species, and the loop has
+--- no way forward that the program can take on its own.
+--- @param context table
+--- @param species string Species name, without a role suffix
+--- @return number
+function genetics.princessCount(context, species)
+    if not context or not context.transport then return 0 end
+
+    local wanted = species .. " Princess"
+    local count = 0
+
+    for _, itemName in ipairs({"forestry:bee_princess_ge", "forestry:bee_queen_ge"}) do
+        local ok, items = pcall(function()
+            return context.transport:findAll({name = itemName})
+        end)
+
+        if ok and type(items) == "table" then
+            for _, item in ipairs(items) do
+                if item.label == wanted or item.label == (species .. " Queen") then
+                    count = count + (tonumber(item.size) or 0)
+                end
+            end
+        end
+    end
+
+    return count
+end
+
 --- Build and check the parameters of a sampling job
 --- @param options table {bee}
 --- @return table|nil params
@@ -1186,10 +1236,6 @@ function genetics.campaignParams(options)
         chromosome = chromosome,
         allele = allele,
         budget = budget,
-        -- When set, an exhausted budget breeds back up to this many drones and
-        -- starts over instead of giving up. nil keeps the single-attempt
-        -- behaviour, which is what a one-off draw from the menu wants.
-        refill = tonumber(options.refill),
         spent = 0,
         obtainedList = {},
         timeout = options.timeout,
@@ -1200,7 +1246,72 @@ end
 --- Rewinding job.step is how the accumulation campaign loops, and the queue
 --- increments after a DONE, so zero restarts at step one with the counters kept
 --- on disk: a reboot mid-campaign resumes where it stopped.
-genetics.CAMPAIGN_STEPS = {}
+genetics.CAMPAIGN_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "assurer-un-drone-en-surplus",
+        -- The whole loop, in one condition. An apiary cycle nets ONE drone --
+        -- measured over ten consecutive cycles -- and the Sampler destroys
+        -- exactly one. So a species held as a princess and a drone can be
+        -- drawn from for ever without the pair ever being touched, and there
+        -- is nothing to stockpile first: one cycle, one draw, and stop at the
+        -- first hit instead of committing to thirty cycles up front.
+        verify = function(job, context)
+            return genetics.droneCount(context, job.params.bee.label) >= 2
+        end,
+        run = function(job, context)
+            local label = job.params.bee.label
+            local species = label:gsub("%s+Drone$", "")
+
+            if genetics.droneCount(context, label) >= 2 then return jobs.DONE end
+
+            -- No princess, no cycle, and no way for the program to make one
+            if genetics.princessCount(context, species) == 0 then
+                return jobs.NEEDS_PLAYER, "mets une " .. species
+                    .. " Princess dans le reseau ME: sans elle l apiary ne"
+                    .. " peut produire aucun drone de cette espece"
+            end
+
+            if not context.queue then
+                return jobs.FAILED, "aucune file pour programmer un cycle"
+            end
+
+            -- One already on its way is enough; queueing another every pass
+            -- would fill the queue with the same cycle
+            for _, other in ipairs(context.queue:list()) do
+                if other.kind == "multiply" and other.status ~= "complete"
+                   and other.status ~= "cancelled"
+                   and other.params and other.params.species == species then
+                    return jobs.RETRY, "cycle d apiary deja en file pour " .. species
+                end
+            end
+
+            -- A cycle that yields nothing -- no flower, no light, an apiary
+            -- the player emptied -- would have this queue one more every pass,
+            -- for ever. Thirty is far past any normal run and stops a loop
+            -- that is going nowhere.
+            job.params.cycles = (job.params.cycles or 0) + 1
+
+            if job.params.cycles > 30 then
+                return jobs.FAILED, "trente cycles d apiary sans produire de"
+                    .. " drone de " .. species .. ": regarde l apiary, il lui"
+                    .. " manque sans doute sa fleur ou sa lumiere."
+            end
+
+            local multiply = require("lib.multiply")
+            local grow = multiply.params({species = species, target = 2})
+            if not grow then return jobs.FAILED, "cycle impossible a programmer" end
+
+            local id = context.queue:submit("multiply", grow)
+            if not id then return jobs.FAILED, "cycle refuse par la file" end
+
+            -- RETRY and not DONE: the cycle has to run before the next draw,
+            -- and the queue sets this job aside for the pass while it does.
+            return jobs.RETRY, "un cycle d apiary pour " .. species
+                .. ", puis on tire a nouveau"
+        end,
+    },
+}
 
 for _, step in ipairs(genetics.SAMPLE_STEPS) do
     table.insert(genetics.CAMPAIGN_STEPS, step)
@@ -1254,32 +1365,6 @@ table.insert(genetics.CAMPAIGN_STEPS, {
 
         if job.params.spent >= job.params.budget then
             if wanted then
-                -- "Obtiens-moi ce gene" is a standing goal, not one attempt.
-                -- The budget is what can be spent WITHOUT taking the last
-                -- drone; when it runs out the answer is to breed more and come
-                -- back, not to give up on a gene the template needs.
-                if job.params.refill and context and context.queue then
-                    local multiply = require("lib.multiply")
-                    local species = job.params.bee.label:gsub("%s+Drone$", "")
-
-                    local grow = multiply.params({
-                        species = species,
-                        target = job.params.refill,
-                    })
-
-                    if grow and context.queue:submit("multiply", grow) then
-                        -- Rewound to zero, the queue restarts it at step one
-                        -- once the accumulation ahead of it has run.
-                        job.params.spent = 0
-                        job.params.obtained = nil
-                        job.step = 0
-
-                        return jobs.DONE, "budget epuise sans " .. wanted
-                            .. ": accumulation jusqu a " .. job.params.refill
-                            .. " drones, puis on recommence"
-                    end
-                end
-
                 -- Not a failure: thirteen genes went into the library and the
                 -- draw simply did not come up. Saying "failed" would hide that.
                 return jobs.DONE, "budget epuise sans " .. wanted

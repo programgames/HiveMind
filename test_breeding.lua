@@ -610,6 +610,13 @@ do
         table.insert(world.network, {name = "forestry:bee_drone_ge",
                                      label = "Common Drone", size = droneCount})
 
+        -- La paire est le critere: un cycle d apiary exige une princesse ET un
+        -- drone, et c est exactement ce qu un croisement reussi laisse.
+        if droneCount > 0 then
+            table.insert(world.network, {name = "forestry:bee_princess_ge",
+                                         label = "Common Princess", size = 1})
+        end
+
         return queue, context
     end
 
@@ -640,7 +647,9 @@ do
     check("elle vise le bon chromosome", hunt.params.chromosome, "Species")
     check("et le bon allele", hunt.params.allele, "Common")
     check("sur les drones de cette espece", hunt.params.bee.label, "Common Drone")
-    check("le budget ne depasse pas le stock", hunt.params.budget, 9)
+    -- Le budget n est plus un stock a constituer: l extraction fait tourner
+    -- l apiary entre deux tirages et s arrete au premier bon.
+    checkTruthy("le budget laisse la boucle travailler", hunt.params.budget > 13)
     check("le croisement reste termine", queue:get(1).status, jobs.COMPLETE)
 
     -- Already in the library: thirteen drones for a sample the Genetic
@@ -671,8 +680,26 @@ do
         if job.kind == "campaign" then third = job end
     end
 
-    check("un seul drone ne declenche pas de chasse", third, nil)
-    checkTruthy("mais le programme le dit",
+    -- Un seul drone suffit desormais, tant que la princesse est la: c est la
+    -- paire qui rend l espece tirable indefiniment.
+    checkTruthy("un drone et une princesse suffisent", third)
+
+    -- Sans princesse, en revanche, aucun cycle n est possible
+    os.remove(QUEUE)
+    reset()
+    local queue4, context4 = stackWithLibrary({}, 0)
+    table.insert(world.network, {name = "forestry:bee_drone_ge",
+                                 label = "Common Drone", size = 3})
+    queue4:submit("breed", freshParams())
+    queue4:run(context4, {maxSteps = 40})
+
+    local fourth = nil
+    for _, job in ipairs(queue4:list()) do
+        if job.kind == "campaign" then fourth = job end
+    end
+
+    check("sans princesse, aucune chasse n est lancee", fourth, nil)
+    checkTruthy("et le programme le dit",
                 table.concat(log, " "):find("a sauver plus tard"))
 
     os.remove(QUEUE)
