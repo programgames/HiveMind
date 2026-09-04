@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.90.0"
+hivemind.VERSION = "0.91.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1191,9 +1191,17 @@ function hivemind.runQueue(context, options)
 
     local report = context.queue:run(context, {
         budget = options.budget,
+
+        -- Said BEFORE the step runs: waiting on a machine takes up to two
+        -- minutes and prints nothing, so the screen sat on "Execution de 1
+        -- tache(s)..." and looked frozen.
+        onStep = function(job, name)
+            print(string.format("  #%d %s : %s...", job.id,
+                jobs.label(job.kind), name or ("etape " .. job.step)))
+        end,
+
         onProgress = function(job, outcome, detail)
-            print(string.format("  #%d %s etape %d : %s%s",
-                job.id, jobs.label(job.kind), job.step, outcome,
+            print(string.format("       -> %s%s", outcome,
                 detail and ("  " .. detail) or ""))
         end,
     })

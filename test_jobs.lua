@@ -435,6 +435,46 @@ do
     check("ni aucun etat", #missing, 0)
 end
 
+print("")
+print("-- dire ce qu'on fait avant de le faire --")
+
+do
+    -- A step can wait two minutes on a machine and print nothing. The screen
+    -- sat on "Execution de 1 tache(s)..." and was indistinguishable from a
+    -- frozen program.
+    os.remove(PATH)
+
+    local announced, finished = {}, {}
+    local queue = jobs.new({
+        path = PATH,
+        handlers = {
+            slow = {steps = {
+                {name = "premiere-etape",
+                 verify = function() return false end,
+                 run = function() return jobs.DONE end},
+                {name = "attendre-la-machine",
+                 verify = function() return false end,
+                 run = function() return jobs.DONE end},
+            }},
+        },
+        clock = function() return 0 end,
+    })
+
+    queue:submit("slow", {})
+    queue:run({}, {
+        maxSteps = 4,
+        onStep = function(job, name) table.insert(announced, name or "?") end,
+        onProgress = function(job, outcome) table.insert(finished, outcome) end,
+    })
+
+    check("chaque etape est annoncee avant de tourner", #announced, 2)
+    check("et la premiere porte son nom", announced[1], "premiere-etape")
+    check("celle qui attend aussi", announced[2], "attendre-la-machine")
+    check("autant d'annonces que de resultats", #announced, #finished)
+
+    os.remove(PATH)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

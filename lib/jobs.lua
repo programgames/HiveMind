@@ -337,7 +337,10 @@ end
 --- Stops on the first job that fails permanently, so the operator sees it rather
 --- than having it buried under later work.
 --- @param context table Passed to every step
---- @param options table|nil {maxSteps, onProgress}
+--- @param options table|nil {maxSteps, budget, onStep, onProgress}
+--- onStep fires BEFORE a step runs. A step can wait two minutes on a machine
+--- without printing anything, and a silent pause is indistinguishable from a
+--- frozen program.
 --- @return table report {steps, completed, retried, failed, blocked}
 function Queue:run(context, options)
     options = options or {}
@@ -373,6 +376,14 @@ function Queue:run(context, options)
         end
 
         local before_step = job.step
+
+        if type(options.onStep) == "function" then
+            local handler = self.handlers[job.kind]
+            local step = handler and handler.steps and handler.steps[job.step]
+
+            pcall(options.onStep, job, step and step.name or nil)
+        end
+
         local outcome, detail = self:step(job, context)
         report.steps = report.steps + 1
 

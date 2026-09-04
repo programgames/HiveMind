@@ -306,6 +306,13 @@ check("la comparaison d allele est un suffixe, pas un substring",
 check("un chromosome dont l uid ne suit pas l etiquette est signale",
       text:find("ne nomment pas leur allele", 1, true) ~= nil)
 
+-- Waiting on a machine takes up to two minutes and prints nothing, so the
+-- screen sat on "Execution de 1 tache(s)..." and looked frozen
+check("la file dit ce qu elle fait avant de le faire",
+      text:find("onStep = function(job, name)", 1, true) ~= nil)
+check("et nomme l etape en cours",
+      text:find("name or (\"etape \" .. job.step)", 1, true) ~= nil)
+
 -- The menu redraws straight after an action and pushes its output off the top
 local screenText = io.open("lib/screen.lua"):read("a")
 
