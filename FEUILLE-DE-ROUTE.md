@@ -1,163 +1,231 @@
 # HiveMind — feuille de route
 
-Ce document dit **ce qu'on fait, comment, et ce qu'on attend comme résultat**.
-Il est en français parce que c'est la langue de travail du projet ; le code et
-les commits restent en anglais.
+Ce document liste **ce qu'il reste à faire, dans l'ordre**. Chaque tâche dit le
+problème, la solution, et ce qu'on attend comme résultat.
 
-## Objectif final
-
-Obtenir et conserver le patrimoine génétique de toutes les abeilles du pack,
-puis pouvoir imprimer n'importe quelle espèce à volonté avec des traits
-optimaux.
-
-Concrètement, en trois capacités :
-
-1. **Découvrir** — croiser jusqu'à obtenir chaque espèce atteignable.
-2. **Conserver** — extraire le gène d'espèce de chacune, le dupliquer, ne jamais
-   pouvoir le perdre.
-3. **Produire** — fabriquer à la demande une abeille de n'importe quelle espèce,
-   avec les meilleurs traits connus.
-
-## Principe de conception
-
-**Le programme ne devine rien qu'il puisse mesurer.** La topologie est découverte
-(`discover`), les espèces viennent du jeu (`listAllSpecies`), les mutations
-possibles sont demandées au Mutatron, les génomes sont lus dans le NBT. Rien
-n'est spécifique à une installation : quelqu'un d'autre lance `discover` puis
-`hivemind`.
-
-Corollaire pour les allèles : ils ne sont **pas** listés à l'avance. Un profil
-génétique est un *ordre de préférence* par chromosome — « le plus rapide que tu
-connaisses » — et le programme choisit parmi ce qu'il a réellement observé. Sa
-connaissance s'enrichit à chaque abeille lue et à chaque sample collecté.
+À jour du 2026-09-04. Avancement chiffré : voir `AVANCEMENT.md`.
 
 ---
 
-## Phase 0 — Calibration ✅ terminée
+## Ce qui est stocké où — à lire une fois, ça évite les malentendus
 
-**Fait** : quatre passages en jeu ont fixé le format du génome NBT, l'étiquette
-des Gene Samples, les noms de chromosomes, la numérotation des slots, et prouvé
-que les templates peuvent être empreintés.
-
-**Résultat** : plus aucun parseur écrit sur une supposition.
-
-## Phase 1 — Le socle ✅ presque terminée
-
-**Fait** : lecture de génome, persistance atomique, registre d'espèces,
-file de tâches reprenable, transport AE2, drivers machines, bibliothèque de
-gènes, point d'entrée. Un cycle de croisement complet a tourné en jeu.
-
-Le premier rapport complet en jeu a montré le vrai goulot : seize espèces de
-princesses contre deux espèces de drones. Chaque croisement dépense un drone,
-donc presque rien n'était exécutable. `lib/multiply.lua` accumule désormais les
-drones d'une espèce en boucle (princesse + drone → reine → princesse + N
-drones), avec objectif, plafond de cycles et reprise après coupure.
-
-Le même rapport a révélé deux pannes silencieuses : les abeilles laissées dans
-la sortie de l'apiary sont invisibles aux tâches, qui les cherchent dans le
-réseau ME et les déclarent manquantes ; et un parent laissé par une tâche
-précédente bloquait le slot du Mutatron sans que rien ne le dise.
-
-**Reste** : brancher le planificateur d'arbre, qui existe et est testé mais
-n'est relié à rien. Aujourd'hui on programme un croisement à la fois.
-
-**Comment** : le planificateur (dans `main.lua`, hérité) construit l'arbre des
-croisements d'une espèce cible, avec réutilisation et cycles d'accumulation de
-drones. Il faut le sortir de `main.lua`, le brancher sur la file de tâches, et
-supprimer l'ancienne couche d'exécution qui est morte.
-
-**Résultat attendu** : tu demandes `Imperial`, le programme met en file les huit
-croisements intermédiaires dans le bon ordre et les enchaîne seul.
-
-## Phase 2 — La génétique ⬜ pas commencée
-
-Nécessite les sept machines Gendustry restantes, contre un second Transposer.
-Aucune n'est remplaçable par du logiciel : chacune est le seul moyen d'accomplir
-son opération.
-
-| Étape | Machine | Ce qu'on obtient |
+| Objet | Où il vit | Pourquoi |
 |---|---|---|
-| Échantillonner | Genetic Sampler | un gène, tiré au hasard sur 13, l'abeille meurt |
-| Sauvegarder | Genetic Transposer | une copie du sample |
-| Construire | Genetic Transposer | un template assemblé à partir de samples |
-| Améliorer | Genetic Imprinter | une abeille existante mise au profil |
-| Créer | Genetic Replicator | une abeille neuve depuis un template complet |
-| Alimenter | DNA Extractor, Protein Liquifier, Mutagen Producer | les fluides |
+| **Gene samples** | dans AE2 | Leur nom dit leur contenu : `Bee Sample - Species: Cultivated`. Le programme les distingue sans effort. **C'est ça, la bibliothèque.** |
+| **Abeilles** | dans AE2 | Identifiées par leur étiquette |
+| **Templates** | dans un coffre, **jamais dans AE2** | Tous portent le même nom. Dans le réseau, le programme ne saurait pas lequel il prend |
+| **Labware, samples vierges** | dans AE2 | Objets ordinaires, aucun problème |
 
-**Comment** : chaque opération devient un type de tâche, avec ses étapes
-vérifiables, comme le croisement. La bibliothèque de gènes et l'index de
-templates sont déjà écrits et testés.
+**Un template n'est pas une archive, c'est un consommable.** On l'assemble à la
+table de craft à partir de samples, qui sont consommés. Les samples se
+dupliquent au Genetic Transposer, donc refaire un template coûte peu.
 
-**Résultat attendu** : le gène d'espèce de chaque abeille croisée est capturé et
-dupliqué automatiquement, et un template de production permet d'imprimer
-n'importe quelle espèce déjà archivée.
-
-**Point clé** : l'Imprinter accepte les templates incomplets, et un template
-n'est pas lié à une espèce. Donc **un seul template de 12 gènes, sans chromosome
-Species, rend parfaite n'importe quelle abeille**. Les templates complets par
-espèce ne servent qu'au Replicator.
-
-## Phase 3 — Les campagnes ⬜ pas commencée
-
-**Comment** : une campagne est un objectif de haut niveau qui alimente la file
-en continu — « obtiens le gène Species de toutes les espèces atteignables ».
-Boucle : croiser une espèce, accumuler ses drones à l'apiary, échantillonner
-jusqu'à tomber sur le chromosome Species, archiver, passer à la suivante.
-
-**Résultat attendu** : le programme tourne seul pendant des heures et ne
-t'interpelle que pour ce qu'il ne peut pas faire — une ruche sauvage à ramasser,
-une fleur à poser, un réservoir à remplir.
+Conséquence : le coffre ne contient que **les templates du moment** — quelques
+unités. Il n'y aura jamais 500 templates rangés quelque part, il y aura 500
+gènes d'espèce dans AE2 et des templates fabriqués au besoin.
 
 ---
 
-## Décisions ouvertes
+## Étape 0 — Ce que tu poses en jeu
 
-**Les deux profils génétiques.** Trois chromosomes demandent un arbitrage :
+**Rien ne peut avancer sans ça.** Quatre choses, toutes sur des faces déjà
+libres. Aucune machine à déplacer.
 
-- **Lifespan** — courte pour itérer vite en élevage, longue pour espacer les
-  changements de reine en production.
-- **Flowers** — voir ci-dessous.
-- **Effect** — certains sont utiles, d'autres nuisibles.
+### 0.1 — Un deuxième Genetic Imprinter
 
-Les dix autres sont des maximums sans ambiguïté, et le programme les choisira
-seul une fois exprimés en ordre de préférence.
+**Problème** : un Imprinter tient un seul template. Avec deux profils
+(élevage, production), il faudrait échanger le template à chaque changement —
+et le slot template ne se vide pas par automatisation.
 
-## Contraintes connues
+**Solution** : deux Imprinters, un template chacun, jamais touchés ensuite.
 
-**Les fleurs.** Chaque espèce exige un fournisseur de fleurs particulier ; ce
-pack en compte neuf, dont des blocs personnalisés. Pendant le croisement on ne
-peut rien y faire — mais `listMutations` donne le génome du résultat, donc le
-programme peut annoncer la fleur nécessaire *avant* de lancer. Après, l'Imprinter
-uniformise le fournisseur sur toute la production : une seule fleur à fournir.
+**Où** : sur une face libre (dessus ou dessous) du transposer qui touche le
+Sampler, l'Imprinter actuel et le Genetic Transposer.
 
-**Les abeilles répliquées sont toujours Ignoble**, et l'Imprinter tue parfois les
-Ignoble. La réplication est donc réservée aux drones, consommables ; les lignées
-de princesses viennent du croisement naturel.
+**Résultat attendu** : « imprime cette abeille en profil production » devient
+un choix de machine, pas une manipulation.
 
-**Les templates sont illisibles.** Même item, même étiquette, NBT inaccessible.
-Ils vivent dans un coffre dédié, un par slot, suivis sur disque et vérifiés par
-empreinte SHA-256. C'est le seul endroit du système où une intervention manuelle
-casse l'état.
+### 0.2 — Un coffre côté génétique
 
-**AE2 ne distingue pas les génomes.** Plusieurs abeilles de la même espèce mais
-génétiquement différentes portent la même étiquette. On ne choisit pas laquelle
-le réseau nous donne. Sans conséquence pour l'espèce visée ; il faudra en tenir
-compte quand la pureté comptera.
+**Problème** : un template posé dans AE2 est perdu parmi ses jumeaux.
 
-## Où en est le code
+**Solution** : un coffre que le transposer voit, où chaque template occupe une
+position connue.
 
-| Module | Rôle | Tests |
-|---|---|---|
-| `lib/genome.lua` | lecture NBT, étiquettes de samples, pureté, profils | 41 |
-| `lib/state.lua` | persistance atomique | 28 |
-| `lib/species.lua` | registre alimenté par le jeu, index inverse | 59 |
-| `lib/jobs.lua` | file reprenable, étapes idempotentes | 40 |
-| `lib/transport.lua` | AE2 → Database → quai → Transposer | 69 |
-| `lib/machines.lua` | interface unique, politique d'énergie | 69 |
-| `lib/library.lua` | bibliothèque de gènes, empreinte de templates | 49 |
-| `lib/breeding.lua` | le cycle de croisement en sept étapes | 34 |
-| `lib/config.lua` | topologie déclarée, découverte par `discover` | — |
-| `hivemind.lua` | démarrage, menu, reprise | — |
+**Où** : l'autre face libre du même transposer.
 
-Outils : `hminstall` (installation et mise à jour), `calibrate` (diagnostic),
-`discover` (topologie), `upload` (envoi de rapport).
+**Un coffre vanilla suffit.** Pas de Storage Drawers : les tiroirs fusionnent
+les objets qui se ressemblent, et deux templates se ressemblent parfaitement.
+Tu en perdrais définitivement.
+
+### 0.3 — Un coffre côté Replicator
+
+**Où** : une face libre du transposer qui touche le Replicator et l'extracteur
+ADN (il lui en reste trois).
+
+**Même rôle** : les templates complets d'espèce, en attente d'entrer dans la
+machine.
+
+### 0.4 — Deux templates identiques, pour l'expérience de l'étape 1
+
+Prends deux templates vierges, ajoute-leur **le même gene sample** à la table
+de craft. Tu obtiens deux templates au contenu identique, appelons-les T et T′.
+
+- **T** → dans le réseau AE2
+- **T′** → dans le coffre de l'étape 0.2
+
+### 0.5 — Envoie-moi la topologie
+
+```
+tools/hminstall --clean
+tools/discover --upload
+```
+
+**Résultat attendu** : je vois les deux coffres et le deuxième Imprinter, et je
+les inscris dans la configuration.
+
+---
+
+## Étape 1 — L'expérience « peut-on garder les templates dans AE2 ? »
+
+**Problème** : tous les templates portent le même nom. Quand le programme en
+demande un au réseau, AE2 lui en donne un au hasard. Sur le Replicator, ça
+fabriquerait n'importe quelle espèce.
+
+**Ce qu'on sait** : AE2, lui, **sait** les distinguer — il range les objets en
+tenant compte de leurs données cachées. C'est le pont OpenComputers qui ne me
+montre que le nom.
+
+**L'idée** : ne pas partir du réseau, mais d'un template qu'on tient. Le
+transposer sait en faire une « photographie » complète, données cachées
+comprises, et la ranger dans un Database upgrade. On demande ensuite au réseau
+l'objet décrit par cette photographie.
+
+**L'expérience** : je photographie T′ depuis le coffre, je demande au réseau, et
+je regarde ce qui arrive.
+
+- Un template **avec un gène dedans** → ça marche, les templates peuvent rester
+  dans AE2, en nombre illimité, choisis automatiquement
+- Un template **vierge** → ça ne marche pas, on garde les coffres
+
+**Résultat attendu** : une réponse oui/non qui décide de l'étape 2. Une seule
+manche. Et si c'est oui, ça vaut aussi pour tout ce qui se distingue par des
+données cachées, pas seulement les templates.
+
+---
+
+## Étape 2 — Savoir quel template est lequel
+
+**Problème** : même dans un coffre, si tu déplaces un template à la main, mon
+index devient faux **en silence**, et j'imprime n'importe quoi sur tes abeilles.
+
+**Solution** : chaque template reçoit une **empreinte** — un code calculé à
+partir de son contenu réel, différent pour deux templates différents. Le
+mécanisme est déjà vérifié en jeu. Au démarrage je recalcule les empreintes et
+je compare à ce que j'avais noté.
+
+**Résultat attendu** : le programme sait dire « slot 3 = template complet
+Robotic », et **refuse d'imprimer** si le coffre ne correspond plus à son index,
+au lieu d'écrire des gènes au hasard sur une abeille.
+
+---
+
+## Étape 3 — Le deuxième Imprinter dans la configuration
+
+**Problème** : le programme ne connaît qu'un Imprinter.
+
+**Solution** : deux machines déclarées, un profil associé à chacune.
+
+**Résultat attendu** : tu choisis le profil, le programme choisit la machine.
+Plus aucun échange de template.
+
+---
+
+## Étape 4 — Surveiller la cuve du DNA Extractor
+
+**Problème** : je surveille les réservoirs du Mutatron, du Replicator, du
+Liquifier et du Mutagen Producer — mais pas celui de l'extracteur. Or c'est
+justement celui qui te dirait **qu'il y a du DNA à transférer**.
+
+**Solution** : l'ajouter à la surveillance existante.
+
+**Résultat attendu** : une ligne dans le menu, du genre
+`DNA Extractor : 6400/8000 — il y a du DNA a prendre`.
+
+**Coût** : quelques lignes. C'est la tâche la plus rentable du lot.
+
+---
+
+## Étape 5 — Poser un template automatiquement
+
+**Problème** : aujourd'hui tu poses chaque template à la main, sans que le
+programme puisse t'aider à trouver le bon.
+
+**Solution** : une fois l'étape 2 faite, le programme prend le template
+**par sa position** dans le coffre et le met dans la machine — à condition que
+le slot soit **vide**.
+
+**Résultat attendu** : « réplique une Robotic » prend le bon template dans le
+coffre et le pose, au lieu de te faire chercher parmi des objets identiques.
+
+**Limite assumée** : ça ne fonctionne que sur une machine vide. Voir la réserve
+ci-dessous.
+
+---
+
+## En réserve — le mixin qui libère le slot template
+
+**Problème** : le Replicator refuse de rendre son template. Mesuré en jeu, puis
+confirmé dans le code du mod : `canExtractItem` répond oui **uniquement** pour
+le slot de sortie. Donc changer un template reste manuel.
+
+**Solution possible** : un fichier de vingt lignes dans `scripts/mixin/` du
+serveur, qui intercepte cette décision et répond oui aussi pour le template.
+Ton pack fait **déjà exactement ça** sur l'Imprinter, avec
+`AllowQueenImprinting.zs` — le modèle existe et fonctionne.
+
+**Ce que ça coûte** :
+- ça change le comportement du mod pour tout le monde sur le serveur
+- ça vit dans les fichiers du serveur, pas chez toi
+- un mixin mal ciblé empêche le jeu de démarrer (réversible : on retire le
+  fichier)
+
+**Décision** : en attente. Tu as dit qu'une réplication par espèce, faite une
+fois à la main, ne te gênait pas. Dans ce cas ce fichier résout un problème que
+tu n'as pas. On le fera si l'échange de templates devient une corvée
+quotidienne.
+
+---
+
+## Le vrai travail restant : attraper sept espèces
+
+Aucun code ne remplace ça. Les 11 allèles des deux profils viennent de sept
+abeilles :
+
+| Espèce | Ce qu'elle apporte |
+|---|---|
+| **Rocky** | Never Sleeps, Tolerates Rain, Fertility 1 — **trois d'un coup** |
+| Cultivated | Lifespan Shortest |
+| Wintry | Fertility 4 |
+| Lime (la Forestry) | Temperature Tolerance Both 3 |
+| Cyan | Humidity Tolerance Both 3 |
+| Robotic | Speed Robotic |
+| Temporal | Lifespan Immortal |
+
+Les quatre autres valeurs — Speed Fast, Flowers, Flowering Slow, Territory
+Average, Effect None — sont celles d'abeilles ordinaires que tu as déjà.
+
+**Dès que tu as les drones**, l'option `t` du menu met en file toutes les
+campagnes nécessaires, d'un coup.
+
+---
+
+## Ce qui est déjà fait
+
+Croisement piloté, accumulation de drones, planification de chaîne, lecture de
+génome sans détruire l'abeille, bibliothèque de gènes avec mise à l'abri
+automatique, échantillonnage, duplication, impression, campagnes de gènes,
+récolte groupée par profil, réplication, alimentation de l'extracteur ADN,
+surveillance des réservoirs, file de tâches reprenable après coupure.
+
+Neuf machines reconnues, cinq transposers, trois interfaces ME.

@@ -88,6 +88,13 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   reste jusqu'à un retrait manuel ou le prochain cycle.
 - **Étiquette d'un Gene Sample** : `Bee Sample - <Chromosome>: <Allèle>`.
   Séparateur ` - `, pas `: `.
+- **La bibliothèque, ce sont les gene samples, pas les templates.** Un sample
+  porte son contenu dans son nom (`Bee Sample - Species: Cultivated`) : AE2 le
+  range, le programme le retrouve, aucun problème. Un **template est un
+  consommable** assemblé à la table de craft à partir de samples, qui sont
+  consommés. Donc on n'archive pas 500 templates : on garde 500 samples dans
+  AE2 et on fabrique un template au besoin. Un coffre vanilla suffit pour les
+  quelques templates en cours d'usage.
 - **Les Genetic Templates sont opaques** : même id, même étiquette, ne diffèrent
   que par le NBT. Identifiables uniquement par `transposer.store` +
   `database.computeHash` (SHA-256). Ils ne doivent **jamais** entrer dans le
@@ -388,6 +395,29 @@ un template à n'importe quelle espèce sans l'écraser. Cave dwelling est absen
 du guide aussi ; l'abeille garde le sien.
 
 ---
+
+## 7 bis. Ce que dit le code du mod (lu avec javap, pas supposé)
+
+Le jar `mods/gendustry-1.6.5.8-mc1.12.2.jar` s'ouvre comme une archive, et
+`javap -p -c` (JDK dans `C:\Program Files\Eclipse Adoptium\...`) liste champs,
+méthodes et bytecode. Relevé le 2026-09-04, en accord parfait avec `tools/probe` :
+
+| Tile | Slots déclarés, dans l'ordre |
+|---|---|
+| `TileImprinter` | `inTemplate`, `inLabware`, `inIndividual`, `outIndividual` |
+| `TileReplicator` | `inTemplate`, `outIndividual` |
+| `TileExtractor` | `inIndividual`, `inLabware` |
+
+`TileReplicator.canExtractItem` (`func_180461_b`) se réduit à
+`index == slots.outIndividual()` — **une seule comparaison** bloque la sortie du
+template. Rien de plus subtil.
+
+**Le pack sait patcher ces classes en ZenScript.** `scripts/mixin/` contient
+`AllowQueenImprinting.zs`, qui s'injecte au début de
+`TileImprinter.isItemValidForSlot` et fait `cir.setReturnValue(true)` : la règle
+d'origine n'est jamais exécutée. Le même geste sur `canExtractItem` libérerait
+le slot template. Pas de Java, pas de jar — un fichier `.zs`, **côté serveur
+uniquement** (l'extraction est décidée là). En réserve, décision du joueur.
 
 ## 8. Où en est le projet
 
