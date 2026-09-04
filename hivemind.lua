@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.72.0"
+hivemind.VERSION = "0.73.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1647,6 +1647,14 @@ function hivemind.speciesSweep(context)
     print("=== RECOLTER LE GENE SPECIES DE CHAQUE ESPECE ===")
     print("Le Sampler tire un chromosome sur 13: compte une treizaine de")
     print("drones par espece. Les tirages rates enrichissent la bibliotheque.")
+    print("")
+
+    -- The pack ships a shortcut this program cannot use: a shapeless craft that
+    -- returns the Species sample of any drone, every time. Thirteen drones
+    -- against one is worth saying out loud before spending the thirteen.
+    print("RACCOURCI: le Perfected Imbuement Fabrial (table de craft) rend")
+    print("le gene Species d un drone a coup sur, en un seul drone.")
+    print("Cette file reste utile pour les 12 autres chromosomes.")
     print("")
 
     context.library:scan()

@@ -310,13 +310,17 @@ config.profiles = {
 -- Only what the guide actually names is here. The blanks are blanks on purpose:
 -- inventing a species would send someone breeding for nothing.
 config.gene_sources = {
-    [1]  = "Robotic (vitesse maximale)",
-    [2]  = "Temporal (longevite)",
-    [3]  = "Wintry (fertilite elevee)",
-    [4]  = "Cyan, Lime (tolerances)",
-    [6]  = "Cyan, Lime (tolerances)",
+    [1]  = "Robotic (Robotic), sinon Blizzy (Fastest)",
+    [2]  = "Cultivated (Shortest), Temporal (Immortal), Blizzy (Longest)",
+    [3]  = "Wintry (4), Rocky (1)",
+    [4]  = "Lime la Forestry (Both 3), Common (None)",
+    [5]  = "Rocky (ne dort jamais)",
+    [6]  = "Cyan (Both 3), Common (None)",
     [7]  = "Rocky (tolere la pluie)",
     [8]  = "Rocky (cavernicole)",
+    [9]  = "Rocky (fleurs = pierres), Gorgon (fleurs = buches)",
+    [10] = "Jaded (floraison maximale)",
+    [11] = "Vindictive (territoire le plus grand)",
 }
 
 -- Which species carries which exact allele.
@@ -335,10 +339,54 @@ config.gene_sources = {
 --
 -- config.gene_sources above stays as free text for chromosomes nobody has
 -- attributed precisely yet; this table is what the planner reads.
+--- Which species carries which allele. [slot] = {["Allele"] = {"Species"}}
+---
+--- Not guessed: taken from the modpack's own quest chain (betterquesting
+--- quests 1205-1216, 2269 and 443310250), which names the carrier of every
+--- allele it considers best. That is the pack's own answer to "where do I get
+--- this", so it beats any wiki written for plain Forestry.
+---
+--- Keys are the allele as the profiles write it, because that is what gets
+--- looked up. Anything the quests do not name stays absent: inventing a
+--- species would send someone breeding for nothing.
 config.gene_carriers = {
-    -- [slot] = { ["Allele"] = {"Species", "Other species"} }
-    [1] = {["Robotic"] = {"Robotic"}},
-    [2] = {["Immortal"] = {"Temporal"}},
+    -- Speed. Robotic is the pack maximum, Fastest the best Forestry one.
+    [1] = {
+        ["Robotic"] = {"Robotic"},
+        ["Fastest"] = {"Blizzy"},
+    },
+    -- Lifespan. Shortest for a breeding line, Immortal for production.
+    [2] = {
+        ["Shortest"] = {"Cultivated"},
+        ["Immortal"] = {"Temporal"},
+        ["Longest"]  = {"Blizzy"},
+    },
+    -- Fertility. 4 makes drones fast, 1 keeps a production hive from flooding.
+    [3] = {
+        ["4"] = {"Wintry"},
+        ["1"] = {"Rocky"},
+    },
+    -- Temperature tolerance. None is deliberate on a production bee: specialty
+    -- drops need an exact climate match and any tolerance suppresses them.
+    [4] = {
+        ["Both 3"] = {"Lime"},
+        ["None"]   = {"Common"},
+    },
+    [5] = {["True"] = {"Rocky"}},   -- Nocturnal, "Never Sleeps"
+    [6] = {
+        ["Both 3"] = {"Cyan"},
+        ["None"]   = {"Common"},
+    },
+    [7] = {["True"] = {"Rocky"}},   -- Tolerant flyer, "Tolerates Rain"
+    [8] = {["True"] = {"Rocky"}},   -- Cave dwelling
+    -- Flower provider. These two accept whole ore dictionaries, so a bee room
+    -- needs no flower bed at all.
+    [9] = {
+        ["Rocks"]    = {"Rocky"},
+        ["Wood log"] = {"Gorgon"},
+    },
+    [10] = {["Maximum"] = {"Jaded"}},
+    [11] = {["Largest"] = {"Vindictive"}},
 }
 
 config.genetics = {

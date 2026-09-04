@@ -106,11 +106,58 @@ check("il ne relance pas une campagne deja en file",
       text:find("deja en file", 1, true) ~= nil)
 check("il refuse de risquer le dernier drone d une espece",
       text:find("Trop peu de drones", 1, true) ~= nil)
+-- Thirteen drones against one, and the program cannot do the one itself
+check("il signale le raccourci qui coute un drone au lieu de treize",
+      text:find("Perfected Imbuement Fabrial", 1, true) ~= nil)
 check("il annonce le cout total avant de confirmer",
       text:find("au pire", 1, true) ~= nil)
 
 check("les porteurs sont declares en config",
       settingsText:find("config.gene_carriers", 1, true) ~= nil)
+
+-- A profile allele nobody carries is a dead end that only shows up months
+-- later, in game, when the plan says "aucune espece n apporte ce gene".
+-- These come from the bee itself and need no source species: they are what an
+-- ordinary bee already is. Keyed by slot, because "None" needs a carrier on a
+-- tolerance chromosome and needs none on Effect.
+do
+    local settings = dofile("lib/config.lua")
+    local fromTheBeeItself = {
+        [1]  = {["Fast"] = true},
+        [9]  = {["Flowers"] = true},
+        [10] = {["Slow"] = true},
+        [11] = {["Average"] = true},
+        [12] = {["None"] = true},
+    }
+
+    local orphans = {}
+    for _, profile in pairs(settings.profiles or {}) do
+        for slot, allele in pairs(profile) do
+            local byAllele = settings.gene_carriers[slot]
+            local ordinary = fromTheBeeItself[slot]
+            if not (ordinary and ordinary[allele])
+               and not (byAllele and byAllele[allele]) then
+                table.insert(orphans, slot .. "=" .. allele)
+            end
+        end
+    end
+
+    check("chaque allele voulu sait d ou il vient: "
+          .. (#orphans > 0 and table.concat(orphans, " ") or "-"),
+          #orphans == 0)
+
+    -- Four traits on one bee: Rocky is the single most valuable catch, and a
+    -- table that lost that would send someone chasing four species instead
+    local rocky = 0
+    for _, byAllele in pairs(settings.gene_carriers) do
+        for _, species in pairs(byAllele) do
+            for _, one in ipairs(species) do
+                if one == "Rocky" then rocky = rocky + 1 end
+            end
+        end
+    end
+    check("Rocky porte bien quatre genes voulus", rocky >= 4)
+end
 check("le plan les classe par nombre de genes apportes",
       text:find("#a.genes ~= #b.genes", 1, true) ~= nil)
 check("et distingue ce qui est deja en stock",
@@ -232,22 +279,34 @@ check("chaque gene manquant peut nommer une espece",
       settingsText:find("config.gene_sources", 1, true) ~= nil
       and text:find("config.gene_sources", 1, true) ~= nil)
 
--- Inventing a source would send someone breeding for nothing, so only what the
--- guide actually names belongs there
-check("aucune source inventee pour les genes non documentes",
-      (function()
-          local block = settingsText:match("config%.gene_sources = {(.-)}")
-          if not block then return false end
-          for slot in block:gmatch("%[(%d+)%]") do
-              local index = tonumber(slot)
-              -- 5, 9, 10, 11, 12 are not attributed in the guide
-              if index == 5 or index == 9 or index == 10
-                 or index == 11 or index == 12 then
-                  return false
-              end
-          end
-          return true
-      end)())
+-- The free-text list and the structured table are read by different code and
+-- drift silently. Anything named in one has to exist in the other, or the plan
+-- ranks species the hint never mentions -- and the reverse.
+do
+    local settings = dofile("lib/config.lua")
+
+    local mismatched = {}
+    for slot in pairs(settings.gene_sources or {}) do
+        if not settings.gene_carriers[slot] then
+            table.insert(mismatched, "texte sans porteur: " .. slot)
+        end
+    end
+    for slot in pairs(settings.gene_carriers or {}) do
+        if not (settings.gene_sources or {})[slot] then
+            table.insert(mismatched, "porteur sans texte: " .. slot)
+        end
+    end
+
+    check("les deux listes de sources disent la meme chose: "
+          .. (#mismatched > 0 and table.concat(mismatched, ", ") or "-"),
+          #mismatched == 0)
+
+    -- Effect stays unattributed on purpose: no bee is bred for None, it is
+    -- what a bee has until something gives it an effect
+    check("l effet reste sans source, volontairement",
+          settings.gene_sources[12] == nil
+          and settings.gene_carriers[12] == nil)
+end
 
 check("le coffre a templates est verifie au demarrage",
       text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)

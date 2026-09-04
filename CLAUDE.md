@@ -116,6 +116,29 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 - **`x32 — 1 genome(s)` dans le rapport veut dire que les 32 sont identiques.**
   Les échantillonner en boucle ne peut sortir que les mêmes treize allèles.
   Lire le génome (option `g`) avant d'y dépenser treize abeilles.
+- **Le pack dit lui-meme quelle espece porte quel allele.** La chaine de
+  quetes BetterQuesting 1205-1216, 2269 et 443310250 nomme le porteur de chaque
+  allele qu'elle juge optimal. C'est la reponse du pack a « ou trouver ca », et
+  elle prime sur tout wiki Forestry. Recopiee dans `config.gene_carriers` :
+  Rocky en porte quatre a lui seul (nocturne, vol sous la pluie, cavernicole,
+  fertilite 1), Wintry la fertilite 4, Cultivated Lifespan Shortest, Temporal
+  Immortal, Robotic la vitesse Robotic, Blizzy Fastest et Longest, Jaded
+  Flowering Maximum, Vindictive Territory Largest, Lime la tolerance thermique
+  Both 3, Cyan l'hygrometrique, Common les deux tolerances None, Gorgon les
+  fleurs « buche ».
+  Chercher `bee` dans les quetes ne donne que du bruit ; **chercher `allele`
+  trouve les quatorze fichiers en une fois**.
+- **`grep -rlo allele config/betterquesting/DefaultQuests/Quests`** donne aussi
+  la carte chromosome -> role de ce pack, verifiee : 1 vitesse, 2 longevite,
+  3 fertilite, 4 tolerance thermique, 5 nocturne, 6 tolerance hygrometrique,
+  7 vol sous la pluie, 8 cavernicole, 9 fleurs, 10 floraison, 11 territoire.
+- **Le pack ajoute un raccourci pour le gene Species** : le *Perfected
+  Imbuement Fabrial* (`scripts/BeeSpeciesExtractor.zs`), craft shapeless
+  drone + `gene_sample_blank` + fabrial, rend **a coup sur** le sample Species
+  de ce drone. Cela remplace les ~13 drones que coute un tirage au Sampler.
+  Le fabrial se fabrique a la table de craft etendue 7x7 et coute lui-meme six
+  gene samples precis. **Pas encore teste en automatisation** : la recette lit
+  le NBT de l'entree marquee, donc rien ne garantit qu'un motif AE2 la porte.
 - **Le Sampler tire un chromosome au hasard sur 13** : ~13 drones par gène
   Species visé, mais les 12 tirages ratés enrichissent quand même le pool.
 - **`waitForPrincess()` échoue si l'apiary porte l'upgrade Automation.**
