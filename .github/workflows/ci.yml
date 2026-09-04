@@ -34,7 +34,6 @@ jobs:
         echo "Checking Lua syntax..."
         lua -e "
         local files = {
-          'main.lua', 'test_planning.lua', 'test_example.lua',
           'lib/config.lua', 'lib/genome.lua', 'lib/state.lua', 'lib/species.lua',
           'lib/jobs.lua', 'lib/transport.lua', 'lib/machines.lua', 'lib/library.lua',
           'lib/data/mutations.lua',
@@ -109,52 +108,6 @@ lua test_menu.lua
         lua test_genome.lua
         echo "::endgroup::"
 
-    - name: Test Suite - Item Detection
-      id: detection-tests
-      run: |
-        echo "::group::Item Detection Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        local success = test_planning.testItemDetection()
-        if not success then os.exit(1) end
-        "
-        echo "::endgroup::"
-
-    - name: Test Suite - Planning
-      id: planning-tests
-      run: |
-        echo "::group::Planning Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        local success = test_planning.runAllTests()
-        if not success then os.exit(1) end
-        "
-        echo "::endgroup::"
-
-    - name: Test Suite - Execution
-      id: execution-tests
-      run: |
-        echo "::group::Execution Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        local success = test_planning.testExecuteBreedingTree()
-        if not success then os.exit(1) end
-        "
-        echo "::endgroup::"
-
-    - name: Test Suite - Error Handling
-      run: |
-        echo "::group::Error Handling Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        test_planning.testExecuteBreedingTreeErrorHandling()
-        "
-        echo "::endgroup::"
-
     - name: Upload Core Test Artifacts
       uses: actions/upload-artifact@v4
       if: always()
@@ -181,26 +134,6 @@ lua test_menu.lua
     - name: Create test environment
       run: mkdir -p Artifacts
 
-    - name: Performance Tests
-      run: |
-        echo "::group::Performance Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        test_planning.performanceTest()
-        "
-        echo "::endgroup::"
-
-    - name: Complexity Stress Tests
-      run: |
-        echo "::group::Complexity Stress Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-        test_planning.complexityStressTest()
-        "
-        echo "::endgroup::"
-
     - name: Upload Performance Test Artifacts
       uses: actions/upload-artifact@v4
       if: always()
@@ -225,43 +158,6 @@ lua test_menu.lua
 
     - name: Create test environment
       run: mkdir -p Artifacts
-
-    - name: Test Example Usage
-      run: |
-        echo "::group::Example Usage Tests"
-        echo "Testing test_example.lua..."
-        lua test_example.lua
-        echo "::endgroup::"
-
-    - name: Test Individual Bee Analysis
-      run: |
-        echo "::group::Individual Bee Tests"
-        lua -e "
-        package.path = package.path .. ';./?.lua'
-        local test_planning = require('test_planning')
-
-        local test_bees = {'Modest', 'Imperial', 'Heroic', 'Mystical'}
-        local passed = 0
-
-        for _, bee in ipairs(test_bees) do
-          print('Testing ' .. bee .. '...')
-          local success = test_planning.testSpecificTarget(bee)
-          if success then
-            passed = passed + 1
-            print('✅ ' .. bee .. ' test passed')
-          else
-            print('❌ ' .. bee .. ' test failed')
-          end
-        end
-
-        print('')
-        print('Individual bee tests: ' .. passed .. '/' .. #test_bees .. ' passed')
-
-        if passed < #test_bees then
-          print('Some individual bee tests failed, but this may be expected for complex bees')
-        end
-        "
-        echo "::endgroup::"
 
   # Generate test report
   test-report:

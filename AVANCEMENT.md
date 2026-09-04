@@ -32,7 +32,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Un croisement complet réussi en jeu, de bout en bout, sans intervention
 - [x] Le planificateur programme lui-même l'accumulation de drones manquants
 - [x] Annonce de la fleur requise (chromosome 9) avant chaque croisement
-- [ ] Couche d'exécution morte de `main.lua` supprimée
+- [x] Couche d'exécution morte de `main.lua` supprimée
 
 ## Phase 2 — Génétique (poids 45)
 
