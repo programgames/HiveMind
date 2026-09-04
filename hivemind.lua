@@ -1717,12 +1717,21 @@ function hivemind.buildBase(context)
             return
         end
 
+        -- Trois cents appels de composant a la suite ne bloquent pas cet
+        -- ordinateur, ils bloquent le SERVEUR: le monde s arrete et le
+        -- watchdog tue l hote. Decouper ne suffit pas, il faut RENDRE LA MAIN
+        -- entre deux tranches -- c est le yield qui laisse le jeu respirer.
+        local function breathe()
+            pcall(function() require("os").sleep(0.05) end)
+        end
+
         local progress
         repeat
-            progress = registry:sweepParents(40, nil)
+            progress = registry:sweepParents(25, nil)
             print("  " .. progress.cached .. "/" .. progress.total
                 .. "  (" .. progress.remaining .. " restantes)")
             registry:save()
+            breathe()
         until progress.complete or progress.asked == 0
 
         base, complete = registry:baseSpecies()

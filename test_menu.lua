@@ -887,6 +887,23 @@ check("et dit ce qui resiste",
       probeText:find("slot(s) encore occupe(s)", 1, true) ~= nil)
 
 print("")
+print("-- le balayage des especes ne doit pas geler le serveur --")
+
+do
+    -- Un appel de composant bloque le SERVEUR, pas seulement cet ordinateur.
+    -- Trois cents a la suite, et le watchdog tue l hote: decouper en tranches
+    -- ne sert a rien si rien ne rend la main entre deux.
+    local from = text:find("function hivemind.buildBase", 1, true)
+    local stop = text:find("\nend\n", from or 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("le balayage se fait par tranches",
+          body:find("sweepParents(", 1, true) ~= nil)
+    check("et rend la main entre deux tranches",
+          body:find("sleep", 1, true) ~= nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
