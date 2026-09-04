@@ -963,6 +963,29 @@ do
 end
 
 print("")
+print("-- un drone ne devient jamais princesse --")
+
+do
+    -- Vu en jeu: le plan demandait "Forest + Diligent -> Blue" avec Forest en
+    -- princesse, contre 102 drones Forest et zero princesse. La tache a attendu
+    -- une abeille qui ne pouvait pas exister. Une mutation se moque du role de
+    -- chaque parent; le reseau, non.
+    local from = text:find("function queueChain", 1, true)
+    local stop = text:find("\nend\n", from or 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("les deux ordres sont examines",
+          body:find("local reversed", 1, true) ~= nil)
+    check("l ordre du plan tient quand il fonctionne",
+          body:find("not asPlanned and reversed", 1, true) ~= nil)
+    check("et la tache est construite avec le role retenu",
+          body:find("naming(princessUid)", 1, true) ~= nil
+          and body:find("naming(droneUid)", 1, true) ~= nil)
+    check("l echange est dit, pas fait en silence",
+          body:find("prend le role de princesse", 1, true) ~= nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

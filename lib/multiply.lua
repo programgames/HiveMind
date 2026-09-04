@@ -181,29 +181,38 @@ multiply.STEPS = {
                 if occupant then
                     apiary:unload(slot)
                     if labelInSlot(apiary, slot) then
-                        -- Gendustry machines refuse extraction from their input
-                        -- slots, so nothing automated can clear this. Naming the
-                        -- slot the player actually sees is the whole point.
-                        return false, role .. ": l'apiary refuse de rendre le slot "
-                            .. apiary:resolveSlot(slot) .. ", qui contient "
-                            .. tostring(occupant)
-                            .. ". Retire-la a la main puis relance."
+                        -- Nothing automated clears a slot the machine will not
+                        -- give back. Same situation as breeding, same answer:
+                        -- the gesture, at the imperative, with the slot as the
+                        -- player sees it. This function asked for a hand and
+                        -- was answered with RETRY, so the job parked in silence.
+                        return false, "retire " .. tostring(occupant)
+                            .. " du slot " .. apiary:resolveSlot(slot)
+                            .. " de l apiary (il occupe la place " .. role .. ")",
+                            true
                     end
                 end
 
                 local ok, reason = apiary:load(spec, slot, 1)
                 if not ok then
-                    return false, role .. " indisponible: " .. tostring(reason)
+                    return false, "mets " .. tostring(spec.label or role)
+                        .. " dans le reseau ME (" .. tostring(reason) .. ")",
+                        true
                 end
 
                 return true
             end
 
-            local ok, why = place(job.params.princess, slots.queen, "princesse")
-            if not ok then return jobs.RETRY, why end
+            -- place() says whether what stops it needs a hand or just time
+            local ok, why, gesture = place(job.params.princess, slots.queen, "princesse")
+            if not ok then
+                return gesture and jobs.NEEDS_PLAYER or jobs.RETRY, why
+            end
 
-            ok, why = place(job.params.drone, slots.drone, "drone")
-            if not ok then return jobs.RETRY, why end
+            ok, why, gesture = place(job.params.drone, slots.drone, "drone")
+            if not ok then
+                return gesture and jobs.NEEDS_PLAYER or jobs.RETRY, why
+            end
 
             return jobs.DONE
         end,

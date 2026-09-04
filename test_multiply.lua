@@ -555,6 +555,28 @@ checkTruthy("plafond de cycles pose", derived.maxCycles > derived.target)
 os.remove(QUEUE)
 
 print("")
+print("")
+print("-- un slot d apiary qui ne se rend pas demande la main --")
+
+do
+    -- Meme situation que le croisement, et elle repondait RETRY la ou breeding
+    -- repond NEEDS_PLAYER: l accumulation se garait en silence au lieu de dire
+    -- quelle abeille retirer. Deux fonctions ecrites a des moments differents,
+    -- un seul comportement attendu.
+    local source = assert(io.open("lib/multiply.lua", "r"))
+    local text = source:read("*all")
+    source:close()
+
+    checkTruthy("elle sait demander un geste",
+                text:find("jobs.NEEDS_PLAYER", 1, true) ~= nil)
+    checkTruthy("et le formule a l imperatif",
+                text:find("retire ", 1, true) ~= nil)
+    checkTruthy("en nommant le slot tel que le joueur le voit",
+                text:find("resolveSlot(slot)", 1, true) ~= nil)
+    checkTruthy("un consommable absent aussi",
+                text:find("dans le reseau ME", 1, true) ~= nil)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

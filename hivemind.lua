@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.0.0"
+hivemind.VERSION = "1.0.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1186,13 +1186,32 @@ function queueChain(context, registry, steps, naming)
     local scheduled = {}
 
     for _, step in ipairs(steps) do
+        local princessUid, droneUid = step.princess.uid, step.drone.uid
+
+        -- A mutation does not care which parent wears which role, but the
+        -- network does. The plan copies the order getBeeParents reports, and
+        -- that order left a cross waiting for a "Forest Princess" against a
+        -- hundred and two Forest DRONES: a drone never becomes a princess, so
+        -- the job would have waited for ever.
+        --
+        -- Swapped only when the swap is the one that works. Both roles absent
+        -- means the species is bred by an earlier step and neither order can
+        -- be checked yet, so the plan's own order stands.
+        local asPlanned = roles(princessUid).princess and roles(droneUid).drone
+        local reversed = roles(droneUid).princess and roles(princessUid).drone
+
+        if not asPlanned and reversed then
+            princessUid, droneUid = droneUid, princessUid
+            print("  " .. naming(droneUid) .. " n existe qu en drones: "
+                .. naming(princessUid) .. " prend le role de princesse")
+        end
+
         -- The drone parent is the one that runs out. A species we hold only as
         -- princesses cannot be crossed at all, and the plan called it available
         -- because it looked only at "do we have this species".
         --
         -- Later steps are fine: a cross ends by returning its princess and its
         -- drones to the network, so a species this plan breeds will have both.
-        local droneUid = step.drone.uid
         local held = roles(droneUid)
 
         if held.princess and not held.drone and not scheduled[droneUid] then
@@ -1217,9 +1236,9 @@ function queueChain(context, registry, steps, naming)
         local params, params_err = breeding.params({
             target = step.target,
             princess = {name = "forestry:bee_princess_ge",
-                        label = naming(step.princess.uid) .. " Princess"},
+                        label = naming(princessUid) .. " Princess"},
             drone = {name = "forestry:bee_drone_ge",
-                     label = naming(step.drone.uid) .. " Drone"},
+                     label = naming(droneUid) .. " Drone"},
         })
 
         if not params then
