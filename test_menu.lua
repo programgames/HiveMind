@@ -414,6 +414,14 @@ check("le menu marque la pause apres chaque action",
 -- the menu draws over it
 check("et efface avant de redessiner",
       text:find("screen.clear()", 1, true) ~= nil)
+-- The menu clears the screen before drawing, so anything printed at startup is
+-- erased a tenth of a second later. That was the flash: a full state screen
+-- written and wiped, taking the list of detected problems with it.
+check("le demarrage n affiche plus un etat qui sera efface",
+      text:find("\n    hivemind.status(context)", 1, true) == nil)
+check("et retient l ecran quand il a quelque chose a dire",
+      text:find("Entree pour ouvrir le menu", 1, true) ~= nil)
+
 check("l ecran est mis a sa taille maximale au demarrage",
       text:find("screen.maximise()", 1, true) ~= nil)
 

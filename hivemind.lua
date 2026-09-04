@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.88.0"
+hivemind.VERSION = "0.88.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -3216,11 +3216,17 @@ function hivemind.main()
 
     local context, problems = hivemind.bootstrap()
 
-    if #problems > 0 then
+    -- Everything printed here is one screen.clear() away from being erased: the
+    -- menu wipes the screen before drawing itself. So only what MUST be read
+    -- goes here, and it holds the screen until it has been.
+    local worthReading = #problems > 0
+
+    if worthReading then
         print("PROBLEMES DETECTES:")
         for _, problem in ipairs(problems) do print("  - " .. problem) end
         print("")
-        print("Le programme demarre quand meme, mais les taches concernees echoueront.")
+        print("Le programme demarre quand meme, mais les taches concernees")
+        print("echoueront.")
         print("")
     end
 
@@ -3229,9 +3235,17 @@ function hivemind.main()
     local interrupted = context.queue:pending()
     if #interrupted > 0 then
         print(#interrupted .. " tache(s) interrompue(s) reprise(s) au demarrage.")
+        print("")
+        worthReading = true
     end
 
-    hivemind.status(context)
+    -- The detailed state used to be printed here and erased a tenth of a second
+    -- later, which is the flash seen at startup. The menu banner carries what
+    -- matters, and option 1 gives the rest on demand.
+    if worthReading then
+        screen.pause("-- Entree pour ouvrir le menu --")
+    end
+
     menu(context)
 end
 
