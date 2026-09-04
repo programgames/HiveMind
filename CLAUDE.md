@@ -194,11 +194,26 @@ les machines nomment un transposer par son index.
 
 | Transposer | ME Interface | Machines |
 |---|---|---|
-| `65d3da44` | `983cd2bd` (4) | Sampler (5), Genetic Transposer (3), Imprinter (2) |
+| `65d3da44` | `983cd2bd` (4) | Sampler (5), Genetic Transposer (3), Imprinter (2), **Imprinter 2** (1) |
 | `95625858` | `4c447a5c` (2) | Mutatron (5), Apiary (3), coffre à templates (4) |
 | `c33193aa` | `3418c8dc` (3) | Replicator (2), DNA Extractor (5) |
-| `a142f36b` | aucune | Protein Liquifier (4) |
+| `a142f36b` | aucune | Protein Liquifier (4), **coffre à templates** (1, 108 slots) |
 | `d28c3d3d` | aucune | Mutagen Producer (2) |
+
+**Deux Imprinters, un profil chacun** (`imprinter` = élevage, face 2, celui
+d'origine ; `imprinter_2` = production, face 1). C'est ce qui supprime tout
+échange de template : chacun garde le sien à demeure.
+
+⚠️ **`discover` nomme les Imprinters dans l'ordre des faces (0 à 5)**, donc
+celui du dessus s'appelle `imprinter` dans son rapport et celui d'origine
+`imprinter_2` — l'inverse de la config. Les faces sont la vérité, pas les noms
+qu'il génère.
+
+**Le coffre à templates est sur `a142f36b`**, avec le Liquifier, et sans aucune
+interface ME. C'est volontaire et suffisant : un template n'est **jamais** tiré
+d'AE2 ni livré à une machine (le slot template ne se vide pas). Le programme
+ne fait que **regarder** ce coffre pour empreinter son contenu, et regarder
+n'exige qu'un transposer.
 
 **Les deux derniers n'ont pas besoin d'interface** : le programme ne leur livre
 jamais rien, il lit seulement leur cuve — et un transposer lit une cuve sans

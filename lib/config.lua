@@ -95,16 +95,27 @@ config.interfaces = {
     -- Named by elimination, which is the only way available: discover lists the
     -- addressable interfaces but cannot say which transposer each one touches.
     -- Two were already spoken for, so the third is this bench's.
-    [PRODUCTION] = "3418c8dc",  -- replicator, extracteur ADN  -- replicator, extracteur ADN
+    [PRODUCTION] = "3418c8dc",  -- replicator, extracteur ADN
 
     -- LIQUIFIER and MUTAGEN have none and need none: nothing is ever
     -- delivered to them, only their tanks are read.
 }
 
+--- Where templates live, because they must never enter the ME network
+---
+--- On the liquifier's transposer, which has no ME Interface at all -- and that
+--- is fine. Nothing is ever staged here from AE2: templates are placed by hand
+--- and the program only ever LOOKS at them, to fingerprint them and say which
+--- is which. Reading a slot needs a transposer, not an interface.
+---
+--- What this chest cannot do is hand a template to a machine: a transposer only
+--- reaches what it touches, and no machine sits on this one. That costs nothing
+--- either, because a template slot never empties itself -- placing one is a
+--- once-per-machine gesture whatever we do.
 config.template_chest = {
-    transposer = BREEDING,
-    side = 4,        -- west/right, found by tools/discover.lua
-    slots = 27,
+    transposer = LIQUIFIER,
+    side = 1,        -- top/up, found by tools/discover.lua
+    slots = 108,     -- ironchest:iron_chest
 }
 
 -- Transposer component addresses, in the order the machine links index them.
@@ -210,8 +221,11 @@ config.machines = {
         -- an output slot does.
         slots = {destination = 0, labware = 1, source = 2, output = 3},
     },
+    -- Two Imprinters, one profile each, so a template is never swapped. This
+    -- one is the original, the one that already holds a template.
     imprinter = {
         transposer = GENETICS, machine = 2, source = 4,
+        profile = "breeding",
         -- Fully measured now. Slots 0 and 3 refused every marker for a long
         -- time, which read as "both are outputs"; in fact the imprinter simply
         -- will not take an EMPTY template. Given a filled one it went straight
@@ -231,6 +245,14 @@ config.machines = {
     -- MEASURED by tools/probe, and the symmetry with the other three was wrong:
     -- these two hold TWO slots, not four. Every guess about them has now been
     -- replaced by an observation.
+    -- The second Imprinter, placed on top of the same transposer. Same shape as
+    -- the first -- it is the same block -- so its slots are not a guess.
+    imprinter_2 = {
+        transposer = GENETICS, machine = 1, source = 4,
+        profile = "production",
+        slots = {template = 0, labware = 1, bee = 2, output = 3},
+    },
+
     replicator = {
         transposer = PRODUCTION, machine = 2, source = 3, enabled = true,
         -- Driver 0 held the template, driver 1 held a Common Queen -- and the

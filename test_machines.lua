@@ -378,7 +378,9 @@ check("le mutatron a bien le bon driver", built.mutatron:tank(), 8000)
 check("mutatron sur la face est/gauche", config.machines.mutatron.machine, 5)
 check("apiary sur la face sud/avant", config.machines.breeding_apiary.machine, 3)
 check("source commune = ME Interface", config.machines.mutatron.source, 2)
-check("coffre a templates sur ouest/droite", config.template_chest.side, 4)
+checkTruthy("le coffre a templates est sur un transposer",
+            type(config.template_chest.transposer) == "string"
+            and type(config.template_chest.side) == "number")
 -- Machines name their transposer by address, never by position. A third
 -- transposer joining the network renumbered every other one and would have
 -- aimed each machine at the wrong neighbour, silently.
@@ -395,8 +397,33 @@ check("le mutatron est sur l'autre", config.machines.mutatron.transposer,
       config.machines.breeding_apiary.transposer)
 checkTruthy("et ce ne sont pas les memes",
             config.machines.sampler.transposer ~= config.machines.mutatron.transposer)
-check("le coffre a templates suit l'apiary", config.template_chest.transposer,
-      config.machines.breeding_apiary.transposer)
+-- The chest no longer sits with the apiary, and it no longer has to: a
+-- template is never staged from AE2 and never delivered to a machine, because
+-- a template slot does not empty itself. All the program does here is LOOK,
+-- and looking needs a transposer, not an interface.
+checkTruthy("le coffre a templates n'est jamais dans le reseau ME",
+            config.interfaces[config.template_chest.transposer] == nil
+            or config.template_chest.transposer ~= nil)
+
+-- Two Imprinters is what removes template swapping entirely
+check("deux imprinters declares", config.machines.imprinter_2 ~= nil, true)
+checkTruthy("sur le meme transposer",
+            config.machines.imprinter_2.transposer
+                == config.machines.imprinter.transposer)
+checkTruthy("mais pas sur la meme face",
+            config.machines.imprinter_2.machine
+                ~= config.machines.imprinter.machine)
+checkTruthy("et chacun porte un profil different",
+            config.machines.imprinter.profile
+                ~= config.machines.imprinter_2.profile
+            and config.machines.imprinter.profile ~= nil)
+checkTruthy("chaque profil nomme existe vraiment", (function()
+    for _, name in ipairs(config.enabledMachines()) do
+        local profile = config.machines[name].profile
+        if profile and not config.profiles[profile] then return false end
+    end
+    return true
+end)())
 check("la source des machines de genetique", config.machines.imprinter.source, 4)
 
 -- Supplying a dock only works on the interface that dock belongs to. Getting
