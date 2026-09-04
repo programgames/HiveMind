@@ -309,6 +309,24 @@ lent = moins de mises à jour de blocs), Territory **Average** (le territoire ne
 fait rien dans un apiary), tolérances **Both 3** (Both 5 existe mais coûte
 beaucoup pour une amplitude dont rien n'a besoin ici).
 
+**Les deux profils sont ceux du Discord de MeatballCraft**, confirmes trait
+pour trait par le joueur, et epingles par un test. Ils ne sont pas a
+« ameliorer » : chaque amelioration evidente a une raison de ne pas se faire.
+Vitesse **Fast** en elevage (une lignee qui meurt vite n'a pas besoin de
+Robotic, qui coute une abeille de plus a attraper), Floraison **Slow**,
+Territoire **Average**, tolerances **Both 3** des deux cotes.
+
+**Both 3 supprime les specialty drops** (quetes 1212/1213 : ils exigent un
+climat exactement identique, et toute tolerance les empeche). La communaute
+choisit quand meme Both 3. Une ligne dediee aux drops rares demanderait un
+**troisieme** template, en tolerance None (Common) — ce n'est pas un correctif a
+apporter aux deux existants.
+
+**Cave dwelling (chromosome 8) est absent des deux profils**, volontairement :
+c'est le treizieme chromosome que la liste ne nomme pas, alors que Nocturne et
+Vol-sous-la-pluie y sont. L'ajouter est une modification de la reponse du pack,
+pas une correction de la notre.
+
 **Species reste vide** dans les deux profils : c'est ce qui permet d'appliquer
 un template à n'importe quelle espèce sans l'écraser. Cave dwelling est absent
 du guide aussi ; l'abeille garde le sien.

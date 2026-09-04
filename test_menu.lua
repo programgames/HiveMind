@@ -308,6 +308,80 @@ do
           and settings.gene_carriers[12] == nil)
 end
 
+-- The two profiles are not ours to improve: they are the pack community's
+-- answer, posted on the MeatballCraft Discord and transcribed here trait by
+-- trait. Every "obvious" upgrade to them has a reason not to be made -- Speed
+-- stays Fast on a breeding line that dies on purpose, Flowering stays Slow
+-- because an Industrial Apiary ignores pollination, Cave dwelling is absent
+-- because the apiary provides it. So they get pinned, and any edit has to
+-- argue with this test first.
+do
+    local settings = dofile("lib/config.lua")
+    local slotFor = {
+        ["Speed"] = 1, ["Lifespan"] = 2, ["Fertility"] = 3,
+        ["Temperature Tolerance"] = 4, ["Never Sleeps"] = 5,
+        ["Humidity Tolerance"] = 6, ["Tolerates Rain"] = 7,
+        ["Flowers"] = 9, ["Flowering"] = 10, ["Territory"] = 11,
+        ["Effect"] = 12,
+    }
+
+    local discord = {
+        breeding = {
+            ["Never Sleeps"] = "True",   ["Flowering"] = "Slow",
+            ["Speed"] = "Fast",          ["Humidity Tolerance"] = "Both 3",
+            ["Flowers"] = "Flowers",     ["Lifespan"] = "Shortest",
+            ["Effect"] = "None",         ["Tolerates Rain"] = "True",
+            ["Fertility"] = "4",         ["Territory"] = "Average",
+            ["Temperature Tolerance"] = "Both 3",
+        },
+        production = {
+            ["Never Sleeps"] = "True",   ["Flowering"] = "Slow",
+            ["Speed"] = "Robotic",       ["Humidity Tolerance"] = "Both 3",
+            ["Flowers"] = "Flowers",     ["Lifespan"] = "Immortal",
+            ["Effect"] = "None",         ["Tolerates Rain"] = "True",
+            ["Fertility"] = "1",         ["Territory"] = "Average",
+            ["Temperature Tolerance"] = "Both 3",
+        },
+    }
+
+    local drift = {}
+    for name, wanted in pairs(discord) do
+        local profile = settings.profiles[name] or {}
+
+        local extra = {}
+        for slot, allele in pairs(profile) do extra[slot] = allele end
+
+        for trait, allele in pairs(wanted) do
+            local slot = slotFor[trait]
+            if profile[slot] ~= allele then
+                table.insert(drift, string.format("%s/%s attendu %s, trouve %s",
+                    name, trait, allele, tostring(profile[slot])))
+            end
+            extra[slot] = nil
+        end
+
+        for slot, allele in pairs(extra) do
+            table.insert(drift, name .. "/slot " .. slot .. " en trop = " .. allele)
+        end
+    end
+
+    check("les profils sont ceux du Discord du pack, trait pour trait: "
+          .. (#drift > 0 and table.concat(drift, " | ") or "-"),
+          #drift == 0)
+
+    -- Species absent is the whole point: a template that carried one would
+    -- overwrite the species of every bee it is applied to
+    check("Species reste hors des deux profils",
+          settings.profiles.breeding[0] == nil
+          and settings.profiles.production[0] == nil)
+
+    -- Cave dwelling is the thirteenth chromosome, the one the list does not
+    -- name. Adding it is a change to the pack's answer, not a fix to ours.
+    check("Cave dwelling reste hors des deux profils, comme la liste",
+          settings.profiles.breeding[8] == nil
+          and settings.profiles.production[8] == nil)
+end
+
 check("le coffre a templates est verifie au demarrage",
       text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)
 
