@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.2.0"
+hivemind.VERSION = "1.3.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1301,9 +1301,11 @@ function hivemind.manageQueue(context)
     print("")
     print("  a = annuler une tache")
     print("  p = purger les taches terminees et annulees")
+    print("  v = TOUT VIDER: annuler et effacer la file entiere")
     if #held > 0 then
-        print("  r = relancer les " .. #held
-            .. " tache(s) qui attendent un geste (c est fait)")
+        print("  r = relancer les " .. screen.count(#held, "tache")
+            .. " qui " .. screen.plural(#held, "attend")
+            .. " un geste (c est fait)")
     end
     print("  vide = retour")
     io.write("Choix: ")
@@ -1314,6 +1316,41 @@ function hivemind.manageQueue(context)
 
     if answer == "p" then
         print(context.queue:prune() .. " tache(s) purgee(s).")
+        return
+    end
+
+    if answer == "v" then
+        -- Irreversible, and it throws away work already paid for in bees: a
+        -- half-run cross has spent its mutagen and its drone. Said before the
+        -- confirmation, not in it.
+        local running = 0
+        for _, job in ipairs(all) do
+            if job.status ~= jobs.COMPLETE and job.status ~= jobs.CANCELLED then
+                running = running + 1
+            end
+        end
+
+        print("")
+        print(screen.count(running, "tache") .. " en cours " .. screen.plural(
+            running, "sera annulee", "seront annulees") .. ", et toute la file")
+        print("effacee. Ce qui a deja tourne est garde: les abeilles nees, les")
+        print("genes extraits, rien de tout cela ne revient en arriere.")
+        io.write("Tout vider ? (o = oui, n = non) : ")
+
+        local sure = io.read()
+        if not sure or sure:lower():sub(1, 1) ~= "o" then
+            print("Annule, la file est intacte.")
+            return
+        end
+
+        local cancelled = 0
+        for _, job in ipairs(all) do
+            if context.queue:cancel(job.id) then cancelled = cancelled + 1 end
+        end
+
+        local removed = context.queue:prune()
+        print(cancelled .. " annulee(s), " .. removed .. " effacee(s).")
+        print("La file est vide.")
         return
     end
 

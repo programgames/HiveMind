@@ -1001,6 +1001,24 @@ do
 end
 
 print("")
+print("-- vider la file entiere --")
+
+do
+    local from = text:find("function hivemind.manageQueue", 1, true)
+    local stop = text:find("\nend\n", from or 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("la file entiere peut etre videe", body:find('== "v"', 1, true) ~= nil)
+
+    -- Irreversible, et ca jette du travail deja paye en abeilles: un
+    -- croisement a moitie fait a depense son mutagene et son drone.
+    check("avec une confirmation", body:find("Tout vider ?", 1, true) ~= nil)
+    check("et le compte de ce qui sera annule, avant la question",
+          body:find("sera annulee", 1, true) ~= nil)
+    check("elle annule puis efface", body:find("queue:prune()", 1, true) ~= nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
