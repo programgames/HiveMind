@@ -261,6 +261,43 @@ campagnes nécessaires, d'un coup.
 
 ---
 
+## Ce qu'il reste, au 2026-09-04
+
+**La feuille de route est terminée.** Toutes les étapes 0 à 5 sont faites, et le
+mixin reste en réserve sur ta décision. Il ne reste que trois choses, dont une
+seule est du code.
+
+### 1. Vérifier en jeu ce qui n'a jamais tourné
+
+Sept options ont été écrites et testées hors du jeu, **jamais exécutées dedans** :
+
+| Option | Ce qu'on vérifie |
+|---|---|
+| `n` Nommer les templates | ✅ déjà fait, les empreintes sortent |
+| `r` Fabriquer une reine | le template demandé au réseau arrive et entre dans la machine |
+| `x` Détruire des drones → ADN | l'extracteur accepte une abeille et la consomme |
+| `t` Chasser ce qui manque | la file se remplit avec les bonnes chasses |
+| `f` sur deux Imprinters | la bonne machine reçoit l'abeille |
+| `i` Chasser le gène d'espèce | une chasse par espèce en stock |
+| Les cuves dans le bandeau | ADN, mutagène, protéines lus par le transposer |
+
+C'est le seul risque réel restant : les slots sont mesurés, mais « mesuré » n'est
+pas « a marché ».
+
+**Une tâche est déjà bloquée** : `#24 replication d une reine — rien en sortie
+apres 121 s`. À regarder en premier, c'est probablement l'ADN ou le template.
+
+### 2. Attraper sept espèces — c'est le gros du travail restant
+
+Aucun code ne remplace ça. Voir la section ci-dessous.
+
+### 3. Assembler les deux templates
+
+À la table de craft, une fois les gènes réunis. Les deux dernières cases de
+`AVANCEMENT.md`, et elles ne se cochent que par de la collecte.
+
+---
+
 ## Ce qui est déjà fait
 
 Croisement piloté, accumulation de drones, planification de chaîne, lecture de
