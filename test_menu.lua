@@ -417,6 +417,21 @@ check("et efface avant de redessiner",
 -- The menu clears the screen before drawing, so anything printed at startup is
 -- erased a tenth of a second later. That was the flash: a full state screen
 -- written and wiped, taking the list of detected problems with it.
+-- The Liquifier and the Mutagen Producer are the player's: nothing is ever
+-- delivered to them, only their tanks are read, and a transposer reads a tank
+-- without any interface. Warning about them reported a deliberate arrangement
+-- as a fault, twice, at every startup.
+check("une machine qu on ne livre jamais n exige pas d interface",
+      text:find("link.source ~= nil and not byBench[bench]", 1, true) ~= nil)
+
+-- The chest used to have to share a transposer with the machines, because a
+-- template crossing the network was lost among its kind. The network was shown
+-- to honour nbt, so that rule is retired.
+check("le coffre n a plus a etre sur le meme transposer",
+      text:find("coffre contre le transposer des machines", 1, true) == nil)
+check("mais un template sans nom est signale comme inutilisable",
+      text:find("aucun template nomme", 1, true) ~= nil)
+
 check("le demarrage n affiche plus un etat qui sera efface",
       text:find("\n    hivemind.status(context)", 1, true) == nil)
 check("et retient l ecran quand il a quelque chose a dire",
@@ -685,7 +700,7 @@ do
 end
 
 check("le coffre a templates est verifie au demarrage",
-      text:find("le coffre a templates est sur le transposer", 1, true) ~= nil)
+      text:find("Coffre injoignable", 1, true) ~= nil)
 
 -- ---------------------------------------------------------------------------
 

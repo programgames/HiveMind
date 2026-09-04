@@ -244,6 +244,11 @@ celui du dessus s'appelle `imprinter` dans son rapport et celui d'origine
 `imprinter_2` — l'inverse de la config. Les faces sont la vérité, pas les noms
 qu'il génère.
 
+**Un banc sans interface ME n'est pas une anomalie** quand rien n'y est jamais
+livré. Le Liquifier et le Mutagen Producer n'ont que leurs cuves lues, et un
+transposer lit une cuve sans interface. Le contrôle de démarrage ne signale
+donc que les machines ayant une `source` déclarée.
+
 **Le coffre à templates est sur `a142f36b`**, avec le Liquifier, et sans aucune
 interface ME. C'est volontaire et suffisant : un template n'est **jamais** tiré
 d'AE2 ni livré à une machine (le slot template ne se vide pas). Le programme

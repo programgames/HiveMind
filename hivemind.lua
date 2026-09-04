@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.88.1"
+hivemind.VERSION = "0.89.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -163,10 +163,18 @@ function hivemind.bootstrap(options)
     end
 
     -- A bench with no interface of its own cannot be supplied at all, and the
-    -- failure looks like a machine refusing every item
+    -- failure looks like a machine refusing every item.
+    --
+    -- Unless nothing is ever supplied to it: a machine with no source side is
+    -- one the program only READS -- the Liquifier and the Mutagen Producer are
+    -- the player's, and a transposer reads their tanks without any interface.
+    -- Warning about those reported a deliberate arrangement as a fault.
     for _, name in ipairs(config.enabledMachines()) do
-        local bench = config.machines[name].transposer
-        if bench and not byBench[bench] and next(config.interfaces or {}) then
+        local link = config.machines[name]
+        local bench = link.transposer
+
+        if bench and link.source ~= nil and not byBench[bench]
+           and next(config.interfaces or {}) then
             table.insert(problems, name
                 .. " : aucune interface ME adressable sur son transposer "
                 .. tostring(bench) .. " (Adapter manquant ?)")
@@ -221,23 +229,24 @@ function hivemind.bootstrap(options)
         config = config,
     })
 
-    -- Templates share one item id and one label and differ only by NBT, so AE2
-    -- cannot tell two of them apart and a template that enters the network is
-    -- lost among its kind. They can therefore only ever move between a chest
-    -- and a machine on the SAME transposer -- anything else would have to route
-    -- through the network. Saying so now beats discovering it mid-imprint.
-    local imprinter = config.machines.imprinter
-    if imprinter and imprinter.enabled ~= false
-       and config.template_chest.transposer ~= imprinter.transposer then
+    -- The chest and the machines used to have to share a transposer, because a
+    -- template crossing the ME network was lost among its kind. That stopped
+    -- being true on 2026-09-04: the network honours nbt, so a NAMED template is
+    -- requested by fingerprint and verified on arrival.
+    --
+    -- What still has to hold is that a template has been named while it was in
+    -- the chest -- an unnamed one has no fingerprint on record and cannot be
+    -- asked for at all.
+    local named = 0
+    for _, entry in ipairs(genes:templates()) do
+        if entry.page then named = named + 1 end
+    end
+
+    if named == 0 then
         table.insert(problems,
-            "le coffre a templates est sur le transposer "
-            .. tostring(config.template_chest.transposer)
-            .. " et l'imprinter sur " .. tostring(imprinter.transposer)
-            .. " : un template ne peut pas passer de l'un a l'autre sans")
+            "aucun template nomme : le programme ne pourra en poser aucun")
         table.insert(problems,
-            "  traverser le reseau ME, ou il devient indiscernable. Deplace le")
-        table.insert(problems,
-            "  coffre contre le transposer des machines de genetique.")
+            "  dans une machine. Pose-les dans le coffre et choisis n.")
     end
 
     -- A module older than this file has none of the newer factories, and
