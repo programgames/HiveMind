@@ -92,7 +92,10 @@ config.interfaces = {
     -- here may be guessed: a wrong address makes every delivery fail as
     -- "la machine refuse cet objet", the one error that has already cost an
     -- evening.
-    [PRODUCTION] = nil,        -- <- adresse a renseigner, cote 3 du transposer
+    -- Named by elimination, which is the only way available: discover lists the
+    -- addressable interfaces but cannot say which transposer each one touches.
+    -- Two were already spoken for, so the third is this bench's.
+    [PRODUCTION] = "3418c8dc",  -- replicator, extracteur ADN  -- replicator, extracteur ADN
 
     -- LIQUIFIER and MUTAGEN have none and need none: nothing is ever
     -- delivered to them, only their tanks are read.

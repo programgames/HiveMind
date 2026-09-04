@@ -399,6 +399,33 @@ check("le coffre a templates suit l'apiary", config.template_chest.transposer,
       config.machines.breeding_apiary.transposer)
 check("la source des machines de genetique", config.machines.imprinter.source, 4)
 
+-- Supplying a dock only works on the interface that dock belongs to. Getting
+-- this wrong makes the item never arrive, and the failure reads as "the machine
+-- refuses this item" -- so a machine that can receive things must have one.
+checkTruthy("chaque machine approvisionnee a une interface declaree", (function()
+    for _, name in ipairs(config.enabledMachines()) do
+        local link = config.machines[name]
+
+        -- A machine with no source is never delivered to; only its tank is
+        -- read, and that needs no interface at all
+        if link.source ~= nil and not config.interfaces[link.transposer] then
+            return false
+        end
+    end
+    return true
+end)())
+
+-- Two benches sharing one interface address would silently stage into the
+-- wrong one, and only one of the two would ever work
+checkTruthy("aucune interface n'est declaree deux fois", (function()
+    local seen = {}
+    for _, address in pairs(config.interfaces) do
+        if seen[address] then return false end
+        seen[address] = true
+    end
+    return true
+end)())
+
 -- Every declared address must actually appear in the transposer list, or the
 -- lookup finds nothing and the machine is unreachable
 checkTruthy("chaque adresse citee existe", (function()

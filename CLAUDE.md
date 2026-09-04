@@ -184,7 +184,7 @@ les machines nomment un transposer par son index.
 |---|---|---|
 | `65d3da44` | `983cd2bd` (4) | Sampler (5), Genetic Transposer (3), Imprinter (2) |
 | `95625858` | `4c447a5c` (2) | Mutatron (5), Apiary (3), coffre à templates (4) |
-| `c33193aa` | oui, côté 3 | Replicator (2), DNA Extractor (5) |
+| `c33193aa` | `3418c8dc` (3) | Replicator (2), DNA Extractor (5) |
 | `a142f36b` | aucune | Protein Liquifier (4) |
 | `d28c3d3d` | aucune | Mutagen Producer (2) |
 
@@ -192,11 +192,12 @@ les machines nomment un transposer par son index.
 jamais rien, il lit seulement leur cuve — et un transposer lit une cuve sans
 aucune interface. C'est le partage de rôles tranché avec le joueur.
 
-`config.interfaces[c33193aa]` **reste à renseigner** : `discover` liste
-maintenant les adresses `me_interface` adressables (section « INTERFACES ME
-ADRESSABLES »), il faut y prendre celle qui n'est ni `983cd2bd` ni `4c447a5c`.
-Ne jamais la deviner : une mauvaise adresse fait échouer chaque livraison sous
-la forme « la machine refuse cet objet ».
+**Les trois interfaces sont identifiées par élimination** : `discover` liste les
+`me_interface` adressables (section « INTERFACES ME ADRESSABLES ») mais ne peut
+pas dire quel transposer chacune touche. Deux étaient déjà attribuées, donc la
+troisième (`3418c8dc`) est celle du banc replicator. Ne jamais deviner : une
+mauvaise adresse fait échouer chaque livraison sous la forme « la machine refuse
+cet objet ».
 
 **Jamais d'index de position en config** : ajouter un transposer au réseau les
 renumérote tous et chaque machine pointe alors vers le mauvais voisin, sans
