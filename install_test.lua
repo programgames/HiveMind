@@ -143,7 +143,8 @@ local text = table.concat(out, "\n")
 local installerSource = real_open("tools/hminstall.lua"):read("*all")
 -- Four spaces then a quoted path: that is a FILES entry, and nothing else in
 -- the installer is written that way.
-local declared = select(2, installerSource:gsub('    "[^"]+%.lua",', ""))
+local filesBlock = installerSource:match("local FILES = (%b{})") or ""
+local declared = select(2, filesBlock:gsub('"[^"]+%.lua"', ""))
 
 check("la liste de fichiers n'est pas vide", declared > 0)
 check("tous les fichiers declares sont installes",
