@@ -14,6 +14,7 @@
 -- Usage:
 --   discover              show what was found
 --   discover --write      also write lib/config_topology.lua
+--   discover --upload     post the whole report to the mailbox
 
 local component = require("component")
 local sides = require("sides")
@@ -177,9 +178,12 @@ local function renderConfig(discovered)
 end
 
 local function main(args)
-    local write = false
+    local write, doUpload = false, false
     for _, arg in ipairs(args) do
         if arg == "--write" then write = true end
+        -- The full topology is far too long to read off a screen or copy by
+        -- hand. Posting it costs one flag; retyping it costs an evening.
+        if arg == "--upload" then doUpload = true end
     end
 
     say("=========================================")
@@ -312,13 +316,40 @@ local function main(args)
         say("(relance avec --write pour l'ecrire dans un fichier)")
     end
 
+    local body = table.concat(report, "\n") .. "\n"
+
     local out = io.open("/home/hivemind-topology.txt", "w")
     if out then
-        out:write(table.concat(report, "\n") .. "\n")
+        out:write(body)
         out:close()
         print("")
         print("Rapport complet : /home/hivemind-topology.txt")
     end
+
+    if not doUpload then
+        print("(relance avec --upload pour l envoyer sans rien recopier)")
+        return
+    end
+
+    local net_ok, internet = pcall(require, "internet")
+    if not net_ok or not component.isAvailable("internet") then
+        print("Pas de carte Internet: le rapport reste sur le disque.")
+        return
+    end
+
+    local ok_config, settings = pcall(require, "lib.config")
+    local mailbox = ok_config and settings and settings.report_mailbox
+
+    if not mailbox then
+        print("Aucune boite aux lettres dans lib/config.lua.")
+        return
+    end
+
+    local sent = pcall(internet.request, mailbox, body,
+        {["Content-Type"] = "text/plain"}, "POST")
+
+    print(sent and "Topologie deposee dans la boite aux lettres."
+                or "Envoi impossible: le rapport reste sur le disque.")
 end
 
 main({...})

@@ -243,6 +243,20 @@ check("un chromosome dont l uid ne suit pas l etiquette est signale",
 -- The menu redraws straight after an action and pushes its output off the top
 local screenText = io.open("lib/screen.lua"):read("a")
 
+-- The topology report is hundreds of lines. Reading it off a screen or
+-- retyping it is not a workflow, and it was the only diagnostic with no way
+-- out of the machine.
+do
+    local discoverText = io.open("tools/discover.lua"):read("a")
+    check("discover sait envoyer son rapport",
+          discoverText:find("--upload", 1, true) ~= nil
+          and discoverText:find("report_mailbox", 1, true) ~= nil)
+    check("et le dit quand on ne le lui demande pas",
+          discoverText:find("relance avec --upload", 1, true) ~= nil)
+    check("sans carte Internet il ne perd pas le rapport",
+          discoverText:find("le rapport reste sur le disque", 1, true) ~= nil)
+end
+
 check("chaque action laisse le temps de lire",
       screenText:find("Entree pour revenir au menu", 1, true) ~= nil)
 check("le menu marque la pause apres chaque action",
