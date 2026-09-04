@@ -16,9 +16,14 @@
 -- offered to each slot straight from there.
 --
 -- Usage:
---   probe            list what would be tried, move nothing
---   probe --yes      run the experiment
---   probe --upload   publish the result
+--   probe                        list what would be tried, move nothing
+--   probe --yes                  run the experiment
+--   probe --upload               publish the result, dry run included
+--   probe replicator --yes       probe only these machines
+--
+-- Naming machines matters once the network has more than one bench: probing a
+-- machine whose slots are already measured disturbs a bench that works, for
+-- nothing.
 
 local component = require("component")
 
@@ -48,9 +53,12 @@ end
 
 local function main(args)
     local commit, doUpload = false, false
+    local only = {}
+
     for _, arg in ipairs(args) do
-        if arg == "--yes" then commit = true end
-        if arg == "--upload" then doUpload = true end
+        if arg == "--yes" then commit = true
+        elseif arg == "--upload" then doUpload = true
+        elseif arg:sub(1, 2) ~= "--" then only[arg] = true end
     end
 
     -- OpenOS caches modules for the whole shell session
@@ -75,16 +83,58 @@ local function main(args)
     say("version " .. tostring(hivemind.VERSION))
     say("")
 
+    --- Publish whatever has been said so far
+    --- Called on every exit, including the dry run: a report that stops before
+    --- sending is a report nobody outside the machine ever sees, and the dry
+    --- run is exactly the one worth reading before anything moves.
+    local function send()
+        if not doUpload then return end
+
+        if not component.isAvailable("internet") then
+            print("Pas de carte Internet: le resultat reste a l ecran.")
+            return
+        end
+
+        local ok_publish, publish = pcall(require, "lib.publish")
+        if not ok_publish then
+            print("lib/publish.lua absent: relance tools/hminstall.")
+            return
+        end
+
+        -- Never just "sent": the mailbox answered 429 for a whole evening while
+        -- every tool announced a delivery. When it refuses, the paste URL is
+        -- printed instead, and relaying it by hand beats losing the result.
+        publish.report(table.concat(report, "\n") .. "\n",
+                       config.report_mailbox)
+    end
+
     -- Only machines without a driver need this: the others answer listSlots()
-    local targets = {}
+    local targets, skipped = {}, {}
     for _, name in ipairs(config.enabledMachines()) do
-        if not config.machines[name].component then
+        local link = config.machines[name]
+
+        if link.component then
+            -- has a driver, it answers listSlots() itself
+        elseif next(only) and not only[name] then
+            table.insert(skipped, name .. " (non demandee)")
+        elseif link.source == nil then
+            -- A marker reaches a slot through the ME Interface of that bench.
+            -- With no source there is no way to offer one, and the attempt
+            -- would read as "this machine refuses everything" -- which is the
+            -- exact wrong conclusion about a machine we never deliver to.
+            table.insert(skipped, name .. " (aucune source d items)")
+        else
             table.insert(targets, name)
         end
     end
 
+    if #skipped > 0 then
+        say("Ignorees : " .. table.concat(skipped, ", "))
+    end
+
     if #targets == 0 then
-        say("Aucune machine sans driver: rien a sonder.")
+        say("Aucune machine a sonder.")
+        send()
         return
     end
 
@@ -112,6 +162,7 @@ local function main(args)
     if #available == 0 then
         say("")
         say("Aucun marqueur en stock: impossible de sonder.")
+        send()
         return
     end
 
@@ -120,6 +171,7 @@ local function main(args)
         say("Rien n'a ete deplace. Relance avec --yes pour sonder reellement.")
         say("Chaque marqueur est repris apres l'essai; une machine qui se met")
         say("a travailler sur ce qu'on lui tend peut toutefois le consommer.")
+        send()
         return
     end
 
@@ -245,24 +297,7 @@ local function main(args)
     say("")
     say("Reporte ces indices dans config.machines.<machine>.slots.")
 
-    if not doUpload then return end
-
-    local body = table.concat(report, "\n") .. "\n"
-    if not component.isAvailable("internet") then
-        print("Pas de carte Internet: le resultat reste a l ecran.")
-        return
-    end
-
-    local ok_publish, publish = pcall(require, "lib.publish")
-    if not ok_publish then
-        print("lib/publish.lua absent: relance tools/hminstall.")
-        return
-    end
-
-    -- Never just "sent": the mailbox answered 429 for a whole evening while
-    -- every tool announced a delivery. When it refuses, the paste URL is
-    -- printed instead, and relaying it by hand beats losing the result.
-    publish.report(body, config.report_mailbox)
+    send()
 end
 
 main({...})

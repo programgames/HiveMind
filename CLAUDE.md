@@ -33,6 +33,11 @@ l'inventaire du réseau, la file avec ses erreurs, les slots bruts, et exécute 
 file si on lui donne `--run`. Options : `--cancel <id>`, `--multiply Espece:N`,
 `--upload`, `--mailbox`.
 
+`probe` exige **`--yes`** pour déplacer quoi que ce soit ; sans lui c'est une
+simulation. Il accepte des noms de machines (`probe replicator dna_extractor
+--yes`) : sonder un banc déjà mesuré dérange quelque chose qui marche. Il saute
+les machines sans `source`, qu'on ne pourrait de toute façon pas atteindre.
+
 Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il faut
 écrire `tools/autoreport`, jamais `autoreport`.
 

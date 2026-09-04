@@ -256,8 +256,7 @@ do
     check("discover publie par lib.publish",
           discoverText:find("publish.report(body, mailbox)", 1, true) ~= nil)
     check("probe aussi",
-          probeText:find("publish.report(body, config.report_mailbox)",
-                         1, true) ~= nil)
+          probeText:find("publish.report(table.concat(report", 1, true) ~= nil)
     check("et autoreport aussi",
           io.open("tools/autoreport.lua"):read("a")
               :find("publish.report(body, mailbox)", 1, true) ~= nil)
@@ -267,6 +266,21 @@ do
           discoverText:find("component.list(\"me_interface\")", 1, true) ~= nil)
     check("et dit ou les reporter",
           discoverText:find("config.interfaces", 1, true) ~= nil)
+
+    -- A dry run that stops before sending is a report nobody outside the
+    -- machine ever sees -- and the dry run is the one worth reading first
+    check("probe publie meme sans rien deplacer",
+          probeText:find("local function send()", 1, true) ~= nil)
+    check("le repli sec appelle l envoi",
+          probeText:find("Rien n'a ete deplace", 1, true) ~= nil)
+
+    -- Probing a bench whose slots are already measured disturbs something that
+    -- works, and probing a machine with no source concludes the exact opposite
+    -- of the truth about it
+    check("probe accepte des noms de machines",
+          probeText:find("non demandee", 1, true) ~= nil)
+    check("et refuse de sonder ce qu on ne livre jamais",
+          probeText:find("aucune source d items", 1, true) ~= nil)
 
     check("aucun outil ne poste plus dans son coin",
           discoverText:find("internet.request", 1, true) == nil
@@ -621,7 +635,7 @@ check("aucune liberation anonyme",
 check("il ignore les marqueurs absents du reseau",
       probeText:find("ABSENT, ignore", 1, true) ~= nil)
 check("il ne sonde que les machines sans driver",
-      probeText:find("not config.machines[name].component", 1, true) ~= nil)
+      probeText:find("if link.component then", 1, true) ~= nil)
 
 -- One ME round trip per attempt cost up to twenty seconds each: sixty attempts
 -- turned a short experiment into an apparent hang. The marker is staged once
