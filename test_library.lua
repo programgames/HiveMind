@@ -257,6 +257,51 @@ checkTruthy("les genes sont comptes", lines[1]:find("alleles"))
 os.remove(PATH)
 
 print("")
+print("-- ce qu une abeille lue apprend, et reste appris --")
+
+-- Which species carries which allele decides everything worth breeding, and it
+-- cannot be read from the network: AE2 hides NBT. Read once, written down.
+local WINTRY = {chromosomes = {
+    [0]  = {active = "forestry.speciesWintry", inactive = "forestry.speciesWintry"},
+    [3]  = {active = "forestry.fertilityLow",  inactive = "forestry.fertilityLow"},
+    [4]  = {active = "forestry.toleranceUp1",  inactive = "forestry.toleranceBoth3"},
+    [12] = {active = "forestry.effectGlacial", inactive = "forestry.effectNone"},
+}}
+
+os.remove(PATH)
+local learner = library.new({path = PATH})
+
+check("quatre chromosomes memorises", learner:recordGenome("Wintry", WINTRY), 4)
+check("une espece sans nom est refusee", learner:recordGenome("", WINTRY), 0)
+check("un genome absent est refuse", learner:recordGenome("Vide", nil), 0)
+
+check("une espece connue est listee", learner:knownGenomes()["Wintry"], 4)
+
+-- The recessive counts: invisible on the bee, but it passes on and the Sampler
+-- can draw it
+check("le porteur est retrouve par allele dominant",
+      learner:carriersOf(4, "Up 1")[1], "Wintry")
+check("et par allele recessif",
+      learner:carriersOf(4, "Both 3")[1], "Wintry")
+check("un allele que personne ne porte ne rend rien",
+      #learner:carriersOf(4, "Both 5"), 0)
+
+-- Suffix, never substring: floweringSlowest would answer for Slow
+local SLOW = {chromosomes = {
+    [10] = {active = "forestry.floweringSlowest", inactive = "forestry.floweringSlowest"},
+}}
+learner:recordGenome("Lent", SLOW)
+check("Slowest ne repond pas pour Slow", #learner:carriersOf(10, "Slow"), 0)
+check("Slowest repond pour Slowest", learner:carriersOf(10, "Slowest")[1], "Lent")
+
+-- And it survives a restart, which is the whole point of writing it down
+local reread = library.new({path = PATH})
+check("le genome survit au redemarrage", reread:knownGenomes()["Wintry"], 4)
+check("et reste interrogeable", reread:carriersOf(4, "Up 1")[1], "Wintry")
+
+os.remove(PATH)
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

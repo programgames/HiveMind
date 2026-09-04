@@ -123,6 +123,16 @@ check("elle refuse de lire si une princesse peut declencher un cycle",
 check("elle compare le genome aux profils",
       text:find("context.library:has(slot, allele)", 1, true) ~= nil)
 
+-- AE2 hides NBT, so a genome can only be learned by parking the bee in the
+-- apiary. Read once, written down, never read again.
+check("la lecture memorise ce qu elle apprend",
+      text:find("context.library:recordGenome", 1, true) ~= nil)
+check("le plan de croisement s en sert",
+      text:find("context.library:carriersOf", 1, true) ~= nil)
+check("il fonctionne sans table declaree a la main",
+      text:find("ni table declaree, ni genome lu", 1, true) ~= nil)
+
+
 -- floweringSlowest answered for Slow, which is the opposite value. A suffix
 -- test refuses that; a substring one cannot.
 check("la comparaison d allele est un suffixe, pas un substring",

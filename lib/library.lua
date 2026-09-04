@@ -44,7 +44,8 @@ function library.new(options)
         scratchDbSlot = options.scratchDbSlot or 9,
         minimumCopies = settings.minimum_copies or 2,
         targetCopies = settings.target_copies or 3,
-        index = {templates = {}, nextTemplateId = 1},
+        -- genomes: species -> {[slot] = "allele uid"}, learned by reading a bee
+        index = {templates = {}, nextTemplateId = 1, genomes = {}},
         genes = nil,          -- built by scan()
         loaded = false,
     }, Library)
@@ -68,6 +69,8 @@ function Library:load()
     if stored and type(stored.templates) == "table" then
         self.index = stored
         self.index.nextTemplateId = stored.nextTemplateId or 1
+        -- Added after the first files were written, so an older one has none
+        self.index.genomes = stored.genomes or {}
     end
 
     return true
@@ -137,6 +140,94 @@ end
 function Library:allGenes()
     if not self.genes then self:scan() end
     return self.genes
+end
+
+--- Remember every allele a species was seen carrying
+--- Which species carries which allele is the one thing that decides what is
+--- worth breeding, and it cannot be read from the network: AE2 hides NBT. It
+--- can only be learned by parking a bee in the apiary and reading it -- so what
+--- is read once is written down, and never has to be read again.
+--- @param species string As the drone label spells it, without " Drone"
+--- @param chromosomes table Parsed genome
+--- @return number recorded How many chromosomes were stored
+function Library:recordGenome(species, chromosomes)
+    if type(species) ~= "string" or species == "" then return 0 end
+    if type(chromosomes) ~= "table" then return 0 end
+
+    self:load()
+    self.index.genomes = self.index.genomes or {}
+
+    local seen = {}
+    local recorded = 0
+
+    for slot = 0, 12 do
+        local active, inactive = genome.alleles(chromosomes, slot)
+
+        -- The recessive counts: it is invisible on the bee but passes to its
+        -- offspring, and the Sampler can draw it
+        if active then
+            seen[tostring(slot)] = {active = active, inactive = inactive}
+            recorded = recorded + 1
+        end
+    end
+
+    if recorded == 0 then return 0 end
+
+    self.index.genomes[species] = seen
+    self:save()
+
+    return recorded
+end
+
+--- Every species known to carry an allele, from what has been read
+--- @param slot number
+--- @param uidSuffix string Allele as a sample label spells it, e.g. "Both 3"
+--- @return string[] species
+function Library:carriersOf(slot, uidSuffix)
+    self:load()
+
+    local function flatten(text)
+        return tostring(text):lower():gsub("[^%w]", "")
+    end
+
+    local target = flatten(uidSuffix)
+    if target == "" then return {} end
+
+    local found = {}
+
+    for species, chromosomes in pairs(self.index.genomes or {}) do
+        local entry = chromosomes[tostring(slot)]
+
+        if entry then
+            -- Suffix, never substring: floweringSlowest would answer for Slow,
+            -- which is the opposite value
+            for _, uid in ipairs({entry.active, entry.inactive}) do
+                local flat = uid and flatten(uid) or ""
+                if #flat >= #target and flat:sub(-#target) == target then
+                    table.insert(found, species)
+                    break
+                end
+            end
+        end
+    end
+
+    table.sort(found)
+    return found
+end
+
+--- Which species have been read at all
+--- @return table species -> number of chromosomes recorded
+function Library:knownGenomes()
+    self:load()
+
+    local known = {}
+    for species, chromosomes in pairs(self.index.genomes or {}) do
+        local count = 0
+        for _ in pairs(chromosomes) do count = count + 1 end
+        known[species] = count
+    end
+
+    return known
 end
 
 --- How many copies of one allele are held

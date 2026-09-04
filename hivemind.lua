@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.71.0"
+hivemind.VERSION = "0.72.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1532,6 +1532,11 @@ function hivemind.analyseBee(context)
         return
     end
 
+    -- Written down at once. AE2 hides NBT, so this genome can only be learned
+    -- by parking the bee here; read once, known forever.
+    local species = beeSpec.label:gsub("%s+Drone$", "")
+    local recorded = context.library:recordGenome(species, parsed)
+
     print("")
     print(beeSpec.label .. " :")
     print("")
@@ -1612,6 +1617,12 @@ function hivemind.analyseBee(context)
         print("Certains chromosomes ne nomment pas leur allele comme l etiquette")
         print("d un sample: compare la liste ci-dessus avec ce que veut le profil")
         print("(option e) avant de conclure.")
+    end
+
+    if recorded > 0 then
+        print("")
+        print(recorded .. " chromosome(s) memorises pour " .. species .. ".")
+        print("L option h s en servira sans avoir a relire cette abeille.")
     end
 
     apiary:unload(slots.drone)
@@ -1765,9 +1776,17 @@ function hivemind.breedingPlan(context)
     print("")
 
     local carriers = config.gene_carriers or {}
-    if next(carriers) == nil then
-        print("Aucun porteur de gene declare dans lib/config.lua.")
-        print("Sans cette table je ne peux rien classer.")
+    local learned = context.library:knownGenomes()
+
+    local readCount = 0
+    for _ in pairs(learned) do readCount = readCount + 1 end
+
+    print(readCount .. " espece(s) dont le genome a ete lu (option g).")
+    print("")
+
+    if next(carriers) == nil and readCount == 0 then
+        print("Aucun porteur connu: ni table declaree, ni genome lu.")
+        print("Lis quelques especes avec l option g, elles se rangeront ici.")
         return
     end
 
@@ -1784,10 +1803,20 @@ function hivemind.breedingPlan(context)
             if not seen[key] and not context.library:has(slot, allele) then
                 seen[key] = true
 
-                local byAllele = carriers[slot]
-                local species = byAllele and byAllele[allele]
+                -- Two sources: the hand-written table, and every genome
+                -- actually read. The second needs no list from anyone.
+                local found = {}
 
-                for _, one in ipairs(species or {}) do
+                local byAllele = carriers[slot]
+                for _, one in ipairs((byAllele and byAllele[allele]) or {}) do
+                    found[one] = true
+                end
+
+                for _, one in ipairs(context.library:carriersOf(slot, allele)) do
+                    found[one] = true
+                end
+
+                for one in pairs(found) do
                     brings[one] = brings[one] or {}
                     table.insert(brings[one], string.format("%s = %s",
                         tostring(genome.labelForSlot(slot) or slot), allele))

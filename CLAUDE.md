@@ -108,6 +108,11 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   d'un autre individu sauvage ou d'une autre espèce — **une seule fois** : une
   fois en sample, la bibliothèque le garde et l'Imprinter le propage à toute une
   lignée.
+- **Un génome lu est mémorisé** (`library:recordGenome`), allèle dominant et
+  récessif. AE2 masque le NBT : cette information ne s'obtient qu'en posant
+  l'abeille dans l'apiary, donc elle est écrite sur disque et ne se relit
+  jamais. `library:carriersOf(slot, allele)` répond ensuite « qui porte ça »
+  sans aucune liste écrite à la main.
 - **`x32 — 1 genome(s)` dans le rapport veut dire que les 32 sont identiques.**
   Les échantillonner en boucle ne peut sortir que les mêmes treize allèles.
   Lire le génome (option `g`) avant d'y dépenser treize abeilles.

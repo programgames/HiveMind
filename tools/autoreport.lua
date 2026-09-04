@@ -448,6 +448,25 @@ local function main(args)
         for _, line in ipairs(found) do say(line) end
     end
 
+    -- Which species carries which allele decides everything worth breeding,
+    -- and it is only learned by reading a bee. Worth seeing what is known.
+    section("GENOMES CONNUS")
+
+    local knownGenomes = context.library.knownGenomes
+        and context.library:knownGenomes() or {}
+
+    local readSpecies = {}
+    for species, count in pairs(knownGenomes) do
+        table.insert(readSpecies, string.format("  %-20s %d chromosome(s)",
+            species, count))
+    end
+    table.sort(readSpecies)
+
+    if #readSpecies == 0 then
+        say("  (aucun genome lu; option g dans le menu)")
+    end
+    for _, line in ipairs(readSpecies) do say(line) end
+
     section("REGISTRE DES ESPECES")
     local known, source = context.species:list()
     local count, derived = 0, 0
