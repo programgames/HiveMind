@@ -6,7 +6,11 @@ génétique est la majorité de l'intérêt.
 
 Recalculer avec `lua progress.lua`.
 
-## Phase 0 — Calibration (poids 10)
+**Poids rééquilibrés le 2026-09-04.** La phase 4 — le parcours joueur — n'existait
+pas, et le programme était noté 93 % alors qu'aucun joueur ne savait s'en servir.
+Le moteur pèse moins qu'avant parce qu'il est fini, pas parce qu'il vaut moins.
+
+## Phase 0 — Calibration (poids 5)
 
 - [x] Format du génome relevé en jeu (13 chromosomes, UID actif/récessif)
 - [x] Étiquettes des Gene Samples verrouillées sur du réel
@@ -15,7 +19,7 @@ Recalculer avec `lua progress.lua`.
 - [x] API du terminal Apiarist explorée, méthodes non documentées comprises
 - [x] Topologie du transposer et des faces relevée
 
-## Phase 1 — Le socle (poids 25)
+## Phase 1 — Le socle (poids 20)
 
 - [x] Persistance atomique (temp + rename)
 - [x] File de tâches reprenable, étapes vérifiées avant d'agir
@@ -34,7 +38,7 @@ Recalculer avec `lua progress.lua`.
 - [x] Annonce de la fleur requise (chromosome 9) avant chaque croisement
 - [x] Couche d'exécution morte de `main.lua` supprimée
 
-## Phase 2 — Génétique (poids 45)
+## Phase 2 — Génétique (poids 30)
 
 - [x] Module bibliothèque de gènes écrit et testé
 - [x] Parseur d'étiquettes de samples
@@ -50,11 +54,45 @@ Recalculer avec `lua progress.lua`.
 - [ ] Template « perfection » de 12 gènes construit (écriture gène par gène faite)
 - [ ] Template complet par espèce, pour le Replicator
 
-## Phase 3 — Campagnes (poids 20)
+## Phase 3 — Campagnes (poids 10)
 
 - [x] Campagne « obtenir le gène Species de toutes les espèces »
 - [x] Analyse d'écart sur les profils optimaux
 - [x] Les deux profils génétiques tranchés avec le joueur
+
+## Phase 4 — Le parcours joueur (poids 35)
+
+Quatre options, dans l'ordre, pour quelqu'un qui n'a rien lu. Détail et
+justification dans `FEUILLE-DE-ROUTE.md`.
+
+**4.2 d'abord** : sans le statut « en attente du joueur », les trois autres
+chantiers produisent des tâches qui meurent d'un geste de cinq secondes.
+
+- [x] 4.2 Résultat d'étape `NEEDS_PLAYER`, avec le geste exact à faire
+- [x] 4.2 La file s'arrête dessus, l'affiche, reprend à la même étape après validation
+- [x] 4.2 Causes branchées : entrée bouchée, cuve vide, consommable absent, abeille absente
+- [x] 4.1 Contrôle des machines : chacune répond, sur la bonne face
+- [x] 4.1 Contrôle des slots : la forme mesurée correspond à la config
+- [x] 4.1 Contrôle des interfaces ME (par comparaison config/réseau, sans rien déplacer)
+- [x] 4.1 Contrôle des cuves, ADN lu dans le bon sens
+- [x] 4.1 Contrôle des consommables : labware et samples vierges au-dessus d'un seuil
+- [x] 4.1 Verdict unique : validée, ou la liste des gestes à faire
+- [x] 4.3 Balayage de toutes les espèces par lots, en cache, pour trouver celles sans parents
+- [ ] 4.3 Séparation « ruche sauvage » / « autre origine » — table `config.base_origins` en place et documentée, **vide** : à remplir en jeu, rien ne permet de la déduire
+- [x] 4.3 Écran « ce que tu dois attraper », ordonné par ce que chaque espèce débloque
+- [x] 4.3 Le gène d'espèce est sauvé automatiquement à la fin de chaque croisement réussi
+- [x] 4.3 Le programme ne rechasse pas un gène d'espèce déjà sauvé
+- [x] 4.4 Plan combiné : les chaînes de tous les porteurs manquants, fusionnées
+- [x] 4.4 Écran d'avancement du template : les 11 gènes, où en est chacun
+- [x] 4.4 Enchaînement croisement → chasse du gène sans retour au menu
+- [x] 4.4 Le craft final annoncé avec la liste exacte des samples
+- [x] 4.5 « Obtenir une abeille » refuse tant que le template n'est pas assemblé, et dit quoi
+- [x] 4.5 Imprint du profil élevage sur la lignée avant de lancer la chaîne
+- [x] 4.5 Journal en direct des croisements, avec ce qui reste
+- [x] 4.6 Menu à quatre options + file + sous-menu avancé
+- [x] 4.6 Les quinze options actuelles déplacées, aucune perdue
+- [x] 4.6 Chaque option principale annonce son prérequis et refuse proprement
+- [x] 4.6 La suggestion en tête d'écran dit la prochaine chose à faire
 
 ## Fait en jeu
 

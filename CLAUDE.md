@@ -394,7 +394,30 @@ lib/library.lua     bibliothèque de gènes, index des templates
 lib/breeding.lua    croisement en 7 étapes
 lib/multiply.lua    accumulation de drones, en boucle
 lib/planner.lua     chaîne de croisements vers une espèce cible
+                    (`planMany` fusionne plusieurs cibles en une liste ordonnée)
+lib/checkup.lua     contrôle d'installation, lecture seule, rend un verdict
 ```
+
+**Le menu a deux niveaux depuis le 2026-09-04.** Quatre options principales —
+vérifier l'installation, constituer la base, fabriquer le template d'élevage,
+obtenir une abeille — plus la file en `6`, plus `9` qui ouvre les options
+d'origine avec leurs touches d'origine. Les tables sont `MAIN` et `ADVANCED`
+dans `hivemind.lua` ; une touche n'a besoin d'être unique que **dans son
+menu**, et `test_menu.lua` le vérifie ainsi.
+
+**La file a un troisième résultat d'étape, `jobs.NEEDS_PLAYER`.** Un slot
+Gendustry bouché, une cuve vide, un consommable absent : ce ne sont ni des
+échecs ni des attentes. L'étape rend le **geste à faire, à l'impératif**, la
+tâche passe en `WAITING` (hors de `pending()`, donc la file ne la reprend pas),
+**aucune tentative n'est consommée**, et `resume(id)` la remet en file où elle
+en était. Une cause que le programme ne comprend pas reste un échec : déguiser
+tous les échecs en corvées enverrait le joueur chercher un slot qui n'existe
+pas.
+
+**Un croisement réussi met en file la chasse au gène d'espèce**, si l'espèce est
+nouvelle et qu'il y a assez de drones (`config.genetics.autosave_min_drones`).
+C'est la 8e étape du cycle et elle ne peut pas faire échouer le croisement : il
+a déjà réussi.
 
 **Une étape qui ATTEND doit revérifier ses conditions, pas seulement sa sortie.**
 Le template du Replicator, approuvé à l'étape 3, avait été retiré à la main
