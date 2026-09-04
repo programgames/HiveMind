@@ -264,6 +264,31 @@ local function main(args)
         end
     end
 
+    -- A transposer sees an ME Interface as an inventory whatever else is true,
+    -- but staging items into it needs the INTERFACE ITSELF as a component,
+    -- which only exists when an Adapter is stuck to it. Listing the addresses
+    -- here is what lets config.interfaces be filled: without it, finding the
+    -- new one meant a second round trip through another tool.
+    say("")
+    say("=== INTERFACES ME ADRESSABLES ===")
+
+    local interfaces = {}
+    for address in component.list("me_interface") do
+        table.insert(interfaces, address)
+    end
+    table.sort(interfaces)
+
+    if #interfaces == 0 then
+        say("  aucune. Sans Adapter collé a une interface, rien ne peut etre")
+        say("  livre: chaque envoi echouera comme si la machine refusait.")
+    end
+
+    for _, address in ipairs(interfaces) do
+        say("  " .. address)
+    end
+
+    say("  -> a reporter dans config.interfaces, par adresse de transposer.")
+
     say("")
     say("=== RESUME ===")
 

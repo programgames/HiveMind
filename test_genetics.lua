@@ -876,7 +876,7 @@ do
         bee = {label = "Meadows Drone"}, count = 1}))
 
     local result = pending:run(ctx, {maxSteps = 20})
-    checkTruthy("la file survit a deux machines non branchees",
+    checkTruthy("la file survit a deux machines qui ne repondent pas",
                 type(result) == "table")
 
     local said = {}
@@ -884,10 +884,18 @@ do
         said[job.kind] = tostring(job.error or "")
     end
 
-    checkTruthy("le replicator manquant est nomme",
-                (said.replicate or ""):find("replicator", 1, true) ~= nil)
-    checkTruthy("l extracteur manquant est nomme",
-                (said.extract or ""):find("dna_extractor", 1, true) ~= nil)
+    -- These two are configured against a bench this mock does not simulate, so
+    -- the transposer sees no inventory there. Refusing is the whole point: the
+    -- slot maps are symmetry rather than measurement, and a job that guessed
+    -- would put a bee wherever a slot happened to accept it.
+    checkTruthy("le replicator injoignable est signale, pas contourne",
+                (said.replicate or ""):find("injoignable", 1, true) ~= nil
+                or (said.replicate or ""):find("replicator", 1, true) ~= nil)
+    checkTruthy("l extracteur aussi",
+                (said.extract or ""):find("injoignable", 1, true) ~= nil
+                or (said.extract or ""):find("dna_extractor", 1, true) ~= nil)
+    checkTruthy("et rien n a ete deplace vers eux",
+                #world.collected == 0)
 end
 
 os.remove(QUEUE)

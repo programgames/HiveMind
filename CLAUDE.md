@@ -178,17 +178,25 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 Deux transposers depuis que le banc de génétique existe. **L'ordre compte** :
 les machines nomment un transposer par son index.
 
+**Cinq transposers** depuis le 2026-09-04, relevés par `tools/discover` :
+
 | Transposer | ME Interface | Machines |
 |---|---|---|
-| `65d3da44` | `983cd2bd` | Sampler (5), Genetic Transposer (3), Imprinter (2), interface (4) |
-| `95625858` | `4c447a5c` | Mutatron (5), Apiary (3), coffre à templates (4), interface (2) |
-| `c33193aa` | **aucune** | Replicator (2), DNA Extractor (5) |
+| `65d3da44` | `983cd2bd` (4) | Sampler (5), Genetic Transposer (3), Imprinter (2) |
+| `95625858` | `4c447a5c` (2) | Mutatron (5), Apiary (3), coffre à templates (4) |
+| `c33193aa` | oui, côté 3 | Replicator (2), DNA Extractor (5) |
+| `a142f36b` | aucune | Protein Liquifier (4) |
+| `d28c3d3d` | aucune | Mutagen Producer (2) |
 
-**Le troisième banc n'a pas de ME Interface** (relevé le 2026-09-04). Les deux
-machines sont vues, adressables, et ne peuvent recevoir ni rendre aucun objet :
-il n'y a pas de source. Tant qu'une ME Interface + un Adapter ne sont pas posés
-contre `c33193aa`, `replicator` et `dna_extractor` restent `enabled = false`.
-Le Protein Liquifier et le Mutagen Producer ne sont contre aucun transposer.
+**Les deux derniers n'ont pas besoin d'interface** : le programme ne leur livre
+jamais rien, il lit seulement leur cuve — et un transposer lit une cuve sans
+aucune interface. C'est le partage de rôles tranché avec le joueur.
+
+`config.interfaces[c33193aa]` **reste à renseigner** : `discover` liste
+maintenant les adresses `me_interface` adressables (section « INTERFACES ME
+ADRESSABLES »), il faut y prendre celle qui n'est ni `983cd2bd` ni `4c447a5c`.
+Ne jamais la deviner : une mauvaise adresse fait échouer chaque livraison sous
+la forme « la machine refuse cet objet ».
 
 **Jamais d'index de position en config** : ajouter un transposer au réseau les
 renumérote tous et chaque machine pointe alors vers le mauvais voisin, sans

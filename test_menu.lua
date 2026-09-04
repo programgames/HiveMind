@@ -261,6 +261,13 @@ do
     check("et autoreport aussi",
           io.open("tools/autoreport.lua"):read("a")
               :find("publish.report(body, mailbox)", 1, true) ~= nil)
+    -- config.interfaces cannot be guessed, and finding the new address used to
+    -- mean a second round trip through another tool
+    check("discover liste les interfaces adressables",
+          discoverText:find("component.list(\"me_interface\")", 1, true) ~= nil)
+    check("et dit ou les reporter",
+          discoverText:find("config.interfaces", 1, true) ~= nil)
+
     check("aucun outil ne poste plus dans son coin",
           discoverText:find("internet.request", 1, true) == nil
           and probeText:find("internet.request", 1, true) == nil)

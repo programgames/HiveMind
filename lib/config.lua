@@ -20,10 +20,14 @@ local config = {}
 -- machine at the wrong neighbour. A prefix is enough to identify one.
 local GENETICS = "65d3da44"   -- sampler, genetic transposer, imprinter
 local BREEDING = "95625858"   -- mutatron, apiary, template chest
--- Third bench, found by tools/discover on 2026-09-04: replicator (side 2) and
--- DNA extractor (side 5). No ME Interface sits on it yet, so it can move
--- nothing in or out of the network -- see config.interfaces.
+-- Third bench, measured by tools/discover on 2026-09-04: replicator on side 2,
+-- DNA extractor on side 5, and its own ME Interface on side 3.
 local PRODUCTION = "c33193aa" -- replicator, dna extractor
+-- These two make what the others drink and the program never moves an item to
+-- either of them, so neither needs an ME Interface. Only their tanks are read,
+-- and a transposer reads a tank without any interface at all.
+local LIQUIFIER = "a142f36b"  -- protein liquifier
+local MUTAGEN   = "d28c3d3d"  -- mutagen producer
 
 -- Sides are resolved lazily: this module is loaded by desktop tests too, where
 -- the OpenComputers libraries do not exist.
@@ -84,10 +88,14 @@ config.interfaces = {
     -- If it turns out to be the wrong way round, staging fails with a clear
     -- reason rather than silently, so the mistake is cheap.
     [GENETICS] = "983cd2bd",   -- sampler, genetic transposer, imprinter
-    -- No entry for PRODUCTION on purpose: discover found no ME Interface on
-    -- that transposer at all. Inventing an address here would make every
-    -- delivery fail as "la machine refuse cet objet", which is the one error
-    -- message that has already cost an evening.
+    -- Filled once tools/discover listed the addressable interfaces. Nothing
+    -- here may be guessed: a wrong address makes every delivery fail as
+    -- "la machine refuse cet objet", the one error that has already cost an
+    -- evening.
+    [PRODUCTION] = nil,        -- <- adresse a renseigner, cote 3 du transposer
+
+    -- LIQUIFIER and MUTAGEN have none and need none: nothing is ever
+    -- delivered to them, only their tanks are read.
 }
 
 config.template_chest = {
@@ -104,6 +112,9 @@ config.template_chest = {
 config.transposers = {
     "65d3da44-cb90-4812-a6fa-d28128c9a988",   -- sampler, transposer, imprinter
     "95625858-b606-4eb0-89cb-4f3b467c0c06",   -- mutatron, apiary, templates
+    "a142f36b-30cd-49b6-a8a9-6354d986bca1",   -- protein liquifier, seul
+    "c33193aa-1d24-4951-9615-c2ba93716737",   -- replicator, extracteur ADN
+    "d28c3d3d-a104-4db4-a495-ac24b90ca351",   -- mutagen producer, seul
 }
 
 
@@ -215,27 +226,27 @@ config.machines = {
     -- slot happens to accept it. Run tools/probe once they are placed, then
     -- tools/discover for the sides, then set enabled = true.
     replicator = {
-        transposer = PRODUCTION, machine = 2, source = nil, enabled = false,
+        transposer = PRODUCTION, machine = 2, source = 3, enabled = true,
         -- The template decides which bee comes out, so it is what the machine
         -- reads; the bee it prints is the output.
         slots = {template = 0, labware = 1, output = 3},
     },
     dna_extractor = {
-        transposer = PRODUCTION, machine = 5, source = nil, enabled = false,
+        transposer = PRODUCTION, machine = 5, source = 3, enabled = true,
         -- The bee is consumed and the DNA leaves as a fluid, so there is no
         -- item output to drain -- only an input to keep fed.
         slots = {labware = 1, input = 2},
     },
     -- These two are the player's business: they make what the others drink.
     -- The program reads their tanks to warn, and never moves anything.
-    -- Never seen by discover: not placed against any transposer yet.
+    -- On its own transposer, with nothing else. No source, and none needed:
+    -- the program reads its tank and never moves an item to it.
     protein_liquifier = {
-        transposer = PRODUCTION, machine = nil, source = nil, enabled = false,
+        transposer = LIQUIFIER, machine = 4, source = nil, enabled = true,
         slots = {input = 2},
     },
-    -- Never seen by discover either.
     mutagen_producer = {
-        transposer = BREEDING, machine = nil, source = nil, enabled = false,
+        transposer = MUTAGEN, machine = 2, source = nil, enabled = true,
         slots = {input = 2},
     },
 }
