@@ -706,6 +706,58 @@ do
 end
 
 print("")
+print("-- un reservoir vide qui ne se remplit plus finit par demander --")
+
+do
+    -- Deux lectures opposees derriere le meme symptome. Le Mutagen Producer
+    -- remplit le Mutatron tout seul quand il est alimente, donc une cuve
+    -- momentanement seche se repare seule et RETRY est juste. Un producteur
+    -- sans rien a travailler ne remplira jamais rien, et la tache attendrait
+    -- pour toujours sans dire quoi faire.
+    local function params()
+        return breeding.params({
+            target = "forestry.speciesCommon",
+            princess = {name = "forestry:bee_princess_ge", label = "Forest Princess"},
+            drone = {name = "forestry:bee_drone_ge", label = "Meadows Drone"},
+        })
+    end
+
+    os.remove(QUEUE)
+    reset()
+    world.mutagen = 0
+
+    local queue, context = buildStack()
+    queue:submit("breed", params())
+
+    -- Les deux premieres passes attendent: la cuve peut encore se remplir
+    queue:run(context, {maxSteps = 40})
+    check("d abord on attend", queue:get(1).status, jobs.PENDING)
+    queue:run(context, {maxSteps = 40})
+    check("on attend encore", queue:get(1).status, jobs.PENDING)
+
+    -- A la troisieme, elle n a pas bouge: ce n est plus une attente
+    queue:run(context, {maxSteps = 40})
+    check("puis le programme demande la main", queue:get(1).status, jobs.WAITING)
+    checkTruthy("en nommant la machine a alimenter",
+                queue:get(1).action
+                and queue:get(1).action:find("Mutagen Producer", 1, true))
+
+    -- Et une cuve qui se remplit entre-temps ne declenche rien
+    os.remove(QUEUE)
+    reset()
+    local queue2, context2 = buildStack()
+    queue2:submit("breed", params())
+    queue2:run(context2, {maxSteps = 40})
+    world.mutagen = 10000
+    for _ = 1, 4 do queue2:run(context2, {maxSteps = 60}) end
+
+    check("un remplissage entre deux passes suffit",
+          queue2:get(1).status, jobs.COMPLETE)
+
+    os.remove(QUEUE)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

@@ -533,9 +533,13 @@ end
 
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
+-- Le libelle dit l action, la description dit ce qu elle coute. "Convertir
+-- des drones en ADN" se lit mieux que "Detruire des drones", mais les drones
+-- sont bel et bien detruits et l avertissement doit rester visible AVANT le
+-- choix -- pas dans la confirmation qui suit.
 check("les actions destructrices le disent dans le menu",
       text:find("l abeille est DETRUITE", 1, true) ~= nil
-      and text:find("Detruire des drones", 1, true) ~= nil)
+      and text:find("les drones y sont DETRUITS", 1, true) ~= nil)
 
 -- The banner can carry several tank warnings and the advice several lines;
 -- unbounded, they push the top of the menu off the screen

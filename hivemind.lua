@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.3.0"
+hivemind.VERSION = "1.4.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1844,6 +1844,16 @@ function hivemind.buildTemplate(context)
         return table.concat(names, ", ")
     end
 
+    -- A mutation needing a foundation block or a biome will never produce, and
+    -- the Mutatron says nothing about why. Listed apart from the species: it
+    -- is a thing to go and place in the world, not a bee to breed.
+    local demands = {}
+    for _, step in ipairs(plan.steps) do
+        for _, condition in ipairs(step.conditions or {}) do
+            table.insert(demands, naming(step.target) .. ": " .. condition)
+        end
+    end
+
     if #plan.steps > 0 or #(plan.blocked or {}) > 0 then
         print("")
         print("A ELEVER EN CHEMIN")
@@ -1868,6 +1878,16 @@ function hivemind.buildTemplate(context)
         print("")
         print("Rien a croiser maintenant.")
         return
+    end
+
+    if #demands > 0 then
+        print("")
+        print("A POSER DANS LE MONDE — sans ca ces croisements ne donnent rien")
+        for _, line in ipairs(demands) do
+            for _, wrapped in ipairs(screen.wrap(line, 70)) do
+                print("  " .. wrapped)
+            end
+        end
     end
 
     -- The extractions this template needs are launched HERE. Sending the
@@ -2753,7 +2773,7 @@ end
 --- @param context table
 function hivemind.speciesSweep(context)
     print("")
-    print("=== CHASSER LE GENE D ESPECE DE CHACUNE ===")
+    print("=== SAUVER LE GENE D ESPECE DE CHAQUE ABEILLE ===")
     print("Le Sampler tire un gene sur 13: compte une treizaine de drones")
     print("par espece. Les tirages rates enrichissent la bibliotheque.")
     print("")
@@ -3156,7 +3176,7 @@ end
 --- @param context table
 function hivemind.feedExtractor(context)
     print("")
-    print("=== DETRUIRE DES DRONES POUR FAIRE DE L ADN ===")
+    print("=== CONVERTIR DES DRONES EN ADN POUR LE REPLICATOR ===")
     print("Chaque abeille envoyee est DETRUITE pour faire de l ADN, qui")
     print("alimente le Replicator. Seul part le surplus des especes dont le")
     print("gene d espece est deja en bibliotheque.")
@@ -3404,7 +3424,7 @@ end
 --- @param context table
 function hivemind.harvestProfile(context)
     print("")
-    print("=== CHASSER TOUT CE QUI MANQUE A UN PROFIL ===")
+    print("=== EXTRAIRE LES GENES MANQUANTS D UN TEMPLATE ===")
 
     local profiles = config.profiles or {}
     local names = {}
@@ -3619,7 +3639,7 @@ end
 --- @param context table
 function hivemind.breedingPlan(context)
     print("")
-    print("=== QUELLE ESPECE ATTRAPER ENSUITE ===")
+    print("=== CLASSER LES ESPECES PAR GENES QU ELLES APPORTENT ===")
     print("Chaque espece n est necessaire qu une fois: un individu, un")
     print("echantillonnage reussi, et le gene est acquis pour toujours.")
     print("")
@@ -3734,7 +3754,7 @@ end
 --- @param context table
 function hivemind.templateHelp(context)
     print("")
-    print("=== VOIR CE QUI MANQUE POUR UN TEMPLATE ===")
+    print("=== ETAT DES DEUX TEMPLATES, GENE PAR GENE ===")
     print("Un template s assemble a la TABLE DE CRAFT: un Genetic Template")
     print("plus tes samples, plusieurs d un coup. Les samples sont consommes.")
     print("")
@@ -3811,7 +3831,7 @@ end
 --- @param context table
 function hivemind.geneCampaign(context)
     print("")
-    print("=== CHASSER UN GENE PRECIS ===")
+    print("=== EXTRAIRE UN GENE PRECIS ===")
     print("Extrait en boucle jusqu au gene vise, ou jusqu a court d abeilles.")
     print("Chaque tirage rate enrichit quand meme la bibliotheque.")
     print("")
@@ -3895,7 +3915,7 @@ end
 --- @param context table
 function hivemind.secureLibrary(context)
     print("")
-    print("=== COPIER LES GENES UNIQUES ===")
+    print("=== SAUVEGARDER LES GENES EN UN SEUL EXEMPLAIRE ===")
 
     context.library:scan()
     local shortages = context.library:shortages()
@@ -4134,7 +4154,7 @@ local ADVANCED = {
     {key = "w", label = "Valider la liste des abeilles de base",
      hint = "celles qu aucun croisement ne peut produire: ce qui te manque encore",
      action = "buildBase"},
-    {key = "h", label = "Quelle espece attraper ensuite",
+    {key = "h", label = "Classer les especes par genes qu elles apportent",
      hint = "classees par nombre de genes manquants qu elles apportent",
      action = "breedingPlan"},
 
@@ -4145,7 +4165,7 @@ local ADVANCED = {
     {key = "4", label = "Croiser deux especes",
      hint = "un croisement precis: A + B donne C, une seule fois",
      action = "submitBreeding"},
-    {key = "5", label = "Obtenir une espece",
+    {key = "5", label = "Obtenir une espece, sans verifier le template",
      hint = "calcule la chaine complete de croisements et l enchaine seule",
      action = "planChain"},
 
@@ -4153,13 +4173,13 @@ local ADVANCED = {
     {key = "a", label = "Extraire un gene d une abeille",
      hint = "un gene au hasard sur 13, et l abeille est DETRUITE",
      action = "sampleGene"},
-    {key = "d", label = "Chasser un gene precis",
+    {key = "d", label = "Extraire un gene precis",
      hint = "recommence l extraction jusqu a tomber sur le gene vise",
      action = "geneCampaign"},
-    {key = "i", label = "Chasser le gene d espece de chacune",
+    {key = "i", label = "Sauver le gene d espece de chaque abeille",
      hint = "une chasse par espece dont tu as assez de drones",
      action = "speciesSweep"},
-    {key = "t", label = "Chasser tout ce qui manque a un profil",
+    {key = "t", label = "Extraire les genes manquants d un template",
      hint = "met en file toutes les chasses necessaires, d un coup",
      action = "harvestProfile"},
 
@@ -4167,12 +4187,12 @@ local ADVANCED = {
     {key = "b", label = "Copier un gene",
      hint = "un exemplaire de plus; l original n est pas consomme",
      action = "duplicateGene"},
-    {key = "c", label = "Copier les genes uniques",
+    {key = "c", label = "Sauvegarder les genes en un seul exemplaire",
      hint = "ceux qui n existent qu en un exemplaire: un accident et ils sont perdus",
      action = "secureLibrary"},
 
     {group = "Templates"},
-    {key = "e", label = "Voir ce qui manque pour un template",
+    {key = "e", label = "Etat des deux templates, gene par gene",
      hint = "les genes a reunir pour chaque profil, et quelle abeille les porte",
      action = "templateHelp"},
     {key = "n", label = "Nommer les templates du coffre",
@@ -4186,8 +4206,8 @@ local ADVANCED = {
     {key = "r", label = "Fabriquer une reine",
      hint = "template complet + ADN: une reine sans parents, en Ignoble Stock",
      action = "replicateBee"},
-    {key = "x", label = "Detruire des drones pour faire de l ADN",
-     hint = "seulement le surplus des especes deja sauvegardees",
+    {key = "x", label = "Convertir des drones en ADN pour le Replicator",
+     hint = "les drones y sont DETRUITS: seulement le surplus des especes sauvees",
      action = "feedExtractor"},
 
     {group = "Faire tourner"},

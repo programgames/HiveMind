@@ -123,11 +123,36 @@ local function alreadyHunting(context, name)
 end
 
 --- Is the machine able to work right now
+--- An empty tank is ambiguous, and the two readings need opposite answers. The
+--- Mutagen Producer refills the Mutatron on its own when it is fed, so a tank
+--- momentarily dry resolves itself and RETRY is right. A producer with nothing
+--- to work from never refills anything, and the job would sit aside for ever
+--- without ever saying what to go and do.
+---
+--- Rather than reach into another machine to tell them apart, this counts: a
+--- tank still dry after three passes is not refilling.
+--- @param machine table
+--- @param job table Carries the count between passes, on disk
 --- @return string|nil retry Reason to come back later, nil when ready
-local function notReady(machine)
+--- @return boolean gesture True when waiting has stopped being reasonable
+local function notReady(machine, job)
     local status, detail = machine:isReady()
-    if status == "ready" then return nil end
-    return detail or status
+
+    if status == "ready" then
+        job.params.dryPasses = nil
+        return nil, false
+    end
+
+    local machines = require("lib.machines")
+
+    if status ~= machines.NO_RESOURCE then
+        job.params.dryPasses = nil
+        return detail or status, false
+    end
+
+    job.params.dryPasses = (job.params.dryPasses or 0) + 1
+
+    return detail or status, job.params.dryPasses >= 3
 end
 
 breeding.STEPS = {
@@ -264,8 +289,14 @@ breeding.STEPS = {
             local mutatron, err = machineOf(context, "mutatron")
             if not mutatron then return jobs.FAILED, err end
 
-            local wait = notReady(mutatron)
-            if wait then return jobs.RETRY, wait end
+            local wait, gesture = notReady(mutatron, job)
+            if wait then
+                if gesture then
+                    return jobs.NEEDS_PLAYER, wait .. " depuis trois passages:"
+                        .. " alimente le Mutagen Producer, il ne se remplit plus"
+                end
+                return jobs.RETRY, wait
+            end
 
             -- Ask the machine which mutations the loaded parents allow. This is
             -- the game's own answer, so an impossible plan is caught here
@@ -313,8 +344,14 @@ breeding.STEPS = {
             local apiary, apiary_err = machineOf(context, "breeding_apiary")
             if not apiary then return jobs.FAILED, apiary_err end
 
-            local wait = notReady(apiary)
-            if wait then return jobs.RETRY, wait end
+            local wait, gesture = notReady(apiary, job)
+            if wait then
+                if gesture then
+                    return jobs.NEEDS_PLAYER, "l apiary est bloque depuis trois"
+                        .. " passages: " .. wait
+                end
+                return jobs.RETRY, wait
+            end
 
             local queen_slot = apiary:slots().queen
             if apiary:slot(queen_slot) then
