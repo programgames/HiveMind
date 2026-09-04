@@ -58,7 +58,13 @@ config.state_directory = "/home/hivemind-state"
 --
 -- The address is unguessable but the contents are readable by whoever holds it:
 -- machine state, network inventory and component addresses. Nothing else.
-config.report_mailbox = "https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b462"
+--- EPUISEE le 2026-09-04: cette adresse repond 429, quota d'URL gratuite
+--- atteint (50 requetes). Tant qu'elle est nil, les outils publient directement
+--- sur paste.rs et affichent l'URL, qu'il faut alors recopier une fois.
+--- Pour retrouver la boucle automatique: cree une nouvelle adresse sur
+--- webhook.site et remplace la ligne ci-dessous.
+--- Ancienne: https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b462
+config.report_mailbox = nil
 
 -- Templates never enter the ME network: they all share one item id and one
 -- label, so AE2 could not tell them apart and we could never pull a specific

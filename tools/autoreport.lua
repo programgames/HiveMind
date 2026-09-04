@@ -638,58 +638,27 @@ local function publish(doUpload)
     end
 
     -- Publishing makes the content readable by anyone holding the URL
-    local net_ok, internet = pcall(require, "internet")
-    if not net_ok or not component.isAvailable("internet") then
+    if not component.isAvailable("internet") then
         print("Pas de carte Internet: envoie le fichier a la main.")
         return
     end
 
-    --- POST a body and return whatever came back
-    --- @return boolean ok
-    --- @return string response
-    local function post(url, headers)
-        local requested, handle = pcall(internet.request, url, body,
-            headers or {["Content-Type"] = "text/plain"}, "POST")
-
-        if not requested then return false, tostring(handle) end
-
-        local chunks = {}
-        local read_ok = pcall(function()
-            for chunk in handle do table.insert(chunks, chunk) end
-        end)
-
-        if not read_ok then return false, "reponse illisible" end
-
-        return true, table.concat(chunks)
-    end
-
-    -- A fixed address means the report can be collected without anyone reading
-    -- a random code off the screen and typing it back. Best effort: a failure
-    -- here must not cost the paste that follows.
-    local ok_config, configuration = pcall(require, "lib.config")
-    local mailbox = ok_config and configuration and configuration.report_mailbox
-
-    if mailbox then
-        local sent, answer = post(mailbox)
-        if sent then
-            print("Rapport depose dans la boite aux lettres.")
-        else
-            print("Boite aux lettres injoignable: " .. tostring(answer))
-        end
-    end
-
-    local paste_ok, response = post("https://paste.rs/")
-
-    if not paste_ok or response == "" then
-        print("Publication impossible: " .. tostring(response))
-        print("Le fichier reste dans " .. OUTPUT)
+    local ok_publish, publish = pcall(require, "lib.publish")
+    if not ok_publish then
+        print("lib/publish.lua absent: relance tools/hminstall.")
         return
     end
 
-    print("")
-    print("=====================================")
-    print("  " .. (response:match("(https?://%S+)") or response))
-    print("=====================================")
+    -- A fixed address means the report can be collected without anyone reading
+    -- a random code off the screen and typing it back -- when it answers. This
+    -- one returned 429 for a whole evening, and the old code here checked only
+    -- that the call had not thrown, so it announced a delivery every time.
+    local ok_config, configuration = pcall(require, "lib.config")
+    local mailbox = ok_config and configuration and configuration.report_mailbox
+
+    if not publish.report(body, mailbox) then
+        print("Le fichier reste dans " .. OUTPUT)
+    end
 end
 
 -- Read here because the crash handler has no access to main's locals

@@ -250,13 +250,20 @@ do
     local discoverText = io.open("tools/discover.lua"):read("a")
     local probeText = io.open("tools/probe.lua"):read("a")
 
-    -- internet.request() only CREATES the request. Both tools announced a
-    -- delivery and sent nothing, silently, every single time -- the reports
-    -- simply never arrived and nothing said so.
-    check("discover attend vraiment la reponse avant de crier victoire",
-          discoverText:find("for chunk in handle do", 1, true) ~= nil)
+    -- Two failures hid here and both looked like success: the request was
+    -- never sent, and later it was sent and refused with 429. One module now
+    -- does it for all three tools, and test_publish holds it.
+    check("discover publie par lib.publish",
+          discoverText:find("publish.report(body, mailbox)", 1, true) ~= nil)
     check("probe aussi",
-          probeText:find("for _ in handle do", 1, true) ~= nil)
+          probeText:find("publish.report(body, config.report_mailbox)",
+                         1, true) ~= nil)
+    check("et autoreport aussi",
+          io.open("tools/autoreport.lua"):read("a")
+              :find("publish.report(body, mailbox)", 1, true) ~= nil)
+    check("aucun outil ne poste plus dans son coin",
+          discoverText:find("internet.request", 1, true) == nil
+          and probeText:find("internet.request", 1, true) == nil)
     check("discover sait envoyer son rapport",
           discoverText:find("--upload", 1, true) ~= nil
           and discoverText:find("report_mailbox", 1, true) ~= nil)

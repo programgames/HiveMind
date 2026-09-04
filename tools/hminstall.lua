@@ -27,6 +27,7 @@ local FILES = {
     "lib/config.lua",
     "lib/genome.lua",
     "lib/screen.lua",
+    "lib/publish.lua",
     "lib/state.lua",
     "lib/species.lua",
     "lib/jobs.lua",

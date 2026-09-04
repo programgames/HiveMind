@@ -177,35 +177,6 @@ local function renderConfig(discovered)
     return table.concat(lines, "\n") .. "\n"
 end
 
-    --- POST a body and wait for the answer
-    --- internet.request() only CREATES the request: it hands back a handle, and
-    --- nothing is actually sent until that handle is read. Calling it inside a
-    --- pcall and reporting success made this tool announce "depose dans la boite
-    --- aux lettres" while sending nothing at all, twice, for two different
-    --- tools. autoreport drains the handle, which is why only autoreport worked.
-    --- @param url string
-    --- @param body string
-    --- @return boolean ok
-    --- @return string response
-    local function post(url, body)
-        local net_ok, internet = pcall(require, "internet")
-        if not net_ok then return false, "bibliotheque internet absente" end
-
-        local requested, handle = pcall(internet.request, url, body,
-            {["Content-Type"] = "text/plain"}, "POST")
-
-        if not requested then return false, tostring(handle) end
-
-        local chunks = {}
-        local read_ok = pcall(function()
-            for chunk in handle do table.insert(chunks, chunk) end
-        end)
-
-        if not read_ok then return false, "reponse illisible" end
-
-        return true, table.concat(chunks)
-    end
-
 local function main(args)
     local write, doUpload = false, false
     for _, arg in ipairs(args) do
@@ -365,19 +336,21 @@ local function main(args)
         return
     end
 
-    local ok_config, settings = pcall(require, "lib.config")
-    local mailbox = ok_config and settings and settings.report_mailbox
-
-    if not mailbox then
-        print("Aucune boite aux lettres dans lib/config.lua.")
+    local ok_publish, publish = pcall(require, "lib.publish")
+    if not ok_publish then
+        print("lib/publish.lua absent: relance tools/hminstall.")
         return
     end
 
-    local sent, answer = post(mailbox, body)
+    local ok_config, settings = pcall(require, "lib.config")
+    local mailbox = ok_config and settings and settings.report_mailbox
 
-    print(sent and "Topologie deposee dans la boite aux lettres."
-                or ("Envoi impossible (" .. tostring(answer)
-                    .. "): le rapport reste sur le disque."))
+    -- Never just "sent": the mailbox answered 429 for a whole evening while
+    -- every tool announced a delivery. When it refuses, the paste URL is
+    -- printed instead, and relaying it by hand beats losing the report.
+    if not publish.report(body, mailbox) then
+        print("Le rapport reste dans /home/hivemind-topology.txt")
+    end
 end
 
 main({...})

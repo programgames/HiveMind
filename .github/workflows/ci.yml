@@ -43,7 +43,9 @@ jobs:
           'lib/breeding.lua', 'test_breeding.lua', 'hivemind.lua',
         'lib/multiply.lua', 'test_multiply.lua', 'test_menu.lua',
         'lib/genetics.lua', 'test_genetics.lua',
-          'lib/planner.lua', 'test_planner.lua'
+          'lib/planner.lua', 'test_planner.lua',
+          'lib/screen.lua', 'lib/publish.lua', 'test_publish.lua',
+          'tools/probe.lua', 'tools/hminstall.lua', 'install_test.lua'
         }
         local errors = false
         for _, file in ipairs(files) do
@@ -99,6 +101,8 @@ lua test_multiply.lua
 lua test_genetics.lua
 lua test_menu.lua
         lua test_planner.lua
+        lua test_publish.lua
+        lua install_test.lua
         echo "::endgroup::"
 
     - name: Test Suite - Genome Layer

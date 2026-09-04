@@ -22,6 +22,12 @@ tools/hminstall                                  # met à jour depuis GitHub
 tools/autoreport --run --upload                  # collecte, agit, publie
 ```
 
+Les trois outils publient par **`lib/publish.lua`** : boîte aux lettres fixe si
+elle répond, sinon repli sur paste.rs avec l'URL affichée à recopier une fois.
+`config.report_mailbox` est **`nil`** depuis le 2026-09-04 : l'ancienne adresse
+webhook.site a épuisé son quota. En créer une nouvelle rétablit la boucle
+automatique.
+
 `autoreport` remplace les captures d'écran : il sort l'état des machines,
 l'inventaire du réseau, la file avec ses erreurs, les slots bruts, et exécute la
 file si on lui donne `--run`. Options : `--cancel <id>`, `--multiply Espece:N`,
@@ -57,6 +63,7 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 | **Un appel de composant bloque le SERVEUR, pas seulement l'ordinateur** | Ne jamais passer un long délai à `waitForPrincess` ou `selectAndProduce` : le monde s'arrête, le watchdog tue l'hôte. Démarrer, puis **sonder** |
 | Un répertoire du même nom masque un programme | L'état va dans `/home/hivemind-state`, pas `/home/hivemind` |
 | Le CDN de GitHub sert des fichiers périmés plusieurs minutes, **par fichier** | Chaque téléchargement porte `?nocache=<jeton unique>` |
+| **Une requête qui aboutit peut avoir échoué** | La boîte aux lettres a répondu **429** (quota d'URL gratuite webhook.site épuisé) toute une soirée pendant que chaque outil annonçait « déposé ». Lire le **statut**, pas seulement le corps. `lib/publish.lua` le fait pour les trois outils et bascule sur paste.rs quand la boîte refuse |
 | **`internet.request()` ne fait que CRÉER la requête** | Rien n'est envoyé tant que le handle n'est pas lu. `pcall(internet.request, ...)` puis « envoyé ! » a menti silencieusement dans `discover` et `probe` : les rapports n'arrivaient jamais et rien ne le disait. Toujours `for chunk in handle do end` |
 
 ---
