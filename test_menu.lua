@@ -35,28 +35,68 @@ settings:close()
 
 print("-- entrees du menu --")
 
-local actions, keys, labels = {}, {}, {}
-for key, label, action in text:gmatch(
-        'key%s*=%s*"(%w)"%s*,%s*label%s*=%s*"([^"]*)"[^}]-action%s*=%s*"([%w_]+)"') do
-    table.insert(actions, action)
-    table.insert(labels, label)
-    keys[key] = (keys[key] or 0) + 1
+--- Read one menu table out of the source
+--- There are two screens now, and a key only has to be unique within the one it
+--- is typed on: "3" is the template on the main menu and drone accumulation
+--- under 9, and nobody ever sees both lists at once.
+local function entriesOf(name)
+    local from = text:find("local " .. name .. " = {", 1, true)
+    if not from then return {}, {}, {} end
+
+    local stop = text:find("\n}", from, true) or #text
+    local body = text:sub(from, stop)
+
+    local found, seen, shown = {}, {}, {}
+    for key, label, action in body:gmatch(
+            'key%s*=%s*"(%w)"%s*,%s*label%s*=%s*"([^"]*)"[^}]-action%s*=%s*"([%w_]+)"') do
+        table.insert(found, action)
+        table.insert(shown, label)
+        seen[key] = (seen[key] or 0) + 1
+    end
+
+    return found, seen, shown
 end
+
+local mainActions, mainKeys, mainLabels = entriesOf("MAIN")
+local advActions, advKeys, advLabels = entriesOf("ADVANCED")
+
+-- actions and labels stay parallel: several checks below read labels[index]
+local actions, labels = {}, {}
+for index, action in ipairs(mainActions) do
+    table.insert(actions, action)
+    table.insert(labels, mainLabels[index])
+end
+for index, action in ipairs(advActions) do
+    table.insert(actions, action)
+    table.insert(labels, advLabels[index])
+end
+
+local keys = advKeys
 
 check("le menu a des entrees", #actions > 0, #actions .. " trouvee(s)")
 
-local duplicated = nil
-for key, count in pairs(keys) do
-    if count > 1 then duplicated = key end
-end
-check("aucune touche en double", duplicated == nil, duplicated)
+check("le menu principal tient en quelques options", #mainActions <= 6, true)
 
-check("la touche 0 n'est pas reutilisee", keys["0"] == nil)
+local duplicated = nil
+for _, set in ipairs({mainKeys, advKeys}) do
+    for key, count in pairs(set) do
+        if count > 1 then duplicated = key end
+    end
+end
+check("aucune touche en double dans un meme menu", duplicated == nil, duplicated)
+
+-- 9 opens the advanced menu and 0 leaves, on both screens
+for _, set in ipairs({mainKeys, advKeys}) do
+    check("la touche 0 n'est pas reutilisee", set["0"] == nil)
+end
+check("la touche 9 est reservee au sous-menu", mainKeys["9"] == nil)
 
 -- The dispatch lowercases the answer, so an uppercase key could never be typed
 local unreachable = {}
-for key in pairs(keys) do
-    if key ~= key:lower() then table.insert(unreachable, key) end
+for _, set in ipairs({mainKeys, advKeys}) do
+    for key in pairs(set) do
+        if key ~= key:lower() then table.insert(unreachable, key) end
+    end
 end
 check("aucune touche impossible a taper", #unreachable == 0,
       table.concat(unreachable, ", "))
@@ -534,7 +574,9 @@ check("le planificateur programme l'accumulation manquante",
       text:find("accumulation programmee pour", 1, true) ~= nil)
 check("et il la met en file avant le croisement",
       (function()
-          local from = text:find("function hivemind.planChain", 1, true)
+          -- The queuing moved into queueChain, shared with the template
+          -- chain: the property is unchanged, the function holding it is not
+          local from = text:find("function queueChain", 1, true)
           if not from then return false end
 
           -- Up to the next top-level "end", so the two submits compared are

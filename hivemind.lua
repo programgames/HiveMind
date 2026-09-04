@@ -62,6 +62,7 @@ local genetics = need("lib.genetics")
 local planner = need("lib.planner")
 local genome = need("lib.genome")
 local screen = need("lib.screen")
+local checkup = need("lib.checkup")
 
 local hivemind = {}
 
@@ -69,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.92.0"
+hivemind.VERSION = "0.93.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -974,10 +975,71 @@ function hivemind.harvestApiary(context)
     return collected
 end
 
+-- Forward declaration: planChain calls this, and the definition sits after it
+-- so the reading order follows the order things happen.
+local queueChain
+
+--- Is the breeding template ready, and what is missing if not
+--- Deliberately blocking rather than warning: a chain run without the template
+--- works, it is simply slower -- and "slower" here means a player spends an
+--- evening on lineages that Fertility 4 and Lifespan Shortest would have made
+--- in a fraction of the time, with no way of knowing what they gave up.
+---
+--- The genes are checkable; the crafted template is not. A template carries no
+--- readable content, only a fingerprint the program was told about once, so the
+--- second half of the answer has to come from the player.
+--- @param context table
+--- @return boolean ready
+--- @return table missing Alleles still absent from the library
+local function templateReady(context)
+    local profile = (config.profiles or {}).breeding
+    if not profile then return true, {} end
+
+    local ok, missing = pcall(function()
+        context.library:scan()
+        return context.library:missingForProfile(profile)
+    end)
+
+    if not ok or type(missing) ~= "table" then return true, {} end
+
+    return #missing == 0, missing
+end
+
 --- Plan a whole breeding chain and queue it
 --- @param context table
 function hivemind.planChain(context)
     local registry = context.species
+
+    local ready, missing = templateReady(context)
+
+    if not ready then
+        print("")
+        print("=== OBTENIR UNE ESPECE ===")
+        print("")
+        print("Pas encore: le template d elevage n est pas pret.")
+        print("")
+        print("Sans lui chaque lignee tourne au rythme d une abeille ordinaire.")
+        print("Avec lui, Fertility 4 et Lifespan Shortest: la meme chaine coute")
+        print("une fraction du temps et des abeilles.")
+        print("")
+        print("Il manque " .. #missing .. " gene(s) :")
+
+        local shown = 0
+        for _, entry in ipairs(missing) do
+            if shown < 6 then
+                print(string.format("  %-22s %s",
+                    tostring(entry.chromosome or entry.slot), entry.allele))
+                shown = shown + 1
+            end
+        end
+        if #missing > shown then
+            print("  ... et " .. (#missing - shown) .. " autre(s)")
+        end
+
+        print("")
+        print("Choisis 3 : il calcule tout ce qu il reste a faire pour l avoir.")
+        return
+    end
 
     -- list() answers (species, source). Without the parentheses both are passed
     -- to next(), which then treats "cache" as a table key and refuses.
@@ -1069,11 +1131,59 @@ function hivemind.planChain(context)
         return
     end
 
+    queueChain(context, registry, plan.steps, naming)
+
+    -- The template only pays off if it is applied. Its genes travel down the
+    -- whole chain from the first pair, so imprinting there is worth more than
+    -- imprinting anywhere later -- and it is the step everyone forgets.
+    local first = plan.steps[1]
+    if not first then return end
+
+    local princess = naming(first.princess.uid) .. " Princess"
+    local drone = naming(first.drone.uid) .. " Drone"
+
+    print("")
+    print("Le template d elevage s applique aux parents du premier croisement,")
+    print("et ses genes descendent toute la chaine ensuite.")
+    io.write("Imprimer " .. princess .. " et " .. drone .. " ? (o/N): ")
+
+    answer = io.read()
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Sans imprint, la chaine marche: elle sera juste plus lente.")
+        return
+    end
+
+    local imprinted = 0
+    for _, label in ipairs({princess, drone}) do
+        local params = genetics.imprintParams({
+            bee = {name = label:find("Princess") and "forestry:bee_princess_ge"
+                                                 or "forestry:bee_drone_ge",
+                   label = label},
+            machine = "imprinter",
+        })
+
+        if params and context.queue:submit("imprint", params) then
+            imprinted = imprinted + 1
+        end
+    end
+
+    print(imprinted .. " impression(s) en file, avant les croisements.")
+end
+
+--- Put an ordered list of crosses in the queue, drones first
+--- Shared by "obtenir une espece" and by the template chain: both end with the
+--- same ordered list of crosses and the same trap underneath it.
+--- @param context table
+--- @param registry table
+--- @param steps table[] planner steps, already ordered
+--- @param naming function uid -> display name
+--- @return number queued
+function queueChain(context, registry, steps, naming)
     local queued, accumulations = 0, 0
     local roles = rolesFrom(context, registry)
     local scheduled = {}
 
-    for _, step in ipairs(plan.steps) do
+    for _, step in ipairs(steps) do
         -- The drone parent is the one that runs out. A species we hold only as
         -- princesses cannot be crossed at all, and the plan called it available
         -- because it looked only at "do we have this species".
@@ -1127,6 +1237,8 @@ function hivemind.planChain(context)
     end
 
     print(queued .. " croisement(s) en file. Choisis 6 pour les executer.")
+
+    return queued
 end
 
 --- Cancel a job or clear out the finished ones
@@ -1144,9 +1256,15 @@ function hivemind.manageQueue(context)
     print("")
     for _, line in ipairs(context.queue:describe()) do print("  " .. line) end
 
+    local held = context.queue:waiting()
+
     print("")
     print("  a = annuler une tache")
     print("  p = purger les taches terminees et annulees")
+    if #held > 0 then
+        print("  r = relancer les " .. #held
+            .. " tache(s) qui attendent un geste (c est fait)")
+    end
     print("  vide = retour")
     io.write("Choix: ")
 
@@ -1156,6 +1274,14 @@ function hivemind.manageQueue(context)
 
     if answer == "p" then
         print(context.queue:prune() .. " tache(s) purgee(s).")
+        return
+    end
+
+    if answer == "r" then
+        -- No harm in being told the gesture is done when it is not: every step
+        -- re-verifies against the world before acting, so the job simply comes
+        -- back to waiting with the same instruction.
+        print(context.queue:resumeAll() .. " tache(s) relancee(s). Choisis 6.")
         return
     end
 
@@ -1178,41 +1304,513 @@ function hivemind.manageQueue(context)
 end
 
 --- Run the queue until it stops making progress
+--- A pass that ends with jobs waiting on a gesture asks for it right there and
+--- resumes: sending the player back to the menu to relaunch what the program
+--- already knows how to continue is the single most tedious thing it did.
 --- @param context table
+--- @param options table|nil {budget, interactive}
 function hivemind.runQueue(context, options)
     options = options or {}
-    local pending = #context.queue:pending()
-    if pending == 0 then
+    -- autoreport has no stdin: prompting there reads EOF and loops
+    local interactive = options.interactive ~= false
+
+    if #context.queue:pending() == 0 and #context.queue:waiting() == 0 then
         print("Aucune tache en attente.")
         return
     end
 
-    print("Execution de " .. pending .. " tache(s)...")
+    local rounds = 0
 
-    local report = context.queue:run(context, {
-        budget = options.budget,
+    while true do
+        rounds = rounds + 1
 
-        -- Said BEFORE the step runs: waiting on a machine takes up to two
-        -- minutes and prints nothing, so the screen sat on "Execution de 1
-        -- tache(s)..." and looked frozen.
-        onStep = function(job, name)
-            print(string.format("  #%d %s : %s...", job.id,
-                jobs.label(job.kind), name or ("etape " .. job.step)))
-        end,
+        local pending = #context.queue:pending()
 
-        onProgress = function(job, outcome, detail)
-            print(string.format("       -> %s%s", outcome,
-                detail and ("  " .. detail) or ""))
-        end,
+        if pending > 0 then
+            print("Execution de " .. pending .. " tache(s)...")
+
+            local report = context.queue:run(context, {
+                budget = options.budget,
+
+                -- Said BEFORE the step runs: waiting on a machine takes up to
+                -- two minutes and prints nothing, so the screen sat on
+                -- "Execution de 1 tache(s)..." and looked frozen.
+                onStep = function(job, name)
+                    print(string.format("  #%d %s : %s...", job.id,
+                        jobs.label(job.kind), name or ("etape " .. job.step)))
+                end,
+
+                onProgress = function(job, outcome, detail)
+                    print(string.format("       -> %s%s", outcome,
+                        detail and ("  " .. detail) or ""))
+                end,
+            })
+
+            print(string.format(
+                "%d etape(s), %d terminee(s), %d attente(s), %d geste(s), %d echec(s)",
+                report.steps, report.completed, report.retried,
+                report.waiting or 0, report.failed))
+
+            local left = #context.queue:pending()
+            if left > 0 then
+                print("Il reste " .. left .. " tache(s) en file.")
+            end
+
+            if report.exhausted then
+                print("Temps imparti ecoule: la file reprend ou elle s'est arretee.")
+                return
+            elseif report.blocked then
+                print("La file est bloquee: corrige la cause puis relance.")
+            end
+        end
+
+        local waiting = context.queue:waiting()
+        if #waiting == 0 then return end
+
+        -- The gestures, together, in one place. Scattered through a hundred
+        -- lines of step log they were unreadable, which is how a queue could
+        -- sit stopped for an evening on a bee anyone could have moved.
+        print("")
+        print("IL FAUT TA MAIN — " .. #waiting .. " tache(s) attendent :")
+        for _, job in ipairs(waiting) do
+            print(string.format("  #%-3d %s", job.id, tostring(job.action)))
+        end
+
+        if not interactive then return end
+
+        print("")
+        io.write("C est fait ? (o = reprendre, autre = laisser en attente): ")
+        local answer = io.read()
+
+        if not answer or not (answer:lower():sub(1, 1) == "o"
+                           or answer:lower():sub(1, 1) == "y") then
+            print("Les taches restent en attente. Choisis a nouveau cette option"
+                .. " quand ce sera fait.")
+            return
+        end
+
+        context.queue:resumeAll()
+
+        -- A player who answers yes without doing anything gets the same list
+        -- back. Ten rounds of that is a loop, not a conversation.
+        if rounds >= 10 then
+            print("Toujours au meme point apres dix reprises: laisse la file"
+                .. " et regarde les machines.")
+            return
+        end
+    end
+end
+
+--- Pass every installation check and give one verdict
+--- The checks existed already, scattered across discover, probe, the slot
+--- diagnostic and a tank banner nobody read as a control. A player who had just
+--- placed nine machines had no way of knowing whether they had finished, and
+--- found out by watching a job fail on its fourth step.
+---
+--- Nothing here MOVES anything: a checkup that empties a slot to see whether it
+--- can is a checkup that breaks a working bench.
+--- @param context table
+function hivemind.checkInstall(context)
+    print("")
+    print("=== VERIFIER L INSTALLATION ===")
+    print("Rien n est deplace: le programme regarde, il ne touche a rien.")
+
+    local readings = {}
+    pcall(function() readings = hivemind.fluidLevels(context) end)
+
+    local report = checkup.run({
+        config = config,
+        transport = context.transport,
+        fluids = readings,
+        thresholds = (config.genetics or {}).supply_floor,
     })
 
-    print(string.format("%d etape(s), %d terminee(s), %d attente(s), %d echec(s)",
-        report.steps, report.completed, report.retried, report.failed))
+    for _, section in ipairs(report.sections) do
+        print("")
+        print(section.title)
 
-    if report.exhausted then
-        print("Temps imparti ecoule: la file reprend ou elle s'est arretee.")
-    elseif report.blocked then
-        print("La file est bloquee: corrige la cause puis relance.")
+        for _, finding in ipairs(section.findings) do
+            local mark = "  ok "
+            if finding.status == checkup.PROBLEM then
+                mark = "  !! "
+            elseif finding.status == checkup.ABSENT then
+                mark = "  -- "
+            end
+
+            print(string.format("%s%-24s %s", mark, finding.name,
+                tostring(finding.detail)))
+        end
+    end
+
+    print("")
+
+    if report.ok then
+        print("INSTALLATION VALIDEE — " .. report.counts.ok .. " controle(s) passes"
+            .. (report.counts.absent > 0
+                and (", " .. report.counts.absent .. " machine(s) pas encore posee(s)")
+                or ""))
+        print("Tu peux passer a la suite.")
+        return report
+    end
+
+    print("PAS ENCORE PRET — " .. report.counts.problem .. " chose(s) a regler :")
+    print("")
+
+    for index, gesture in ipairs(report.gestures) do
+        print("  " .. index .. ". " .. gesture)
+    end
+
+    print("")
+    print("Refais cette verification quand c est corrige.")
+
+    return report
+end
+
+--- Everything the breeding template still needs, in one plan
+--- The pieces were all there and none of them met: option e said which alleles
+--- were missing, option t queued the hunts, option 5 planned a chain to one
+--- species. But the carriers -- Rocky, Wintry, Lime, Cyan -- are not in stock,
+--- and nothing worked out how to get them. This joins the three.
+--- @param context table
+function hivemind.buildTemplate(context)
+    print("")
+    print("=== FABRIQUER LE TEMPLATE D ELEVAGE ===")
+    print("Prerequis: les especes de base en stock (option 2).")
+    print("Un template d elevage rend chaque lignee suivante plus rapide:")
+    print("Fertility 4 et Lifespan Shortest, c est plus de drones, plus vite.")
+
+    local profile = (config.profiles or {}).breeding
+    if not profile then
+        print("Aucun profil 'breeding' dans lib/config.lua.")
+        return
+    end
+
+    context.library:scan()
+    local missing = context.library:missingForProfile(profile)
+
+    if #missing == 0 then
+        print("")
+        print("Les 11 genes sont en bibliotheque.")
+        print("")
+        print("IL RESTE UN GESTE, ET LE MOD L IMPOSE:")
+        print("assemble le template A LA TABLE DE CRAFT. Un template se remplit")
+        print("en y combinant les samples; aucune machine n accepte cette")
+        print("operation. Les samples sont consommes, alors duplique-les avant")
+        print("(option b, sous 9) si tu tiens a les garder.")
+        print("")
+        print("A reunir :")
+        for slot, allele in pairs(profile) do
+            print(string.format("  Bee Sample - %s: %s",
+                tostring(genome.labelForSlot(slot)), allele))
+        end
+        return
+    end
+
+    -- Who carries what: the pack's own quest chain, plus whatever reading real
+    -- genomes has taught us. Both are needed and neither is enough.
+    local carriers = {}
+    local wanted, seenCarrier = {}, {}
+
+    for _, entry in ipairs(missing) do
+        -- Two sources, both needed: the table transcribed from the pack's own
+        -- quests, and whatever reading real genomes has taught us
+        local seen, list = {}, {}
+        local byAllele = (config.gene_carriers or {})[entry.slot]
+
+        for _, one in ipairs((byAllele and byAllele[entry.allele]) or {}) do
+            if not seen[one] then seen[one] = true table.insert(list, one) end
+        end
+        for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
+            if not seen[one] then seen[one] = true table.insert(list, one) end
+        end
+
+        carriers[entry.slot .. "/" .. entry.allele] = list
+
+        for _, one in ipairs(list) do
+            if not seenCarrier[one] then
+                seenCarrier[one] = true
+                table.insert(wanted, one)
+            end
+        end
+    end
+
+    -- Which of those we already hold, in either role
+    local owned = {}
+    for _, itemName in ipairs({"forestry:bee_drone_ge", "forestry:bee_princess_ge"}) do
+        for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
+            local label = tostring(item.label or "")
+            local name = label:gsub("%s+Drone$", ""):gsub("%s+Princess$", "")
+            if name ~= "" then owned[name] = true end
+        end
+    end
+
+    print("")
+    print(#missing .. " gene(s) manquant(s) :")
+
+    local haveCarrier, needCarrier = {}, {}
+
+    for _, entry in ipairs(missing) do
+        local list = carriers[entry.slot .. "/" .. entry.allele] or {}
+        local held = nil
+        for _, one in ipairs(list) do
+            if owned[one] then held = one break end
+        end
+
+        if held then
+            table.insert(haveCarrier, entry.chromosome .. " = " .. entry.allele)
+        elseif #list > 0 then
+            for _, one in ipairs(list) do
+                if not owned[one] then needCarrier[one] = true end
+            end
+        end
+
+        print(string.format("  %-22s %-10s <- %s", tostring(entry.chromosome),
+            entry.allele,
+            #list > 0 and (table.concat(list, " ou ")
+                .. (held and "  (en stock)" or "  (a obtenir)"))
+                or "aucun porteur note -- lis un genome (option g)"))
+    end
+
+    if #haveCarrier > 0 then
+        print("")
+        print(#haveCarrier .. " gene(s) chassable(s) tout de suite. Choisis t, sous 9.")
+    end
+
+    print("")
+    print("« aucun porteur note » ne veut pas dire introuvable: plusieurs de ces")
+    print("valeurs sont celles d abeilles ordinaires. Lis le genome d une")
+    print("abeille que tu as (option g, sous 9): il retiendra qui porte quoi.")
+
+    local toBreed = {}
+    for name in pairs(needCarrier) do table.insert(toBreed, name) end
+    table.sort(toBreed)
+
+    if #toBreed == 0 then
+        print("")
+        print("Aucune espece a croiser: tous les porteurs sont en stock.")
+        return
+    end
+
+    print("")
+    print("PORTEURS A OBTENIR : " .. table.concat(toBreed, ", "))
+    print("Calcul de la chaine complete...")
+
+    local registry = context.species
+    local all = registry:list()
+
+    local function naming(uid)
+        local entry = all[uid]
+        return entry and entry.name or uid
+    end
+
+    -- The plan works in uids and the carrier tables in display names
+    local targets, unknown = {}, {}
+    for _, name in ipairs(toBreed) do
+        local resolved = registry.resolve and registry:resolve(name) or nil
+        if resolved then
+            table.insert(targets, resolved.uid)
+        else
+            table.insert(unknown, name)
+        end
+    end
+
+    if #unknown > 0 then
+        print("")
+        print("Inconnues du registre : " .. table.concat(unknown, ", "))
+        print("Choisis 9 puis 9 pour redemander la liste des especes au jeu.")
+    end
+
+    if #targets == 0 then return end
+
+    local plan, err = planner.planMany({
+        registry = registry,
+        available = availabilityFrom(context, registry),
+        targets = targets,
+    })
+
+    if not plan then
+        print("Planification impossible: " .. tostring(err))
+        return
+    end
+
+    print("")
+    for _, entry in ipairs(plan.targets) do
+        print(string.format("  %-22s %s", naming(entry.uid),
+            entry.held and "deja en stock"
+                or (entry.reachable and (entry.steps .. " croisement(s)")
+                    or "INATTEIGNABLE")))
+    end
+
+    if #plan.missing > 0 then
+        print("")
+        print("A ATTRAPER D ABORD — rien ne peut les produire :")
+        for _, entry in ipairs(plan.missing) do
+            print("  " .. naming(entry.uid) .. "  (" .. entry.reason .. ")")
+        end
+        print("")
+        print("Choisis 2 pour voir ou elles se trouvent.")
+    end
+
+    if #plan.steps == 0 then
+        print("")
+        print("Rien a croiser maintenant.")
+        return
+    end
+
+    print("")
+    print(#plan.steps .. " croisement(s), dans l ordre :")
+    for index, step in ipairs(plan.steps) do
+        local line = string.format("  %2d. %s + %s -> %s", index,
+            naming(step.princess.uid), naming(step.drone.uid), naming(step.target))
+        if step.chance then line = line .. string.format("  (%.0f%%)", step.chance) end
+        print(line)
+
+        for _, condition in ipairs(step.conditions or {}) do
+            print("        ! " .. condition)
+        end
+    end
+
+    print("")
+    io.write("Mettre ces croisements en file ? (o/N): ")
+
+    local answer = io.read()
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Annule.")
+        return
+    end
+
+    queueChain(context, registry, plan.steps, naming)
+
+    print("Chaque espece obtenue verra son gene sauve toute seule.")
+end
+
+--- What has to be caught by hand, and what can be saved right now
+--- A base species is one nothing can produce: the program can plan a hundred
+--- crosses and still be stuck because a single wild bee was never caught. That
+--- list existed nowhere, and the planner could only say "espece de base
+--- absente" one species at a time, after the fact.
+---
+--- Ordered by what each one unlocks, because Meadows opens thirteen species and
+--- Ardite opens one, and nobody should start with Ardite.
+--- @param context table
+function hivemind.buildBase(context)
+    print("")
+    print("=== CONSTITUER LA BASE ===")
+    print("Prerequis: installation validee (option 1).")
+    print("Les especes que rien ne produit: il faut aller les chercher.")
+
+    local registry = context.species
+
+    local base, complete = registry:baseSpecies()
+
+    if not complete then
+        print("")
+        print("Le programme doit d abord demander au jeu les parents de chaque")
+        print("espece. C est long une fois, puis conserve sur disque.")
+        print("Un appel de composant gele le SERVEUR: ca se fait par tranches.")
+        io.write("Continuer le balayage maintenant ? (o/N): ")
+
+        local answer = io.read()
+        if not answer or answer:lower():sub(1, 1) ~= "o" then
+            print("Sans le balayage, la liste serait fausse: une espece jamais")
+            print("interrogee ressemble a une espece sans parents.")
+            return
+        end
+
+        local progress
+        repeat
+            progress = registry:sweepParents(40, nil)
+            print("  " .. progress.cached .. "/" .. progress.total
+                .. "  (" .. progress.remaining .. " restantes)")
+            registry:save()
+        until progress.complete or progress.asked == 0
+
+        base, complete = registry:baseSpecies()
+
+        if not complete then
+            print("Le balayage n avance plus: le jeu ne repond pas sur toutes.")
+            return
+        end
+    end
+
+    -- What the network holds, in either role: a princess is as good as a drone
+    -- for "do I have this species at all"
+    local owned = {}
+    for _, itemName in ipairs({"forestry:bee_drone_ge", "forestry:bee_princess_ge",
+                               "forestry:bee_queen_ge"}) do
+        for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
+            local label = tostring(item.label or "")
+            local name = label:gsub("%s+Drone$", ""):gsub("%s+Princess$", "")
+                              :gsub("%s+Queen$", "")
+            if name ~= "" then
+                owned[name] = (owned[name] or 0) + (tonumber(item.size) or 0)
+            end
+        end
+    end
+
+    context.library:scan()
+    local saved = context.library:speciesGenes()
+
+    local toCatch, toSave, done = {}, {}, 0
+
+    for _, entry in ipairs(base) do
+        if not owned[entry.name] then
+            table.insert(toCatch, entry)
+        elseif not saved[entry.name] then
+            table.insert(toSave, entry)
+        else
+            done = done + 1
+        end
+    end
+
+    print("")
+    print(#base .. " especes de base — " .. done .. " sauvegardee(s), "
+        .. #toSave .. " a sauvegarder, " .. #toCatch .. " a attraper")
+
+    if #toSave > 0 then
+        print("")
+        print("TU LES AS DEJA, LEUR GENE N EST PAS SAUVE :")
+        for _, entry in ipairs(toSave) do
+            print(string.format("  %-22s %d en stock, debloque %d espece(s)",
+                entry.name, owned[entry.name], entry.unlocks))
+        end
+        print("")
+        print("Choisis i (sous 9) pour mettre toutes ces chasses en file d un coup.")
+    end
+
+    if #toCatch > 0 then
+        print("")
+        print("A ATTRAPER — les plus utiles d abord :")
+
+        local origins = config.base_origins or {}
+        local shown = 0
+
+        for _, entry in ipairs(toCatch) do
+            if shown < 20 then
+                local origin = origins[entry.name]
+                local note = "origine a confirmer"
+                if origin == "ruche" then note = "ruche sauvage"
+                elseif origin == "autre" then note = "quete/craft, pas de ruche" end
+
+                print(string.format("  %-22s debloque %2d espece(s)   %s",
+                    entry.name, entry.unlocks, note))
+                shown = shown + 1
+            end
+        end
+
+        if #toCatch > shown then
+            print("  ... et " .. (#toCatch - shown) .. " autre(s), moins utiles")
+        end
+
+        print("")
+        print("« origine a confirmer » veut dire que le programme ne sait pas")
+        print("si une ruche la donne: rien dans l API du jeu ne le dit. Note-le")
+        print("dans config.base_origins quand tu l auras constate en jeu.")
+    end
+
+    if #toCatch == 0 and #toSave == 0 then
+        print("")
+        print("La base est complete: toutes les especes de base sont a l abri.")
     end
 end
 
@@ -2906,6 +3504,21 @@ end
 function hivemind.advice(context)
     local lines = {}
 
+    -- A gesture the program is waiting for beats everything else on the screen:
+    -- nothing else it could suggest will move while a slot stays blocked.
+    local held = context.queue:waiting()
+    if #held > 0 then
+        table.insert(lines, #held .. " tache(s) attendent un geste de ta part.")
+        table.insert(lines, "  -> " .. tostring(held[1].action))
+        if #held > 1 then
+            table.insert(lines, "Choisis 6 : la liste complete y est, et la file"
+                .. " repart des que tu valides.")
+        else
+            table.insert(lines, "Choisis 6 : la file repart des que tu valides.")
+        end
+        return lines
+    end
+
     -- Cheap reads only: a transposer glance and the queue already in memory.
     -- The menu redraws after every action and must not cost a network sweep.
     local apiary = context.machines and context.machines.breeding_apiary
@@ -2913,8 +3526,8 @@ function hivemind.advice(context)
         local waiting = apiary:outputs()
         if #waiting > 0 then
             table.insert(lines, "La sortie de l'apiary contient " .. #waiting
-                .. " pile(s). Choisis 7 : tant qu'elles y sont, les taches ne")
-            table.insert(lines, "les voient pas et les reclament comme manquantes.")
+                .. " pile(s). Choisis 7 sous 9 : tant qu'elles y sont, les")
+            table.insert(lines, "taches ne les voient pas et les reclament comme manquantes.")
         end
     end
 
@@ -2931,8 +3544,8 @@ function hivemind.advice(context)
                 if missing:find("Drone") then
                     table.insert(lines, "La tache #" .. job.id .. " attend un "
                         .. missing .. " que personne ne produit.")
-                    table.insert(lines, "Choisis 3 pour en accumuler, ou 8 pour"
-                        .. " annuler la tache.")
+                    table.insert(lines, "Choisis 3 sous 9 pour en accumuler,"
+                        .. " ou 8 pour annuler la tache.")
                 else
                     table.insert(lines, "La tache #" .. job.id .. " attend un "
                         .. missing .. ", absent du reseau.")
@@ -2943,8 +3556,8 @@ function hivemind.advice(context)
 
     if #lines == 0 then
         if #pending == 0 then
-            table.insert(lines, "Rien en file. Choisis 5 pour viser une espece,"
-                .. " ou 3 pour constituer un stock de drones.")
+            table.insert(lines, "Rien en file. Choisis 4 pour viser une abeille,"
+                .. " ou 2 pour constituer la base.")
         else
             table.insert(lines, #pending .. " tache(s) prete(s). Choisis 6 pour"
                 .. " les faire tourner.")
@@ -3004,8 +3617,11 @@ end
 -- the reader guessing what would happen. And where an action destroys something
 -- irreversibly, the description says so -- that belongs before the choice, not
 -- in the confirmation that follows it.
-local ENTRIES = {
+local ADVANCED = {
     {group = "Regarder"},
+    {key = "v", label = "Verifier l installation",
+     hint = "machines, faces, slots, interfaces, cuves, consommables: un verdict",
+     action = "checkInstall"},
     {key = "1", label = "Etat detaille",
      hint = "stocks, machines, genes en bibliotheque, taches en cours",
      action = "status"},
@@ -3015,6 +3631,12 @@ local ENTRIES = {
     {key = "g", label = "Lire le genome d une abeille",
      hint = "ses 13 genes d un coup; elle survit, et le programme retient ce qu il apprend",
      action = "analyseBee"},
+    {key = "k", label = "Fabriquer le template d elevage",
+     hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
+     action = "buildTemplate"},
+    {key = "w", label = "Constituer la base",
+     hint = "les especes que rien ne produit: a attraper, puis a mettre a l abri",
+     action = "buildBase"},
     {key = "h", label = "Quelle espece attraper ensuite",
      hint = "classees par nombre de genes manquants qu elles apportent",
      action = "breedingPlan"},
@@ -3088,14 +3710,43 @@ local ENTRIES = {
      action = "refreshSpecies"},
 }
 
+-- The four things a player actually wants, in the order they have to happen.
+-- Fifteen options with no stated order is not a menu, it is a list of tools:
+-- someone who has just placed nine machines cannot tell which of them comes
+-- first, and the program knew all along.
+--
+-- Nothing is removed. Every option below still exists under 9, with the same
+-- key and the same behaviour, for anyone who already knows what they want.
+local MAIN = {
+    {key = "1", label = "Verifier l installation",
+     hint = "machines, faces, slots, interfaces, cuves: un verdict, rien n est deplace",
+     action = "checkInstall"},
+    {key = "2", label = "Constituer la base",
+     hint = "les especes que rien ne produit: a attraper, puis a mettre a l abri",
+     action = "buildBase"},
+    {key = "3", label = "Fabriquer le template d elevage",
+     hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
+     action = "buildTemplate"},
+    {key = "4", label = "Obtenir une abeille",
+     hint = "dis laquelle: le programme calcule et enchaine tout (demande 3)",
+     action = "planChain"},
+
+    {group = "Faire tourner"},
+    -- Key 6 and not 5: thirteen screens end with "Choisis 6 pour la faire
+    -- tourner", and moving it would have made every one of them wrong.
+    {key = "6", label = "Avancer les taches en cours",
+     hint = "journal en direct, et il te dit quand il a besoin de ta main",
+     action = "runQueue"},
+}
+
 --- How many lines the full menu needs, groups, blanks and prompt included
 --- @return number
-local function fullMenuHeight()
+local function fullMenuHeight(entries)
     -- Title, banner, up to two tank warnings, blank, up to three advice lines,
     -- blank, "0 Quitter", prompt. Underestimating this puts the top of the menu
     -- off screen, which is the very thing the fold exists to prevent.
     local lines = 12
-    for _, entry in ipairs(ENTRIES) do
+    for _, entry in ipairs(entries) do
         lines = lines + (entry.group and 2 or 1)
     end
     return lines
@@ -3107,9 +3758,9 @@ end
 --- line. The keys themselves never change: the compact menu is the same menu.
 --- @param width number
 --- @param height number
-local function drawOptions(width, height)
-    if height >= fullMenuHeight() and width >= 120 then
-        for _, entry in ipairs(ENTRIES) do
+local function drawOptions(width, height, entries)
+    if height >= fullMenuHeight(entries) and width >= 120 then
+        for _, entry in ipairs(entries) do
             if entry.group then
                 print("")
                 print("  " .. entry.group)
@@ -3122,7 +3773,7 @@ local function drawOptions(width, height)
     end
 
     local options = {}
-    for _, entry in ipairs(ENTRIES) do
+    for _, entry in ipairs(entries) do
         if not entry.group then table.insert(options, entry) end
     end
 
@@ -3146,6 +3797,48 @@ local function drawOptions(width, height)
             end
         end
         print("  " .. table.concat(parts, "  "))
+    end
+end
+
+--- The fifteen tools, unchanged, one level down
+--- Kept whole and kept keyed the same: someone who learned "t" last week must
+--- still be able to type "t". What changes is that nobody has to.
+--- @param context table
+local function advancedMenu(context)
+    while true do
+        screen.clear()
+
+        local width, height = screen.size()
+
+        print("=== OUTILS AVANCES ===")
+        print("Toutes les options d origine, avec leurs touches d origine.")
+
+        drawOptions(width, height, ADVANCED)
+
+        print("")
+        print("    0  Retour")
+        io.write("Choix: ")
+
+        local choice = io.read()
+        if not choice then return end
+
+        choice = choice:gsub("%s+", ""):lower()
+        if choice == "0" or choice == "q" then return end
+
+        local matched = nil
+        for _, entry in ipairs(ADVANCED) do
+            if entry.key == choice then matched = entry break end
+        end
+
+        if matched then
+            hivemind[matched.action](context)
+        else
+            print("")
+            print("Choix inconnu: " .. choice)
+        end
+
+        print("")
+        screen.pause()
     end
 end
 
@@ -3188,9 +3881,11 @@ local function menu(context)
             end
         end
 
-        drawOptions(width, height)
+        drawOptions(width, height, MAIN)
 
         print("")
+        print("    9  Outils avances                        "
+            .. "les " .. (#ADVANCED) .. " options d origine, intactes")
         print("    0  Quitter")
         io.write("Choix: ")
 
@@ -3204,25 +3899,30 @@ local function menu(context)
             return
         end
 
-        local matched = nil
-        for _, entry in ipairs(ENTRIES) do
-            if entry.key == choice then matched = entry break end
-        end
-
-        if matched then
-            hivemind[matched.action](context)
-
-            -- The menu redraws straight after and pushes everything off the
-            -- top of the screen. A genome read is thirteen lines nobody gets
-            -- to see if the next thing printed is a menu.
-            print("")
-            screen.pause()
+        if choice == "9" then
+            advancedMenu(context)
         else
-            -- The invalid branch needs the pause too, or the complaint is the
-            -- one line that scrolls away before it is read
-            print("")
-            print("Choix inconnu: " .. choice)
-            screen.pause()
+            local matched = nil
+            for _, entry in ipairs(MAIN) do
+                if entry.key == choice then matched = entry break end
+            end
+
+            if matched then
+                hivemind[matched.action](context)
+
+                -- The menu redraws straight after and pushes everything off
+                -- the top of the screen. A genome read is thirteen lines
+                -- nobody gets to see if the next thing printed is a menu.
+                print("")
+                screen.pause()
+            else
+                -- The invalid branch needs the pause too, or the complaint is
+                -- the one line that scrolls away before it is read
+                print("")
+                print("Choix inconnu: " .. choice)
+                print("Les anciennes options sont sous 9.")
+                screen.pause()
+            end
         end
     end
 end

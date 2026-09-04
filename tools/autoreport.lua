@@ -266,7 +266,7 @@ local function main(args)
     -- beats a report full of empty sections that look like good news.
     local absent = {}
     for _, name in ipairs({"bootstrap", "status", "slotDiagnostic", "runQueue",
-                           "harvestApiary"}) do
+                           "harvestApiary", "checkInstall"}) do
         if type(hivemind[name]) ~= "function" then table.insert(absent, name) end
     end
 
@@ -333,6 +333,13 @@ local function main(args)
     if #problems > 0 then
         section("PROBLEMES AU DEMARRAGE")
         for _, problem in ipairs(problems) do say("  " .. problem) end
+    end
+
+    -- Before anything else: every other section reads as broken on a network
+    -- that is off, or on a machine declared on the wrong face
+    if type(hivemind.checkInstall) == "function" then
+        section("CONTROLE DE L INSTALLATION")
+        capture(hivemind.checkInstall, context)
     end
 
     section("ETAT")
@@ -604,7 +611,9 @@ local function main(args)
         for pass = 1, passes do
             section("EXECUTION DE LA FILE"
                 .. (passes > 1 and (" - passe " .. pass .. "/" .. passes) or ""))
-            capture(hivemind.runQueue, context, {budget = budget / passes})
+            -- No stdin here: a prompt would read EOF and the pass would spin
+            capture(hivemind.runQueue, context,
+                    {budget = budget / passes, interactive = false})
 
             if #context.queue:pending() == 0 then break end
         end
