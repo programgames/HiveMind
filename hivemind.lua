@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.93.0"
+hivemind.VERSION = "0.94.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1741,7 +1741,7 @@ function hivemind.buildBase(context)
             -- Toutes les quatre tranches borne la perte a une centaine
             -- d especes sans payer l ecriture quatorze fois.
             if progress.complete or slices % 4 == 0 then
-                collectgarbage()
+                pcall(collectgarbage)
 
                 -- Une ecriture qui echoue ne doit pas emporter le balayage:
                 -- ce qui est appris reste utilisable pour cette session.

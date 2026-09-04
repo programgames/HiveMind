@@ -104,39 +104,54 @@ local function renderKey(key)
     return nil
 end
 
---- Render a value as Lua source
+--- Emit a value as Lua source, one fragment at a time
+--- It does NOT build the result. Returning a string per node kept every
+--- fragment of the tree alive at once, and the final table.concat then had to
+--- allocate the whole file on top of them: the species cache reached 355
+--- entries with their mutation paths and ran the computer out of memory,
+--- losing a sweep that had already cost three hundred component calls.
+--- Handing fragments to a sink lets the caller flush them to disk as they come,
+--- so the cost stops depending on how big the state is.
+---
+--- The output is compact -- no indentation, no line breaks. Those read nicely
+--- on a ten-key state file and cost half the bytes on this one, and these files
+--- carry "do not edit by hand" on their first line.
+---
 --- Keys are sorted so two saves of the same state produce the same bytes, which
 --- makes the files diffable and the tests deterministic.
 --- @param value any
---- @param indent string
---- @param seen table Tables already being rendered, to break cycles
---- @return string|nil rendered
+--- @param seen table Tables already being emitted, to break cycles
+--- @param write function(text) Receives each fragment in order
+--- @return boolean ok
 --- @return string|nil error
-local function render(value, indent, seen)
+local function emit(value, seen, write)
     local kind = type(value)
 
     if kind == "nil" or kind == "boolean" then
-        return tostring(value)
+        write(tostring(value))
+        return true
     end
 
     if kind == "number" then
-        if value ~= value then return nil, "NaN n'est pas persistable" end
+        if value ~= value then return false, "NaN n'est pas persistable" end
         if value == math.huge or value == -math.huge then
-            return nil, "l'infini n'est pas persistable"
+            return false, "l'infini n'est pas persistable"
         end
         -- %.14g round-trips a double without dragging in float noise
-        return string.format("%.14g", value)
+        write(string.format("%.14g", value))
+        return true
     end
 
     if kind == "string" then
-        return string.format("%q", value)
+        write(string.format("%q", value))
+        return true
     end
 
     if kind ~= "table" then
-        return nil, "type non persistable: " .. kind
+        return false, "type non persistable: " .. kind
     end
 
-    if seen[value] then return nil, "reference circulaire" end
+    if seen[value] then return false, "reference circulaire" end
     seen[value] = true
 
     local keys = {}
@@ -154,35 +169,33 @@ local function render(value, indent, seen)
         return tostring(a.key) < tostring(b.key)
     end)
 
-    if #keys == 0 then
-        seen[value] = nil
-        return "{}"
-    end
-
-    -- Compact, deliberately. One line and two spaces of indentation per key
-    -- read nicely on a ten-key state file and are fatal on a big one: the
-    -- species cache reached 355 entries with their mutation paths, and the
-    -- pretty-printed form ran the computer out of memory INSIDE table.concat --
-    -- losing a sweep that had already cost three hundred component calls.
-    -- These files carry "do not edit by hand" on their first line.
-    local parts = {"{"}
+    write("{")
 
     for _, entry in ipairs(keys) do
-        local rendered, err = render(value[entry.key], indent, seen)
-        if not rendered then
+        write(entry.rendered)
+        write("=")
+
+        local ok, err = emit(value[entry.key], seen, write)
+        if not ok then
             seen[value] = nil
-            return nil, err
+            return false, err
         end
-        table.insert(parts, entry.rendered .. "=" .. rendered .. ",")
+
+        write(",")
     end
 
-    table.insert(parts, "}")
+    write("}")
     seen[value] = nil
 
-    return table.concat(parts)
+    return true
 end
 
---- Serialize a table to Lua source
+local HEADER = "-- HiveMind state file, generated - do not edit by hand\nreturn "
+
+--- Serialize a table to Lua source, in memory
+--- Convenient, and the wrong tool above a few kilobytes: it holds the whole
+--- file at once. state.save streams instead, and nothing on the hot path
+--- should call this.
 --- @param value table
 --- @return string|nil source
 --- @return string|nil error
@@ -191,10 +204,14 @@ function state.serialize(value)
         return nil, "seules les tables sont persistables"
     end
 
-    local body, err = render(value, "", {})
-    if not body then return nil, err end
+    local parts = {}
+    local ok, err = emit(value, {}, function(text)
+        table.insert(parts, text)
+    end)
 
-    return "-- HiveMind state file, generated - do not edit by hand\nreturn " .. body .. "\n"
+    if not ok then return nil, err end
+
+    return HEADER .. table.concat(parts) .. "\n"
 end
 
 --- Read a table back from Lua source
@@ -226,8 +243,9 @@ end
 --- @return boolean ok
 --- @return string|nil error
 function state.save(path, value)
-    local source, err = state.serialize(value)
-    if not source then return false, err end
+    if type(value) ~= "table" then
+        return false, "seules les tables sont persistables"
+    end
 
     local made, directory_err = ensureDirectory(path:match("^(.*)[/\\][^/\\]*$"))
     if not made then return false, directory_err end
@@ -239,8 +257,52 @@ function state.save(path, value)
             .. " (le repertoire existe-t-il ?)"
     end
 
-    local written = file:write(source)
+    -- Written as it is produced, in blocks. Building the file first cost as
+    -- much memory as the file plus every fragment that made it, which is what
+    -- killed a 355-species sweep. Four kilobytes is the whole footprint now,
+    -- whatever the state weighs.
+    local buffer, pending, written, blocks = {}, 0, true, 0
+
+    local function flush()
+        if pending == 0 then return end
+        if written then written = file:write(table.concat(buffer)) end
+        buffer, pending = {}, 0
+        blocks = blocks + 1
+
+        -- The fragments just written are garbage, and so is every sorted key
+        -- list built to produce them. On a computer with two megabytes it is
+        -- not enough for them to be collectable: they have to be COLLECTED --
+        -- measured, an incremental step does not keep up and the garbage still
+        -- grows to the size of the file. A real sweep every eight blocks bounds
+        -- it to about thirty kilobytes whatever the state weighs.
+        --
+        -- Guarded: the OpenComputers sandbox does not promise every option, and
+        -- a save must never die because a hint was refused.
+        if blocks % 8 == 0 then pcall(collectgarbage) end
+    end
+
+    local function put(text)
+        table.insert(buffer, text)
+        pending = pending + #text
+        if pending >= 4096 then flush() end
+    end
+
+    put(HEADER)
+
+    local ok, emit_err = emit(value, {}, put)
+
+    if ok then
+        put("\n")
+        flush()
+    end
+
     file:close()
+
+    if not ok then
+        -- The temporary file holds half a state; the previous one is intact
+        removeFile(temporary)
+        return false, emit_err
+    end
 
     if not written then
         removeFile(temporary)

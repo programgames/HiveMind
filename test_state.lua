@@ -147,6 +147,88 @@ check("chemin nomme", state.pathFor("jobs", "/home/hivemind/state"),
 os.remove(PATH)
 
 print("")
+print("")
+print("-- un gros etat doit tenir dans la memoire d un ordinateur --")
+
+do
+    -- Plante en jeu: 355 especes avec leurs chemins de mutation, et le
+    -- programme est mort dans table.concat au milieu de la sauvegarde. Rendre
+    -- une chaine par noeud gardait tous les fragments vivants a la fois, et le
+    -- concat final devait allouer le fichier entier par-dessus.
+    local cache = {version = 1, species = {}, parents = {}}
+    for i = 1, 400 do
+        local uid = "forestry.speciesEspece" .. i
+        cache.species[uid] = {uid = uid, name = "Espece " .. i, derived = false}
+        local mutations = {}
+        for m = 1, 2 do
+            table.insert(mutations, {
+                parent1 = {uid = "forestry.speciesParent" .. m .. i,
+                           name = "Parent " .. m .. i},
+                parent2 = {uid = "magicbees.speciesAutre" .. m .. i,
+                           name = "Autre " .. m .. i},
+                chance = 12.5,
+                conditions = {"Requires blockNickel as a foundation."},
+            })
+        end
+        cache.parents[uid] = mutations
+    end
+
+    local big = TMP .. "/hivemind-gros-etat.lua"
+    os.remove(big)
+
+    -- Mesurer APRES la sauvegarde ne prouve rien: tout ce qu elle a alloue est
+    -- devenu du dechet entre-temps. Ce qui tue la machine, c est le PIC, et il
+    -- se mesure au moment ou les octets partent sur le disque.
+    -- Mesurer les kilo-octets vus par collectgarbage sur un poste de bureau ne
+    -- modelise pas l allocateur d OpenComputers, et le chiffre bouge d une
+    -- passe a l autre. Ce qui se mesure vraiment, et qui est exactement la
+    -- panne: la taille de la plus grosse ecriture. L ancienne version en
+    -- faisait UNE, de la taille du fichier, apres l avoir construit en entier.
+    local writes, biggest, total = 0, 0, 0
+    local realOpen = io.open
+
+    io.open = function(path, mode)
+        local file = realOpen(path, mode)
+        if not file or mode ~= "w" then return file end
+
+        return setmetatable({}, {__index = function(_, key)
+            if key == "write" then
+                return function(_, text)
+                    writes = writes + 1
+                    total = total + #text
+                    if #text > biggest then biggest = #text end
+                    return file:write(text)
+                end
+            end
+            if key == "close" then return function() return file:close() end end
+            return function(_, ...) return file[key](file, ...) end
+        end})
+    end
+
+    local ok, err = state.save(big, cache)
+
+    io.open = realOpen
+
+    check("un etat de 400 especes s ecrit (" .. tostring(err) .. ")", ok, true)
+    checkTruthy("le fichier fait plus de 100 Ko (" .. total .. " octets)",
+                total > 100000)
+    checkTruthy("il part par blocs (" .. writes .. " ecritures)", writes > 10)
+    checkTruthy(string.format(
+                    "et aucun bloc ne porte le fichier entier (%d octets au plus)",
+                    biggest),
+                biggest < 8192)
+
+    local back, load_err = state.load(big, nil)
+    checkTruthy("il se relit (" .. tostring(load_err) .. ")", back ~= nil)
+    check("jusque dans les feuilles",
+          back.parents["forestry.speciesEspece399"][2].parent2.name, "Autre 2399")
+    check("les conditions de mutation survivent",
+          back.parents["forestry.speciesEspece1"][1].conditions[1],
+          "Requires blockNickel as a foundation.")
+
+    os.remove(big)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
