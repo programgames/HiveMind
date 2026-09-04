@@ -396,6 +396,13 @@ lib/multiply.lua    accumulation de drones, en boucle
 lib/planner.lua     chaîne de croisements vers une espèce cible
 ```
 
+**Une étape qui ATTEND doit revérifier ses conditions, pas seulement sa sortie.**
+Le template du Replicator, approuvé à l'étape 3, avait été retiré à la main
+avant l'étape 6 : la tâche a attendu 121 secondes une machine qui n'avait rien
+à copier, et l'aurait refait à chaque passe. Avant d'attendre, on revérifie que
+la machine peut encore produire — sinon c'est un échec immédiat avec la raison,
+pas une attente.
+
 **Le principe qui rend la reprise fiable** : chaque étape déclare `verify()`
 avant `run()`. Le numéro d'étape enregistré n'est qu'un indice ; c'est le monde
 qui décide. Une coupure entre « la reine est produite » et « je l'ai noté » fait

@@ -900,6 +900,27 @@ end
 
 os.remove(QUEUE)
 
+print("")
+print("-- attendre une machine qui ne peut plus rien produire --")
+
+do
+    -- Every step re-checks the world before acting, and the waiting steps did
+    -- not. A template approved at step 3 and taken out by hand before step 6
+    -- meant two minutes of waiting on an empty machine, on every pass, forever.
+    local text = io.open("lib/genetics.lua"):read("a")
+
+    checkTruthy("le replicator verifie son template avant d attendre",
+                text:find("le template a quitte le replicator", 1, true) ~= nil)
+    checkTruthy("et son liquide",
+                text:find("plus de liquide dans le replicator", 1, true) ~= nil)
+    checkTruthy("l imprinter verifie le sien aussi",
+                text:find("le template a quitte l imprinter", 1, true) ~= nil)
+    checkTruthy("et que l abeille est toujours la",
+                text:find("l abeille n est plus dans l imprinter", 1, true) ~= nil)
+
+end
+
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

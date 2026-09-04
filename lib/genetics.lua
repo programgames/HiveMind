@@ -688,6 +688,23 @@ genetics.IMPRINT_STEPS = {
             local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
+            -- Same trap as the replicator: the template was approved several
+            -- steps ago and can have been taken out since. Waiting two minutes
+            -- on a machine that cannot work says nothing useful.
+            local slots = machine.link.slots
+
+            if not machine:slot(slots.template) then
+                return jobs.FAILED,
+                    "le template a quitte l imprinter: il n a plus rien a"
+                    .. " appliquer. Repose-le et relance."
+            end
+
+            if not machine:slot(slots.bee) then
+                return jobs.FAILED,
+                    "l abeille n est plus dans l imprinter: elle a ete retiree"
+                    .. " ou consommee sans rien produire."
+            end
+
             local wait = job.params.timeout
                 or (context.config and context.config.genetics
                     and context.config.genetics.sample_timeout_seconds)
@@ -938,6 +955,23 @@ genetics.REPLICATE_STEPS = {
         run = function(job, context)
             local machine, err = machineOf(context, "replicator")
             if not machine then return jobs.FAILED, err end
+
+            -- Check the machine can still work before waiting on it. The
+            -- template was present when step 3 approved it and can have left
+            -- since -- taken by hand, most likely -- and waiting two minutes
+            -- for a machine with nothing in it teaches nobody anything.
+            if not machine:slot(machine.link.slots.template) then
+                return jobs.FAILED,
+                    "le template a quitte le replicator: il n a plus rien a"
+                    .. " copier. Repose un template COMPLET (13 genes sur 13,"
+                    .. " gene d espece compris) et relance."
+            end
+
+            local tank = context.transport:tank(machine.link)
+            if tank and (tank.amount or 0) == 0 then
+                return jobs.RETRY,
+                    "plus de liquide dans le replicator: remplis-le et relance."
+            end
 
             local wait = job.params.timeout
                 or (context.config and context.config.genetics
