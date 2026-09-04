@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.84.1"
+hivemind.VERSION = "0.84.2"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1903,11 +1903,17 @@ function hivemind.nameTemplates(context)
 
     print("Enregistres :")
     for _, entry in ipairs(context.library:templates()) do
-        print(string.format("  %-24s slot coffre %-3d %s",
-            tostring(entry.name or entry.species or "sans nom"), entry.slot,
-            entry.page and ("Database " .. entry.page)
-                or "PAS DE FICHE: pas demandable"))
+        print(string.format("  %-22s %-24s %s",
+            tostring(entry.name or entry.species or "sans nom"),
+            entry.page and ("demandable (fiche " .. entry.page .. ")")
+                or "PAS DE FICHE: pas demandable",
+            "nomme au slot " .. tostring(entry.slot) .. " du coffre"))
     end
+
+    print("")
+    print("Le slot du coffre n est qu un souvenir: des que tu remets le")
+    print("template dans le reseau, il est vide. C est l empreinte qui")
+    print("identifie le template, et la fiche qui permet de le demander.")
 end
 
 --- Put a named template into a machine that has none

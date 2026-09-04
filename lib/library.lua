@@ -615,12 +615,17 @@ function Library:describe()
     for _, entry in ipairs(templates) do
         if shown < 15 then
             shown = shown + 1
-            table.insert(lines, string.format("  %-22s coffre %-3d %s",
+
+            table.insert(lines, string.format("  %-22s %-24s %s",
                 tostring(entry.name or entry.species or "sans nom"),
-                entry.slot,
                 -- Without a Database entry it cannot be asked of the network,
                 -- which makes it a template we can see and not use
-                entry.page and ("fiche " .. entry.page) or "PAS DEMANDABLE"))
+                entry.page and ("demandable (fiche " .. entry.page .. ")")
+                    or "PAS DEMANDABLE",
+                -- Where it was when it was named. It goes stale as soon as the
+                -- template is put into the network, and that is fine: identity
+                -- is the fingerprint, not the position.
+                "nomme au slot " .. tostring(entry.slot) .. " du coffre"))
         end
     end
 

@@ -144,6 +144,10 @@ check("et se fait tant qu ils sont dans le coffre",
 check("un template sans fiche est signale comme non demandable",
       text:find("PAS DE FICHE: pas demandable", 1, true) ~= nil)
 
+-- The chest slot goes stale the moment the template is put into the network
+check("et le slot du coffre est presente comme un souvenir",
+      text:find("n est qu un souvenir", 1, true) ~= nil)
+
 -- And the names have to be visible without going through the naming screen
 check("l etat detaille montre les templates nommes",
       io.open("lib/library.lua"):read("a")
