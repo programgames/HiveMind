@@ -98,6 +98,17 @@ check("la lecture de genome est atteignable", wired.analyseBee == true)
 -- allele is in the library forever. So the useful question is which shortest
 -- list of species covers every gene still missing.
 check("le plan de croisement est atteignable", wired.breedingPlan == true)
+
+-- Collecting a Species gene one menu choice at a time is fine for two species
+-- and hopeless for twenty
+check("le balayage des especes est atteignable", wired.speciesSweep == true)
+check("il ne relance pas une campagne deja en file",
+      text:find("deja en file", 1, true) ~= nil)
+check("il refuse de risquer le dernier drone d une espece",
+      text:find("Trop peu de drones", 1, true) ~= nil)
+check("il annonce le cout total avant de confirmer",
+      text:find("au pire", 1, true) ~= nil)
+
 check("les porteurs sont declares en config",
       settingsText:find("config.gene_carriers", 1, true) ~= nil)
 check("le plan les classe par nombre de genes apportes",
