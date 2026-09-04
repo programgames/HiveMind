@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.77.0"
+hivemind.VERSION = "0.78.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1838,7 +1838,8 @@ function hivemind.replicateBee(context)
     end
 
     print("")
-    print("  L abeille produite sera Ignoble: reserve cela aux drones.")
+    print("  Il en sort une REINE, en Ignoble Stock -- verifie en jeu, une")
+    print("  Common Queen etait dans la machine au sondage.")
     io.write("Confirmer ? (o/N): ")
 
     local answer = io.read()

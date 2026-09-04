@@ -257,6 +257,22 @@ associe un index de transposer à une adresse (un préfixe suffit).
 La documentation Gendustry disait labware en 3 et sortie en 4 — un slot qui
 n'existe pas dans un inventaire de quatre. Ne jamais s'y fier.
 
+**Et la symétrie ne se généralise pas non plus.** Mesuré le 2026-09-04 :
+le **Replicator** et le **DNA Extractor** n'ont que **DEUX slots**.
+
+| Machine | driver 0 | driver 1 |
+|---|---|---|
+| Replicator | template | **sortie** (une *Common Queen* y était) |
+| DNA Extractor | abeille (entrée) | labware |
+
+Le Replicator n'a **aucun slot labware**. Il sort une **reine**, pas un drone,
+en Ignoble Stock. Le DNA Extractor n'a pas de sortie : l'ADN part en fluide,
+seule l'entrée est à alimenter.
+
+Ce qui distingue une entrée d'une sortie ici : la reine est ressortie quand on
+l'a demandée, le template est resté. Les entrées Gendustry refusent l'extraction
+automatisée, les sorties non — c'est le seul test fiable.
+
 Ancien paragraphe conservé pour mémoire : les correspondances venaient de la documentation
 Gendustry et **la première lecture réelle les a démenties**. Rien ne doit s'y
 fier avant confirmation par le diagnostic.

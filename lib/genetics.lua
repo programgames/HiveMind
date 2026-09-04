@@ -963,8 +963,8 @@ genetics.REPLICATE_STEPS = {
             local produced = machine:slot(machine.link.slots.output)
             if produced then
                 job.params.produced = tostring(produced.label)
-                report(context, "abeille repliquee: " .. job.params.produced
-                    .. " (Ignoble, comme toujours)")
+                report(context, "reine repliquee: " .. job.params.produced
+                    .. " (Ignoble Stock)")
             end
 
             machine:unload(machine.link.slots.output)

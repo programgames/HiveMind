@@ -228,17 +228,22 @@ config.machines = {
     -- moves anything, and refuses rather than dropping a bee into whatever
     -- slot happens to accept it. Run tools/probe once they are placed, then
     -- tools/discover for the sides, then set enabled = true.
+    -- MEASURED by tools/probe, and the symmetry with the other three was wrong:
+    -- these two hold TWO slots, not four. Every guess about them has now been
+    -- replaced by an observation.
     replicator = {
         transposer = PRODUCTION, machine = 2, source = 3, enabled = true,
-        -- The template decides which bee comes out, so it is what the machine
-        -- reads; the bee it prints is the output.
-        slots = {template = 0, labware = 1, output = 3},
+        -- Driver 0 held the template, driver 1 held a Common Queen -- and the
+        -- queen came out when asked while the template stayed, which is how an
+        -- output slot and an input slot tell themselves apart here.
+        -- No labware slot at all.
+        slots = {template = 0, output = 1},
     },
     dna_extractor = {
         transposer = PRODUCTION, machine = 5, source = 3, enabled = true,
-        -- The bee is consumed and the DNA leaves as a fluid, so there is no
-        -- item output to drain -- only an input to keep fed.
-        slots = {labware = 1, input = 2},
+        -- Driver 0 took a bee, driver 1 held the labware. The DNA leaves as a
+        -- fluid, so there is no output to drain -- only an input to keep fed.
+        slots = {input = 0, labware = 1},
     },
     -- These two are the player's business: they make what the others drink.
     -- The program reads their tanks to warn, and never moves anything.

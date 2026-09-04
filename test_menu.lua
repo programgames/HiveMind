@@ -120,8 +120,21 @@ check("elle exige un template complet, espece comprise",
 check("elle ne va jamais chercher le template dans le reseau",
       text:find("template complet et un template vide portent le meme nom",
                 1, true) ~= nil)
-check("elle annonce que le produit sera Ignoble",
-      text:find("sera Ignoble", 1, true) ~= nil)
+check("elle annonce que le produit est une reine Ignoble",
+      text:find("Il en sort une REINE", 1, true) ~= nil)
+
+-- Symmetry with the other three machines said four slots each. The probe found
+-- two, and the replicator has no labware slot at all.
+do
+    local settings = dofile("lib/config.lua")
+    check("les slots du replicator sont ceux mesures",
+          settings.machines.replicator.slots.template == 0
+          and settings.machines.replicator.slots.output == 1
+          and settings.machines.replicator.slots.labware == nil)
+    check("ceux de l extracteur aussi",
+          settings.machines.dna_extractor.slots.input == 0
+          and settings.machines.dna_extractor.slots.labware == 1)
+end
 
 -- The extractor is the one place a bee is destroyed on purpose
 check("l alimentation de l extracteur est atteignable",
