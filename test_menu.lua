@@ -292,13 +292,23 @@ do
     local nbtText = io.open("tools/nbtprobe.lua"):read("a")
 
     check("l experience NBT rend toujours le quai",
-          select(2, nbtText:gsub("releaseDock", "")) >= 4)
+          nbtText:find("Always give the template back", 1, true) ~= nil
+          and nbtText:find("local verdict", 1, true) ~= nil
+          and nbtText:find("return verdict", 1, true) ~= nil)
     check("elle ne demande rien sans --yes",
           nbtText:find("Rien n a ete deplace", 1, true) ~= nil)
-    check("elle verifie que le meme template est dans le reseau",
-          nbtText:find("templates dans le reseau", 1, true) ~= nil)
+    check("elle verifie que le reseau a quelque chose a rendre",
+          nbtText:find("Aucun template dans le reseau", 1, true) ~= nil)
     check("elle compare deux empreintes, pas deux etiquettes",
           nbtText:find("delivered == wanted", 1, true) ~= nil)
+
+    -- One template proves nothing: with a hundred in the network, a bridge that
+    -- ignored the nbt could hand back the right one by luck
+    check("elle teste chaque template, pas seulement le premier",
+          nbtText:find("for _, entry in ipairs(templates) do", 1, true) ~= nil
+          and nbtText:find("askFor(entry)", 1, true) ~= nil)
+    check("et refuse de conclure sur un seul contenu",
+          nbtText:find("NON CONCLUANT", 1, true) ~= nil)
     check("elle tranche par un verdict lisible",
           nbtText:find("VERDICT : OUI", 1, true) ~= nil
           and nbtText:find("VERDICT : NON", 1, true) ~= nil)

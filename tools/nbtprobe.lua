@@ -13,9 +13,12 @@
 -- THAT database entry. If AE2 honours the nbt, the template that arrives is the
 -- one we asked for.
 --
--- The experiment needs two identical templates: one in the chest, one in the
--- network. It fingerprints the chest one, asks the network for it, and
--- fingerprints what turns up. Same hash means the nbt was honoured.
+-- One template does not settle it. With a hundred templates in the network and
+-- one of them filled, a bridge that ignored the nbt would hand back an
+-- arbitrary one -- and if that happened to be the filled one, the test would
+-- say "honoured" while nothing was. So EVERY template in the chest is asked for
+-- in turn and each delivery checked against its own request. Two different
+-- contents each coming back correctly cannot be luck.
 --
 -- It also lists every template in the chest with its fingerprint, which is
 -- useful on its own: that is how "slot 3 = complete Robotic template" becomes
@@ -166,33 +169,49 @@ local function main(args)
 
     -- -----------------------------------------------------------------------
     -- The experiment
+    --
+    -- One template proves almost nothing. With 128 templates in the network and
+    -- one of them filled, a bridge that ignored the nbt entirely would hand
+    -- back an arbitrary one -- and if it happens to hand back the filled one,
+    -- the test says "honoured" while nothing was honoured at all.
+    --
+    -- So every template in the chest is asked for in turn, and each delivery is
+    -- checked against ITS OWN request. Two templates with different contents
+    -- that each come back correctly cannot be a coincidence: a blind bridge
+    -- would answer both with the same item.
     -- -----------------------------------------------------------------------
-
-    local subject = templates[1]
-    if not subject.hash then
-        say("Impossible d empreinter le premier template: rien a tester.")
-        send()
-        return
-    end
 
     -- Any bench with an ME Interface will do; the database is shared by the
     -- whole computer, so the chest and the interface need not be neighbours.
     local link = config.machines.sampler
     local interface = transport:interfaceFor(link)
 
+    local distinct = {}
+    for _, entry in ipairs(templates) do
+        if entry.hash then distinct[entry.hash] = true end
+    end
+
+    local variety = 0
+    for _ in pairs(distinct) do variety = variety + 1 end
+
     say("=== EXPERIENCE ===")
-    say("  template teste : slot " .. subject.slot
-        .. ", empreinte " .. subject.hash:sub(1, 16) .. "...")
-    say("  interface      : " .. tostring(config.interfaces[link.transposer]))
-    say("")
-    say("  Le meme template doit se trouver dans le reseau AE2, sinon le")
-    say("  reseau n a rien a rendre et l experience ne prouve rien.")
+    say("  interface : " .. tostring(config.interfaces[link.transposer]))
+    say("  a tester  : " .. #templates .. " template(s), "
+        .. variety .. " contenu(s) different(s)")
+
+    if variety < 2 then
+        say("")
+        say("  ATTENTION: un seul contenu distinct dans le coffre.")
+        say("  Le test ne pourra pas etre concluant: si le reseau rendait un")
+        say("  template au hasard, il pourrait tomber juste par chance.")
+        say("  Mets-en un DEUXIEME, de contenu different (un vierge suffit).")
+    end
 
     local inNetwork = 0
     for _, item in ipairs(transport:findAll({name = TEMPLATE}) or {}) do
         inNetwork = inNetwork + (tonumber(item.size) or 0)
     end
-    say("  templates dans le reseau : " .. inNetwork)
+    say("  reseau    : " .. inNetwork .. " template(s)")
 
     if inNetwork == 0 then
         say("")
@@ -209,92 +228,97 @@ local function main(args)
         return
     end
 
-    -- Re-photograph into DB_WANTED: the loop above may have overwritten it
-    local wanted, wanted_err =
-        transport:fingerprint(chestLink, subject.slot, DB_WANTED, true)
+    --- Ask the network for one precise template and see what turns up
+    --- @param entry table {slot, hash}
+    --- @return string verdict
+    local function askFor(entry)
+        -- Re-photograph: the previous round overwrote this database slot
+        local wanted, wanted_err =
+            transport:fingerprint(chestLink, entry.slot, DB_WANTED, true)
 
-    if not wanted then
-        say("Empreinte perdue: " .. tostring(wanted_err))
-        send()
-        return
-    end
+        if not wanted then return "empreinte perdue: " .. tostring(wanted_err) end
 
-    local dock, dock_err = transport:reserveDock(link)
-    if not dock then
-        say("Aucun quai libre: " .. tostring(dock_err))
-        send()
-        return
+        local dock, dock_err = transport:reserveDock(link)
+        if not dock then return "aucun quai libre: " .. tostring(dock_err) end
+
+        local verdict
+
+        -- Hand back whatever the dock held, and wait for AE2 to take it
+        invoke(interface, "setInterfaceConfiguration", dock)
+        local emptied, occupant = transport:awaitDockEmpty(link, dock)
+
+        if not emptied then
+            verdict = "le quai ne se vide pas ('" .. tostring(occupant) .. "')"
+        else
+            -- The whole experiment is this call: a dock configured from a
+            -- database entry that carries the nbt of a template we hold.
+            local called, configured = invoke(interface,
+                "setInterfaceConfiguration",
+                dock, transport.database.address, DB_WANTED, 1)
+
+            if not called or configured == false then
+                verdict = "quai refuse: " .. tostring(configured)
+            elseif not transport:awaitStock(link, dock, 1) then
+                verdict = "RIEN LIVRE"
+            else
+                local delivered =
+                    transport:fingerprint(link, dock, DB_ARRIVED, false)
+
+                if delivered == wanted then
+                    verdict = "EXACT"
+                else
+                    verdict = "AUTRE (" .. tostring(delivered
+                        and delivered:sub(1, 16) or "?") .. "...)"
+                end
+            end
+        end
+
+        -- Always give the template back, whatever happened
+        transport:releaseDock(dock, link)
+        transport:awaitDockEmpty(link, dock)
+
+        return verdict
     end
 
     say("")
-    say("  quai reserve : " .. dock)
 
-    -- Hand back whatever the dock held, and wait for AE2 to take it
-    invoke(interface, "setInterfaceConfiguration", dock)
-    local emptied, occupant = transport:awaitDockEmpty(link, dock)
+    local exact, total = 0, 0
+    for _, entry in ipairs(templates) do
+        if entry.hash then
+            total = total + 1
+            local verdict = askFor(entry)
 
-    if not emptied then
-        say("  le quai ne se vide pas (contient '" .. tostring(occupant) .. "')")
-        transport:releaseDock(dock, link)
-        send()
-        return
+            say(string.format("  slot %-3d %s...  ->  %s",
+                entry.slot, entry.hash:sub(1, 16), verdict))
+
+            if verdict == "EXACT" then exact = exact + 1 end
+        end
     end
-
-    -- The whole experiment is this call: a dock configured from a database
-    -- entry that carries the nbt of a template we hold.
-    local called, configured = invoke(interface, "setInterfaceConfiguration",
-        dock, transport.database.address, DB_WANTED, 1)
-
-    if not called or configured == false then
-        say("  configuration du quai refusee: " .. tostring(configured))
-        transport:releaseDock(dock, link)
-        send()
-        return
-    end
-
-    say("  quai configure depuis l empreinte, attente de la livraison...")
-
-    local arrived = transport:awaitStock(link, dock, 1)
-
-    if not arrived then
-        say("")
-        say("VERDICT : le reseau n a rien livre.")
-        say("  Le filtre construit depuis le NBT ne correspond a aucun item.")
-        say("  Autrement dit AE2 le prend au pied de la lettre et ne trouve")
-        say("  pas ce template -- verifie qu il est bien dans le reseau.")
-        transport:releaseDock(dock, link)
-        send()
-        return
-    end
-
-    local delivered = transport:fingerprint(link, dock, DB_ARRIVED, false)
-    local stack = transport:inspect({transposer = link.transposer,
-                                     machine = link.source}, dock)
 
     say("")
-    say("  livre : " .. tostring(type(stack) == "table" and stack.label or "?"))
-    say("  empreinte voulue : " .. wanted)
-    say("  empreinte livree : " .. tostring(delivered))
-    say("")
 
-    if delivered == wanted then
-        say("VERDICT : OUI. Le NBT est honore.")
-        say("  Les templates peuvent vivre dans AE2, en nombre illimite, et le")
-        say("  programme peut demander celui qu il veut. Le coffre devient une")
-        say("  commodite au lieu d une obligation.")
+    if exact == total and total > 0 and variety >= 2 then
+        say("VERDICT : OUI, le NBT est honore.")
+        say("  " .. total .. " demandes, " .. total .. " livraisons exactes, sur "
+            .. variety .. " contenus differents.")
+        say("  Un reseau qui ignorerait le NBT aurait rendu le meme objet aux")
+        say("  deux demandes: ce n est pas un hasard.")
+        say("  Les templates peuvent vivre dans AE2, en nombre illimite.")
+    elseif exact == total and total > 0 then
+        say("RESULTAT : livraison exacte, mais NON CONCLUANT.")
+        say("  Un seul contenu teste. Avec " .. inNetwork .. " templates dans le")
+        say("  reseau, un tirage au hasard pouvait tomber juste.")
+        say("  Ajoute un template de contenu different dans le coffre et")
+        say("  relance: c est ce deuxieme essai qui tranche.")
     else
-        say("VERDICT : NON. Le NBT est ignore.")
-        say("  Le reseau a rendu un autre template. Les templates restent dans")
-        say("  le coffre, designes par leur position, et l index sur disque est")
-        say("  la seule facon de savoir lequel est lequel.")
+        say("VERDICT : NON, le NBT n est pas honore.")
+        say("  " .. exact .. " livraison(s) exacte(s) sur " .. total .. ".")
+        say("  Les templates restent dans le coffre, designes par leur")
+        say("  position, et l index sur disque dit lequel est lequel.")
     end
 
-    -- Always give the template back, whatever the verdict
-    transport:releaseDock(dock, link)
-    transport:awaitDockEmpty(link, dock)
-
     say("")
-    say("Quai libere, le template est rendu au reseau.")
+    say("Quais liberes, les templates sont rendus au reseau.")
 
     send()
 end
