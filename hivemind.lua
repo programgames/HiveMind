@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.83.0"
+hivemind.VERSION = "0.84.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1797,6 +1797,171 @@ local function machineReady(context, name, humanName)
     return false
 end
 
+--- Name the templates sitting in the chest, so they can be asked for later
+---
+--- Every Genetic Template is called "Genetic Template". The only thing that
+--- tells two apart is the fingerprint of their contents, and the only moment
+--- the program can take one is while the template is physically in the chest --
+--- once it is in the ME network there is no way to hold it again.
+---
+--- So this is the moment templates become addressable, and it has to happen
+--- before they are put away.
+--- @param context table
+function hivemind.nameTemplates(context)
+    print("")
+    print("=== NOMMER LES TEMPLATES DU COFFRE ===")
+    print("Tous les templates s appellent pareil. Leur seule difference")
+    print("lisible est l empreinte de leur contenu, et elle ne se releve")
+    print("QUE tant que le template est dans le coffre.")
+    print("")
+
+    local chest = config.template_chest
+    if not chest or not chest.transposer then
+        print("Aucun coffre a templates declare dans lib/config.lua.")
+        return
+    end
+
+    local link = {transposer = chest.transposer, machine = chest.side}
+
+    local size = context.transport:inventorySize(link)
+    if not size then
+        print("Coffre injoignable: le transposer " .. tostring(chest.transposer))
+        print("ne voit rien sur la face " .. tostring(chest.side) .. ".")
+        return
+    end
+
+    -- How many more can ever be recorded: a template is only requestable from a
+    -- Database slot holding its description, so the upgrade's size is the ceiling
+    local capacity = context.transport:databaseCapacity()
+    local taken = 0
+    for _, entry in ipairs(context.library:templates()) do
+        if entry.page then taken = taken + 1 end
+    end
+
+    print("Database : " .. capacity .. " slot(s), " .. taken .. " deja pris")
+    print("")
+
+    local found = 0
+    for slot = 1, size do
+        local stack = context.transport:inspect(link, slot)
+
+        if type(stack) == "table" and stack.name == "gendustry:gene_template" then
+            found = found + 1
+
+            local hash = context.library:fingerprint(slot)
+            local known = context.library:template(slot)
+
+            print(string.format("-- slot %d  empreinte %s", slot,
+                hash and hash:sub(1, 16) .. "..." or "ILLISIBLE"))
+
+            if known and known.hash == hash then
+                print("   deja enregistre : " .. tostring(known.name or known.species
+                    or "sans nom"))
+            elseif known then
+                -- The record and the chest disagree, which means someone moved
+                -- something. Saying so beats acting on a stale index.
+                print("   ATTENTION: l index dit autre chose pour ce slot.")
+                print("   (enregistre : " .. tostring(known.name or known.species)
+                    .. ", mais le contenu a change)")
+            end
+
+            if hash then
+                io.write("   nom (vide = passer) : ")
+                local name = io.read()
+                name = name and name:gsub("^%s+", ""):gsub("%s+$", "")
+
+                if name and name ~= "" then
+                    local entry, err = context.library:registerTemplate(slot,
+                        {name = name})
+
+                    if not entry then
+                        print("   echec : " .. tostring(err))
+                    else
+                        entry.name = name
+                        local page, page_err = context.library:keepPhotograph(entry)
+
+                        if page then
+                            print("   enregistre, fiche en slot " .. page
+                                .. " du Database.")
+                        else
+                            print("   ENREGISTRE MAIS PAS DEMANDABLE : "
+                                .. tostring(page_err))
+                        end
+                    end
+                end
+            end
+
+            print("")
+        end
+    end
+
+    if found == 0 then
+        print("Aucun template dans le coffre.")
+        print("Assemble-en un a la table de craft et pose-le dedans.")
+        return
+    end
+
+    print("Enregistres :")
+    for _, entry in ipairs(context.library:templates()) do
+        print(string.format("  %-24s slot coffre %-3d %s",
+            tostring(entry.name or entry.species or "sans nom"), entry.slot,
+            entry.page and ("Database " .. entry.page)
+                or "PAS DE FICHE: pas demandable"))
+    end
+end
+
+--- Put a named template into a machine that has none
+--- The template slot never empties itself, so this only ever works on a machine
+--- that is empty -- which is exactly the moment it is useful.
+--- @param context table
+--- @param machineName string
+--- @return boolean placed
+local function placeTemplate(context, machineName)
+    local machine = context.machines and context.machines[machineName]
+    if not machine then return false end
+
+    local slot = machine.link.slots.template
+    if not slot then return false end
+
+    if machine:slot(slot) then return false end   -- already holds one
+
+    local recorded = {}
+    for _, entry in ipairs(context.library:templates()) do
+        if entry.page then table.insert(recorded, entry) end
+    end
+
+    if #recorded == 0 then
+        print("Aucun template enregistre: choisis n pour en nommer un.")
+        return false
+    end
+
+    print("")
+    print("Templates demandables :")
+    for index, entry in ipairs(recorded) do
+        print("  " .. index .. " = " .. tostring(entry.name or entry.species))
+    end
+
+    io.write("Lequel poser ? (vide = aucun): ")
+    local answer = io.read()
+    local pick = tonumber(answer and answer:gsub("%s+", ""))
+
+    local chosen = pick and recorded[pick]
+    if not chosen then return false end
+
+    print("Demande au reseau...")
+
+    local ok, err = context.library:deliverTemplate(chosen, machine.link, slot)
+
+    if not ok then
+        print("Echec : " .. tostring(err))
+        print("Le template doit etre DANS le reseau ME pour etre livre.")
+        return false
+    end
+
+    print("Pose : " .. tostring(chosen.name or chosen.species))
+    return true
+end
+
 --- Print a bee from a complete template
 --- The Replicator is the only machine that makes a bee out of nothing, and it
 --- is what turns the gene library into insurance: losing the last Robotic drone
@@ -1818,12 +1983,19 @@ function hivemind.replicateBee(context)
 
     if not template then
         print("Aucun template dans le replicator.")
-        print("")
-        print("Pose-le a la main dans le slot "
-            .. machine:resolveSlot(machine.link.slots.template) .. ".")
-        print("Le programme ne peut pas le choisir: dans le reseau ME, un")
-        print("template complet et un template vide portent le meme nom.")
-        return
+
+        -- Choosing one is possible now: a named template carries a fingerprint,
+        -- and the network answers a request built from its description. What
+        -- stays impossible is taking one back out.
+        if not placeTemplate(context, "replicator") then
+            print("")
+            print("Pose-le a la main dans le slot "
+                .. machine:resolveSlot(machine.link.slots.template) .. ",")
+            print("ou nomme-en un (option n) pour que je puisse le demander.")
+            return
+        end
+
+        template = machine:slot(machine.link.slots.template)
     end
 
     print("Template en place : " .. tostring(template.label))
@@ -2763,6 +2935,8 @@ local ENTRIES = {
      hint = "une campagne par espece en stock", action = "speciesSweep"},
     {key = "t", label = "Recolter ce qui manque",
      hint = "toutes les campagnes d un profil, d un coup", action = "harvestProfile"},
+    {key = "n", label = "Nommer les templates",
+     hint = "les rend demandables au reseau", action = "nameTemplates"},
     {key = "e", label = "Construire un template",
      hint = "ce qui manque pour chaque profil", action = "templateHelp"},
     {key = "h", label = "Quoi croiser ensuite",

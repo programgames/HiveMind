@@ -117,9 +117,32 @@ check("il annonce le cout total avant de confirmer",
 check("la replication est atteignable", wired.replicateBee == true)
 check("elle exige un template complet, espece comprise",
       text:find("13 chromosomes sur 13", 1, true) ~= nil)
-check("elle ne va jamais chercher le template dans le reseau",
-      text:find("template complet et un template vide portent le meme nom",
-                1, true) ~= nil)
+check("elle peut demander un template nomme au reseau",
+      text:find("placeTemplate(context, \"replicator\")", 1, true) ~= nil)
+check("mais jamais par son nom, seulement par empreinte",
+      text:find("library:deliverTemplate", 1, true) ~= nil)
+
+do
+    local libraryText = io.open("lib/library.lua"):read("a")
+    local transportText = io.open("lib/transport.lua"):read("a")
+
+    -- Every template carries the same label, so checking the label proves
+    -- nothing. What arrives is fingerprinted and compared.
+    check("et la livraison est verifiee avant d entrer dans la machine",
+          transportText:find("arrived ~= expected", 1, true) ~= nil
+          and transportText:find("le reseau a livre un autre objet",
+                                 1, true) ~= nil)
+    check("la fiche du Database n est jamais celle du brouillon",
+          libraryText:find("existing ~= self.scratchDbSlot", 1, true) ~= nil)
+end
+
+-- Naming happens while the template is still in the chest, because that is the
+-- only moment the program can ever hold it
+check("nommer les templates est atteignable", wired.nameTemplates == true)
+check("et se fait tant qu ils sont dans le coffre",
+      text:find("QUE tant que le template est dans le coffre", 1, true) ~= nil)
+check("un template sans fiche est signale comme non demandable",
+      text:find("PAS DE FICHE: pas demandable", 1, true) ~= nil)
 check("elle annonce que le produit est une reine Ignoble",
       text:find("Il en sort une REINE", 1, true) ~= nil)
 

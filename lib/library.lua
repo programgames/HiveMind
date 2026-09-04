@@ -450,6 +450,33 @@ function Library:requestTemplate(entry, link)
     return self.transport:stageFromDatabase(page, link, 1)
 end
 
+--- Put a recorded template into a machine slot
+--- Refuses unless what the network hands over fingerprints identically. The
+--- alternative is writing whatever genes turned up onto a live bee.
+--- @param entry table Record from registerTemplate
+--- @param link table Machine link
+--- @param slot number Machine slot
+--- @return boolean ok
+--- @return string|nil error
+function Library:deliverTemplate(entry, link, slot)
+    if not self.transport then return false, "aucun transport" end
+    if not entry or not entry.hash then return false, "template inconnu" end
+
+    local page = self.transport:pageFor(entry.hash)
+
+    if not page or page == self.scratchDbSlot then
+        local kept, err = self:keepPhotograph(entry)
+        if not kept then
+            return false, "fiche perdue et le coffre ne la rend pas: "
+                .. tostring(err)
+        end
+        page = kept
+    end
+
+    return self.transport:deliverExact(page, entry.hash, link, slot,
+                                       self.scratchDbSlot)
+end
+
 --- Fingerprint whatever sits in a template chest slot
 --- @param slot number
 --- @return string|nil hash

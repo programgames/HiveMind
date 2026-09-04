@@ -273,9 +273,27 @@ symétrie le laissait penser. Disposition confirmée : 0 template, 1 labware,
 **Le template n'est pas consommé par l'Imprinter** (vérifié : il est resté en
 slot 0 après trois imprints). Une pose sert toutes les abeilles suivantes.
 
-Le programme ne va **jamais** chercher un template dans le réseau : rempli ou
-vide, même id et même étiquette, AE2 rendrait n'importe lequel. Il est posé à la
-main une fois et sert ensuite toutes les abeilles.
+**Le programme peut maintenant aller chercher un template précis dans le
+réseau** — mais jamais par son nom, uniquement par son empreinte, et il vérifie
+ce qui arrive avant de le mettre dans une machine. Comparer l'étiquette ne
+prouverait rien : elles sont toutes identiques.
+
+Chaîne : le template est posé dans le coffre → le transposer écrit sa **fiche
+complète** (NBT inclus) dans un slot du **Database upgrade** → on nomme le
+template, l'empreinte et le numéro de slot sont écrits sur disque → plus tard,
+le slot de configuration de l'interface ME est réglé **depuis cette fiche**, et
+AE2 rend exactement ce template.
+
+**Le nombre de templates demandables = le nombre de slots libres du Database.**
+Écrire une fiche exige d'avoir l'objet en main, ce qui n'est plus vrai une fois
+qu'il est dans le réseau : la fiche doit donc être prise pendant que le template
+est dans le coffre, et y rester. Six slots partent dans les sas de chargement
+(`config.docks`), un sert de brouillon → **tier 1 : 2 templates, tier 2 : 18,
+tier 3 : 74**. En réduire le nombre de sas libère autant de slots.
+
+**Le slot de brouillon ne doit jamais servir de fiche durable** : l'empreintage
+y écrit à chaque passage, donc la fiche précédente serait écrasée et le template
+deviendrait indemandable sans le moindre message.
 
 **Un template ne doit jamais entrer dans le réseau ME** — même id, même
 étiquette, il y serait perdu parmi les vierges. Pas besoin de coffre pour

@@ -584,6 +584,67 @@ end
 --- @param count number|nil
 --- @return number moved
 --- @return string|nil error
+--- Deliver one EXACT item into a machine slot, checked by fingerprint
+---
+--- deliver() checks the label, which is the only thing it can check and is
+--- worthless here: every Genetic Template carries the same one. So what lands
+--- in the interface is fingerprinted and compared to what was asked for, and a
+--- mismatch refuses rather than writing unknown genes onto a bee.
+--- @param page number Database slot holding the item's description
+--- @param expected string Fingerprint the delivery must match
+--- @param link table Machine link
+--- @param slot number Machine slot to fill
+--- @param scratch number Database slot to fingerprint the arrival through
+--- @return boolean ok
+--- @return string|nil error
+function Transport:deliverExact(page, expected, link, slot, scratch)
+    local transposer, transposer_err = self:transposerFor(link.transposer)
+    if not transposer then return false, transposer_err end
+
+    local dock, stage_err = self:stageFromDatabase(page, link, 1)
+    if not dock then return false, stage_err end
+
+    local stocked, stock_err = self:awaitStock(link, dock, 1)
+    if not stocked then
+        self:releaseDock(dock, link)
+        return false, stock_err
+    end
+
+    if expected then
+        local arrived = self:fingerprint(link, dock, scratch or page, false)
+
+        if arrived ~= expected then
+            self:releaseDock(dock, link)
+            return false, "le reseau a livre un autre objet ("
+                .. tostring(arrived and arrived:sub(1, 12) or "illisible")
+                .. "... au lieu de " .. expected:sub(1, 12) .. "...)"
+        end
+    end
+
+    local ok, answer = invoke(transposer, "transferItem",
+        link.source, link.machine, 1, dock, slot)
+
+    if not ok then
+        self:releaseDock(dock, link)
+        return false, "transfert impossible: " .. tostring(answer)
+    end
+
+    if movedCount(answer, 1) < 1 then
+        local occupant_ok, occupant =
+            invoke(transposer, "getStackInSlot", link.machine, slot)
+        local occupied = (occupant_ok and type(occupant) == "table")
+            and (occupant.label or occupant.name) or "vide"
+
+        self:releaseDock(dock, link)
+        return false, string.format(
+            "la machine refuse l objet dans le slot %d (ce slot contient: %s)",
+            slot, occupied)
+    end
+
+    self:releaseDock(dock, link)
+    return true
+end
+
 function Transport:retrieve(link, slot, count)
     local transposer, err = self:transposerFor(link.transposer)
     if not transposer then return 0, err end
