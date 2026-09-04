@@ -321,6 +321,16 @@ function checkup.fluids(readings)
                 gesture = "vide le " .. reading.machine
                     .. ": plein, il ne produit plus rien",
             })
+        elseif reading.dry then
+            -- A buffered tank is full most of the time and that is normal.
+            -- Empty is the only state worth a word: whatever drinks from it
+            -- is about to stop.
+            table.insert(findings, {
+                name = reading.machine, status = checkup.PROBLEM,
+                detail = "plus de " .. tostring(reading.fluid),
+                gesture = "alimente le " .. reading.machine
+                    .. ": la chaine qui en boit va s arreter",
+            })
         elseif reading.low then
             table.insert(findings, {
                 name = reading.machine, status = checkup.PROBLEM,

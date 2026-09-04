@@ -159,22 +159,27 @@ local function render(value, indent, seen)
         return "{}"
     end
 
-    local inner = indent .. "  "
+    -- Compact, deliberately. One line and two spaces of indentation per key
+    -- read nicely on a ten-key state file and are fatal on a big one: the
+    -- species cache reached 355 entries with their mutation paths, and the
+    -- pretty-printed form ran the computer out of memory INSIDE table.concat --
+    -- losing a sweep that had already cost three hundred component calls.
+    -- These files carry "do not edit by hand" on their first line.
     local parts = {"{"}
 
     for _, entry in ipairs(keys) do
-        local rendered, err = render(value[entry.key], inner, seen)
+        local rendered, err = render(value[entry.key], indent, seen)
         if not rendered then
             seen[value] = nil
             return nil, err
         end
-        table.insert(parts, inner .. entry.rendered .. " = " .. rendered .. ",")
+        table.insert(parts, entry.rendered .. "=" .. rendered .. ",")
     end
 
-    table.insert(parts, indent .. "}")
+    table.insert(parts, "}")
     seen[value] = nil
 
-    return table.concat(parts, "\n")
+    return table.concat(parts)
 end
 
 --- Serialize a table to Lua source

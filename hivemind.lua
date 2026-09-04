@@ -1695,7 +1695,7 @@ end
 --- @param context table
 function hivemind.buildBase(context)
     print("")
-    print("=== CONSTITUER LA BASE ===")
+    print("=== VALIDER LA LISTE DES ABEILLES DE BASE ===")
     print("Prerequis: installation validee (option 1).")
     print("Les especes que rien ne produit: il faut aller les chercher.")
 
@@ -1726,11 +1726,32 @@ function hivemind.buildBase(context)
         end
 
         local progress
+        local slices = 0
+
         repeat
             progress = registry:sweepParents(25, nil)
+            slices = slices + 1
+
             print("  " .. progress.cached .. "/" .. progress.total
                 .. "  (" .. progress.remaining .. " restantes)")
-            registry:save()
+
+            -- Serialiser tout le cache coute de la memoire, et le faire apres
+            -- CHAQUE tranche multipliait ce cout par le nombre de tranches:
+            -- c est ce qui a tue le programme a 225/355, dans table.concat.
+            -- Toutes les quatre tranches borne la perte a une centaine
+            -- d especes sans payer l ecriture quatorze fois.
+            if progress.complete or slices % 4 == 0 then
+                collectgarbage()
+
+                -- Une ecriture qui echoue ne doit pas emporter le balayage:
+                -- ce qui est appris reste utilisable pour cette session.
+                local written = pcall(function() return registry:save() end)
+                if not written then
+                    print("  cache non ecrit: le balayage continue en memoire,")
+                    print("  mais il sera a refaire au prochain demarrage.")
+                end
+            end
+
             breathe()
         until progress.complete or progress.asked == 0
 
@@ -2857,8 +2878,13 @@ function hivemind.fluidLevels(context)
         -- its work.
         {key = "dna_extractor", name = "DNA Extractor", fluid = "ADN",
          fills = true},
+        -- Plein n est PAS un probleme ici, contrairement a l extracteur: le
+        -- joueur tire les proteines vers la machine qui les boit, donc une
+        -- cuve pleine est du surplus en attente. Le dire chaque fois etait du
+        -- bruit qui noyait les vrais avertissements. Seul le vide compte:
+        -- plus de proteines, c est la chaine qui s arrete.
         {key = "protein_liquifier", name = "Protein Liquifier",
-         fluid = "proteines", fills = true},
+         fluid = "proteines", fills = true, buffered = true},
         {key = "mutagen_producer", name = "Mutagen Producer", fluid = "mutagene"},
     }
 
@@ -2906,9 +2932,13 @@ function hivemind.fluidLevels(context)
                           and ((tank.ratio ~= nil and tank.ratio < LOW)
                                or amount == 0),
                     empty = not entry.fills and amount == 0,
-                    ready = entry.fills and amount > 0,
-                    full = entry.fills and tank.ratio ~= nil
-                           and tank.ratio > 0.90,
+                    -- A buffered tank is drained by the player on purpose,
+                    -- so neither "full" nor "there is some to move" is news
+                    ready = entry.fills and not entry.buffered and amount > 0,
+                    full = entry.fills and not entry.buffered
+                           and tank.ratio ~= nil and tank.ratio > 0.90,
+                    -- The one thing worth saying about it
+                    dry = entry.buffered and amount == 0,
                 })
             end
         end
@@ -2932,6 +2962,9 @@ function hivemind.fluidWarnings(context)
         elseif reading.ready then
             table.insert(warnings, string.format("%s : %d de %s a transferer",
                 reading.machine, reading.amount, reading.fluid))
+        elseif reading.dry then
+            table.insert(warnings, reading.machine .. " : plus de "
+                .. reading.fluid .. " -- la chaine qui en boit va s arreter")
         elseif reading.empty then
             table.insert(warnings, reading.machine .. " : plus de "
                 .. reading.fluid .. " -- a toi de le remplir")
@@ -3643,8 +3676,8 @@ local ADVANCED = {
     {key = "k", label = "Fabriquer le template d elevage",
      hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
      action = "buildTemplate"},
-    {key = "w", label = "Constituer la base",
-     hint = "les especes que rien ne produit: a attraper, puis a mettre a l abri",
+    {key = "w", label = "Valider la liste des abeilles de base",
+     hint = "celles qu aucun croisement ne peut produire: ce qui te manque encore",
      action = "buildBase"},
     {key = "h", label = "Quelle espece attraper ensuite",
      hint = "classees par nombre de genes manquants qu elles apportent",
@@ -3730,8 +3763,8 @@ local MAIN = {
     {key = "1", label = "Verifier l installation",
      hint = "machines, faces, slots, interfaces, cuves: un verdict, rien n est deplace",
      action = "checkInstall"},
-    {key = "2", label = "Constituer la base",
-     hint = "les especes que rien ne produit: a attraper, puis a mettre a l abri",
+    {key = "2", label = "Valider la liste des abeilles de base",
+     hint = "celles qu aucun croisement ne peut produire: ce qui te manque encore",
      action = "buildBase"},
     {key = "3", label = "Fabriquer le template d elevage",
      hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
@@ -3820,7 +3853,8 @@ local function advancedMenu(context)
         local width, height = screen.size()
 
         print("=== OUTILS AVANCES ===")
-        print("Toutes les options d origine, avec leurs touches d origine.")
+        print("Chaque machine et chaque gene, un par un. Le menu principal")
+        print("enchaine ces memes actions tout seul; ici tu les choisis.")
 
         drawOptions(width, height, ADVANCED)
 
@@ -3894,7 +3928,7 @@ local function menu(context)
 
         print("")
         print("    9  Outils avances                        "
-            .. "les " .. (#ADVANCED) .. " options d origine, intactes")
+            .. "machines, genes, templates, file: tout, en detail")
         print("    0  Quitter")
         io.write("Choix: ")
 
