@@ -271,13 +271,19 @@ config.machines = {
     -- The program reads their tanks to warn, and never moves anything.
     -- On its own transposer, with nothing else. No source, and none needed:
     -- the program reads its tank and never moves an item to it.
+    -- driver 0, not 2. Mesure du 2026-09-04 par tools/autoreport : ces deux
+    -- machines n'ont qu'UN SEUL slot, qui tenait un Raw Porkchop et un
+    -- Glowstone -- les deux entrees que le joueur fournit. La valeur 2 venait
+    -- de la symetrie avec les machines de genetique, et elle designait un slot
+    -- qui n'existe pas. Sans consequence tant que le programme se contente de
+    -- lire leurs cuves ; le controle d'installation, lui, le voit.
     protein_liquifier = {
         transposer = LIQUIFIER, machine = 4, source = nil, enabled = true,
-        slots = {input = 2},
+        slots = {input = 0},
     },
     mutagen_producer = {
         transposer = MUTAGEN, machine = 2, source = nil, enabled = true,
-        slots = {input = 2},
+        slots = {input = 0},
     },
 }
 
@@ -422,6 +428,27 @@ config.gene_sources = {
 --- Keys are the allele as the profiles write it, because that is what gets
 --- looked up. Anything the quests do not name stays absent: inventing a
 --- species would send someone breeding for nothing.
+--- Where a base species actually comes from.
+---
+--- « Sans parents » n'est PAS « trouvable dans une ruche sauvage ». Le
+--- programme sait dire qu'une espèce n'a aucune mutation — c'est du calcul sur
+--- les données du jeu — mais rien dans l'API ne dit si elle sort d'une ruche,
+--- d'une quête, d'un craft ou d'un mob. Envoyer quelqu'un chercher une ruche
+--- de Deep Learner lui fait perdre une soirée.
+---
+--- Cette table est donc **volontairement vide**. Chaque entrée doit être
+--- constatée en jeu, jamais recopiée d'un wiki Forestry : MeatballCraft a
+--- réécrit l'arbre. Une espèce absente d'ici est annoncée « origine a
+--- confirmer », ce qui est la vérité.
+---
+--- Valeurs acceptées : "ruche" (une ruche sauvage la donne), "autre" (quête,
+--- craft, mob — le programme ne peut rien pour toi).
+---
+---   config.base_origins["Meadows"] = "ruche"
+---
+--- @type table<string, string>
+config.base_origins = {}
+
 config.gene_carriers = {
     -- Speed. Robotic is the pack maximum, Fastest the best Forestry one.
     [1] = {
@@ -464,6 +491,16 @@ config.gene_carriers = {
 
 config.genetics = {
     sample_timeout_seconds = 120,
+    -- What the installation check calls "enough". Below these the queue does
+    -- not fail, it stops and asks -- which is worse to discover mid-campaign
+    -- than on the check screen.
+    supply_floor = {labware = 16, blank = 16},
+    -- Une espece obtenue une fois ne doit plus jamais etre a refaire: des
+    -- qu un croisement reussit, la chasse a son gene Species part en file.
+    -- Sous ce nombre de drones la chasse s arreterait faute d abeilles, donc
+    -- elle attend le prochain passage plutot que d encombrer la file.
+    autosave_species = true,
+    autosave_min_drones = 4,
     -- Drones kept per species before any are fed to the DNA Extractor. A bee is
     -- cheap to keep and expensive to re-obtain, and the extractor destroys
     -- what it takes.
