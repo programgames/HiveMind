@@ -904,6 +904,32 @@ do
 end
 
 print("")
+print("-- une espece de base se tient en PAIRE, pas en nombre --")
+
+do
+    -- Une princesse seule ne se reproduit pas, et des drones seuls meurent
+    -- avec le dernier echantillon. Le critere est donc la paire: c est elle
+    -- qui rend l espece refaisable pour toujours. Compter les drones -- ou
+    -- pire, additionner princesses et drones -- promet des abeilles qu on ne
+    -- peut pas depenser.
+    local from = text:find("function hivemind.buildBase", 1, true)
+    local stop = text:find("\nend\n", from or 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("les princesses et les drones sont comptes separement",
+          body:find("local drones, princesses", 1, true) ~= nil)
+    check("et la paire decide",
+          body:find("hasPrincess and hasDrone", 1, true) ~= nil)
+
+    -- Aller chercher une abeille de base est le travail du joueur, dans le
+    -- monde. Le programme ne sait pas d ou elle sort et n a pas a le suivre.
+    check("l ecran n invente pas l origine des especes",
+          body:find("base_origins", 1, true) == nil)
+    check("il envoie chercher dans la nature",
+          body:find("va les chercher dans la nature", 1, true) ~= nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.96.0"
+hivemind.VERSION = "0.97.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1722,7 +1722,9 @@ function hivemind.buildBase(context)
     print("")
     print("=== VALIDER LA LISTE DES ABEILLES DE BASE ===")
     print("Prerequis: installation validee (option 1).")
-    print("Les especes que rien ne produit: il faut aller les chercher.")
+    print("Aucun croisement ne produit ces especes: elles se trouvent.")
+    print("Il t en faut une PRINCESSE ET UN DRONE pour pouvoir en refaire,")
+    print("puis son gene d espece pour ne plus jamais avoir a la chercher.")
 
     local registry = context.species
 
@@ -1821,154 +1823,112 @@ function hivemind.buildBase(context)
     context.library:scan()
     local saved = context.library:speciesGenes()
 
-    -- Three piles, not two. A species held only as princesses cannot be
-    -- sampled and cannot even be multiplied, so putting it next to one with
-    -- sixty drones under a single heading is what makes the screen lie.
-    local toCatch, canHunt, needDrones, done = {}, {}, {}, 0
+    -- The criterion is the PAIR, not a drone count. One princess and one drone
+    -- of a species is what lets it be made again for ever: the princess alone
+    -- reproduces nothing, and the drones alone die with the last sample. Below
+    -- that pair the species is not acquired, however many princesses are held.
+    --
+    -- Two questions, in order, and nothing else on this screen:
+    --   1. do I hold the pair for every base species?
+    --   2. is its species gene saved, so I never have to find it again?
+    local complete, toSave, toFind = {}, {}, {}
 
     for _, entry in ipairs(base) do
-        if not held(entry.name) then
-            table.insert(toCatch, entry)
+        local hasPrincess = (princesses[entry.name] or 0) > 0
+        local hasDrone = (drones[entry.name] or 0) > 0
+
+        if not (hasPrincess and hasDrone) then
+            table.insert(toFind, entry)
         elseif saved[entry.name] then
-            done = done + 1
-        elseif (drones[entry.name] or 0) >= 2 then
-            table.insert(canHunt, entry)
+            table.insert(complete, entry)
         else
-            table.insert(needDrones, entry)
+            table.insert(toSave, entry)
         end
     end
 
-    -- One line per pile, not four numbers and no direction. Someone reading
-    -- "30 especes - 1, 3, 12, 14" learns the shape of the problem and nothing
-    -- about what to do next.
+    -- Alphabetical: this is a checklist to run down, and ordering it by a
+    -- criterion the screen no longer shows would be ordering it by a secret.
+    for _, pile in ipairs({complete, toSave, toFind}) do
+        table.sort(pile, function(a, b) return a.name < b.name end)
+    end
+
     print("")
     print(screen.count(#base, "abeille de base", "abeilles de base") .. ". "
-        .. done .. " " .. screen.plural(done, "sauvegardee") .. ", "
-        .. #canHunt .. " " .. screen.plural(#canHunt, "prete") .. ", "
-        .. #needDrones .. " sans drone, "
-        .. #toCatch .. " " .. screen.plural(#toCatch, "introuvee") .. ".")
+        .. #complete .. " " .. screen.plural(#complete, "complete") .. ", "
+        .. #toSave .. " a sauvegarder, "
+        .. #toFind .. " a trouver.")
 
-    -- Which one to start with, and why. Twelve species that all look alike is
-    -- where a player stalls. The rule is the most useful one that HAS
-    -- something to work with: sending someone at a species they hold three
-    -- princesses of is sending them somewhere a single failed cross hurts.
-    local ENOUGH = 5
-    local best = nil
-    for _, entry in ipairs(needDrones) do
-        if (princesses[entry.name] or 0) >= ENOUGH
-           and (not best or entry.unlocks > best.unlocks) then
-            best = entry
-        end
+    local function pair(entry)
+        local p = princesses[entry.name] or 0
+        local d = drones[entry.name] or 0
+
+        return string.format("%4d %s%4d %s", p,
+            screen.fit(screen.plural(p, "princesse"), 11),
+            d, screen.plural(d, "drone"))
     end
 
-    if best then
-        -- Two lines: eighty columns is the floor, and this one ran to
-        -- eighty-eight, which wraps in the middle of a word
-        print("-> Commence par " .. best.name .. ": il sert a "
-            .. screen.count(best.unlocks, "espece") .. ".")
-        print("   Tu as " .. screen.count(princesses[best.name], "princesse")
-            .. ((drones[best.name] or 0) > 0
-                and (" et " .. screen.count(drones[best.name], "drone") .. ".")
-                or ", il ne manque que le drone."))
-    end
-
-    --- One list, one shape, capped so the screen never scrolls its own heading
-    --- off the top
-    --- @param entries table[]
-    --- @param limit number
-    --- @param line function(entry) -> string
-    local function listing(entries, limit, line)
-        local shown = 0
-        for _, entry in ipairs(entries) do
-            if shown >= limit then break end
-            print("  " .. line(entry))
-            shown = shown + 1
-        end
-
-        if #entries > shown then
-            print("  ... et " .. (#entries - shown) .. " "
-                .. screen.plural(#entries - shown, "autre"))
-        end
-    end
-
-    -- "sert a N especes" and not "debloque N especes": read quickly, "debloque"
-    -- promises that catching this bee hands you twenty-seven others.
-    local function serves(entry)
-        return "sert a " .. string.format("%2d", entry.unlocks) .. " "
-            .. screen.plural(entry.unlocks, "espece")
-    end
-
-    if #canHunt > 0 then
+    if #toSave > 0 then
         print("")
-        print(#canHunt .. " " .. screen.plural(#canHunt, "PRETE", "PRETES")
-            .. " — sauve leur gene maintenant")
+        print(#toSave .. " A SAUVEGARDER — tu as la princesse et le drone")
 
-        listing(canHunt, 8, function(entry)
-            return screen.fit(entry.name, 14)
-                .. string.format(" %3d ", drones[entry.name] or 0)
-                .. screen.fit(screen.plural(drones[entry.name] or 0, "drone"), 9)
-                .. " " .. serves(entry)
-        end)
+        for _, entry in ipairs(toSave) do
+            print("  " .. screen.fit(entry.name, 16) .. pair(entry))
+        end
 
-        print("  Choisis 9 puis i pour lancer " .. (#canHunt > 1
-            and ("les " .. #canHunt .. " chasses") or "la chasse") .. ".")
+        print("  Choisis 9 puis i pour lancer ces chasses.")
     end
 
-    if #needDrones > 0 then
-        -- The heading carries the way out. "rien ne peut demarrer" announced a
-        -- dead end and left the answer four lines below, after the list.
+    if #toFind > 0 then
         print("")
-        print(#needDrones .. " SANS DRONE — croise-les pour en produire")
+        print(#toFind .. " A TROUVER — va les chercher dans la nature")
 
-        listing(needDrones, 8, function(entry)
-            local count = princesses[entry.name] or 0
-            local held = screen.plural(count, "princesse")
+        for _, entry in ipairs(toFind) do
+            local p = princesses[entry.name] or 0
+            local d = drones[entry.name] or 0
 
-            -- The drone count is zero on almost every line; printing it there
-            -- teaches nothing and buries the one species that has one
-            if (drones[entry.name] or 0) > 0 then
-                held = held .. " + " .. screen.count(drones[entry.name], "drone")
+            local lacking
+            if p == 0 and d == 0 then lacking = "rien en stock"
+            elseif d == 0 then lacking = "il manque le drone"
+            else lacking = "il manque la princesse" end
+
+            -- A gene already saved does not make the species held: it means
+            -- one was sampled before the pair was lost.
+            if saved[entry.name] then
+                lacking = lacking .. ", gene deja sauve"
             end
 
-            return screen.fit(entry.name, 14)
-                .. string.format(" %3d ", count)
-                .. screen.fit(held, 22) .. " " .. serves(entry)
-        end)
+            -- Only what is actually held. "0 D" next to "il manque le drone"
+            -- is the same fact twice, and "0 P 0 D" next to "rien en stock" is
+            -- it three times.
+            local counts = ""
+            if p > 0 then counts = string.format("%4d P", p) end
+            if d > 0 then
+                counts = counts .. string.format("%s%4d D",
+                    p > 0 and " " or "", d)
+            end
 
-        print("  Une princesse seule ne lance rien. Croise-la avec un drone")
-        print("  d une autre espece: les descendants porteront son gene, et le")
-        print("  Sampler pourra le tirer.")
-    end
-
-    if #toCatch > 0 then
-        print("")
-        print(#toCatch .. " " .. screen.plural(#toCatch, "INTROUVEE", "INTROUVEES")
-            .. " — les plus utiles d abord")
-
-        local origins = config.base_origins or {}
-        local noted = 0
-
-        listing(toCatch, 8, function(entry)
-            local origin = origins[entry.name]
-            local note = ""
-            -- Repeated on every line, "origine a confirmer" was the same word
-            -- fourteen times and taught nothing. It is said once, below.
-            if origin == "ruche" then note = "   ruche sauvage" noted = noted + 1
-            elseif origin == "autre" then note = "   quete ou craft" noted = noted + 1 end
-
-            return screen.fit(entry.name, 14) .. " " .. serves(entry) .. note
-        end)
-
-        if noted < #toCatch then
-            print("  Aucune origine notee pour la plupart: rien dans l API du jeu")
-            print("  ne dit si une ruche les donne. Renseigne config.base_origins")
-            print("  quand tu l auras constate en jeu.")
+            print("  " .. screen.fit(entry.name, 16)
+                .. screen.fit(counts, 13) .. lacking)
         end
     end
 
-    if #toCatch == 0 and #toSave == 0 then
+    if #complete > 0 then
         print("")
-        print("La base est complete: toutes les especes de base sont a l abri.")
+        print(#complete .. " " .. screen.plural(#complete, "COMPLETE")
+            .. " — paire en stock et gene sauve")
+
+        local names = {}
+        for _, entry in ipairs(complete) do table.insert(names, entry.name) end
+
+        for _, line in ipairs(screen.wrap(table.concat(names, ", "), 72)) do
+            print("  " .. line)
+        end
+    end
+
+    if #toFind == 0 and #toSave == 0 then
+        print("")
+        print("La base est complete: chaque espece de base est en paire et son")
+        print("gene est en bibliotheque. Tu n auras plus jamais a les chercher.")
     end
 end
 

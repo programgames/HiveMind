@@ -78,7 +78,7 @@ chantiers produisent des tâches qui meurent d'un geste de cinq secondes.
 - [x] 4.1 Contrôle des consommables : labware et samples vierges au-dessus d'un seuil
 - [x] 4.1 Verdict unique : validée, ou la liste des gestes à faire
 - [x] 4.3 Balayage de toutes les espèces par lots, en cache, pour trouver celles sans parents
-- [ ] 4.3 Séparation « ruche sauvage » / « autre origine » — table `config.base_origins` en place et documentée, **vide** : à remplir en jeu, rien ne permet de la déduire
+- [x] 4.3 ~~Séparation « ruche sauvage » / « autre origine »~~ — **abandonné le 2026-09-04** : suivre d'où vient une abeille n'est pas la responsabilité du programme, c'est le travail du joueur dans le monde. `config.base_origins` supprimée
 - [x] 4.3 Écran « ce que tu dois attraper », ordonné par ce que chaque espèce débloque
 - [x] 4.3 Le gène d'espèce est sauvé automatiquement à la fin de chaque croisement réussi
 - [x] 4.3 Le programme ne rechasse pas un gène d'espèce déjà sauvé

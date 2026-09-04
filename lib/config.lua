@@ -428,27 +428,6 @@ config.gene_sources = {
 --- Keys are the allele as the profiles write it, because that is what gets
 --- looked up. Anything the quests do not name stays absent: inventing a
 --- species would send someone breeding for nothing.
---- Where a base species actually comes from.
----
---- « Sans parents » n'est PAS « trouvable dans une ruche sauvage ». Le
---- programme sait dire qu'une espèce n'a aucune mutation — c'est du calcul sur
---- les données du jeu — mais rien dans l'API ne dit si elle sort d'une ruche,
---- d'une quête, d'un craft ou d'un mob. Envoyer quelqu'un chercher une ruche
---- de Deep Learner lui fait perdre une soirée.
----
---- Cette table est donc **volontairement vide**. Chaque entrée doit être
---- constatée en jeu, jamais recopiée d'un wiki Forestry : MeatballCraft a
---- réécrit l'arbre. Une espèce absente d'ici est annoncée « origine a
---- confirmer », ce qui est la vérité.
----
---- Valeurs acceptées : "ruche" (une ruche sauvage la donne), "autre" (quête,
---- craft, mob — le programme ne peut rien pour toi).
----
----   config.base_origins["Meadows"] = "ruche"
----
---- @type table<string, string>
-config.base_origins = {}
-
 config.gene_carriers = {
     -- Speed. Robotic is the pack maximum, Fastest the best Forestry one.
     [1] = {
