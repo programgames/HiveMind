@@ -203,6 +203,70 @@ checkTruthy("les especes manquantes sont listees",
             table.concat(missingLines, "\n"):find("Meadows", 1, true))
 
 print("")
+print("-- plusieurs especes d un coup --")
+
+do
+    -- The template wants eleven alleles carried by seven bees. Planning them
+    -- one at a time replans the same opening chain seven times and, worse,
+    -- plans the same cross twice: the second one would fail on a princess the
+    -- first one had already spent.
+    local many, err = planner.planMany({
+        registry = registry,
+        available = heldSet({"Forest", "Meadows"}),
+        targets = {"Cultivated", "Majestic"},
+    })
+
+    checkTruthy("un plan combine sort (" .. tostring(err) .. ")", many)
+
+    local seen = {}
+    local repeated = nil
+    for _, step in ipairs(many.steps) do
+        if seen[step.target] then repeated = step.target end
+        seen[step.target] = true
+    end
+
+    check("aucun croisement planifie deux fois", repeated, nil)
+    checkTruthy("Common n est croise qu une fois", seen.Common)
+    checkTruthy("Cultivated aussi", seen.Cultivated)
+    checkTruthy("et Majestic est atteint", seen.Majestic)
+    check("les deux cibles sont atteignables", many.reachable, true)
+
+    -- The order is the whole point: a step must never come before its parents
+    local position = {}
+    for index, step in ipairs(many.steps) do position[step.target] = index end
+
+    checkTruthy("Common avant Cultivated", position.Common < position.Cultivated)
+    checkTruthy("Cultivated avant Noble", position.Cultivated < position.Noble)
+    checkTruthy("Noble avant Majestic", position.Noble < position.Majestic)
+
+    -- One target already in stock must not drag the others down
+    local mixed = planner.planMany({
+        registry = registry,
+        available = heldSet({"Forest", "Meadows", "Common"}),
+        targets = {"Common", "Cultivated"},
+    })
+
+    check("une cible deja possedee ne coute aucun croisement",
+          mixed.targets[1].held, true)
+    check("et l autre est planifiee normalement", mixed.targets[2].held, false)
+
+    -- A base species nobody holds is the one thing no code can fix
+    local blocked = planner.planMany({
+        registry = registry,
+        available = heldSet({"Forest"}),
+        targets = {"Cultivated", "Imperial"},
+    })
+
+    check("un plan combine impossible le dit", blocked.reachable, false)
+    check("l espece de base manquante est nommee une seule fois",
+          #blocked.missing, 1)
+    check("et c est la bonne", blocked.missing[1].uid, "Meadows")
+
+    check("aucune cible refusee sans raison",
+          (planner.planMany({registry = registry, targets = {}})), nil)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

@@ -360,6 +360,110 @@ function Registry:isBase(uid)
     return #(self:parents(uid)) == 0
 end
 
+--- Ask the game for the parents of every species it has not been asked about
+--- Three hundred component calls in one go freeze the SERVER, not just this
+--- computer, so the sweep is done in slices and says how much is left. Calling
+--- it again continues where it stopped: everything learned is on disk.
+--- @param limit number|nil How many species to ask about in this slice
+--- @param onProgress function|nil Called with (done, total, name)
+--- @return table progress {asked, cached, total, remaining, complete}
+function Registry:sweepParents(limit, onProgress)
+    self:load()
+
+    local all, source = self:list()
+    if source == "vide" then
+        return {asked = 0, cached = 0, total = 0, remaining = 0, complete = false}
+    end
+
+    local names = {}
+    for uid in pairs(all) do table.insert(names, uid) end
+    table.sort(names)
+
+    local budget = tonumber(limit) or 40
+    local asked, cached = 0, 0
+
+    for _, uid in ipairs(names) do
+        if self.cache.parents[uid] then
+            cached = cached + 1
+        elseif asked < budget then
+            self:parents(uid)
+            asked = asked + 1
+            cached = cached + 1
+
+            if onProgress then
+                pcall(onProgress, cached, #names, all[uid] and all[uid].name)
+            end
+        end
+    end
+
+    -- parents() learns species that listAllSpecies never returned, so the total
+    -- grows as the sweep runs. Counting against the old total would report
+    -- "complete" on a list that had just got longer.
+    local total = 0
+    local known = 0
+    for uid in pairs(self:list()) do
+        total = total + 1
+        if self.cache.parents[uid] then known = known + 1 end
+    end
+
+    return {
+        asked = asked,
+        cached = known,
+        total = total,
+        remaining = total - known,
+        complete = known >= total,
+    }
+end
+
+--- Every species nothing can produce, and how much each one opens up
+--- A base species is where the whole tree starts: the program can never make
+--- one, so it is the shortest possible answer to "what do I have to go and
+--- catch". Ordering by what each unlocks is what stops someone spending a
+--- morning on a species that leads nowhere.
+---
+--- Only meaningful once sweepParents has finished: a species whose parents have
+--- never been asked for looks exactly like a species that has none.
+--- @return table[] species {uid, name, unlocks}
+--- @return boolean complete False when the sweep still has species to ask about
+function Registry:baseSpecies()
+    self:load()
+
+    local all = self:list()
+
+    local unlocks = {}
+    local complete = true
+
+    for uid in pairs(all) do
+        if not self.cache.parents[uid] then complete = false end
+
+        for _, mutation in ipairs(self.cache.parents[uid] or {}) do
+            for _, parent in ipairs({mutation.parent1, mutation.parent2}) do
+                unlocks[parent.uid] = (unlocks[parent.uid] or 0) + 1
+            end
+        end
+    end
+
+    local base = {}
+
+    for uid, entry in pairs(all) do
+        if #(self.cache.parents[uid] or {}) == 0 then
+            table.insert(base, {
+                uid = uid,
+                name = entry.name or uid,
+                unlocks = unlocks[uid] or 0,
+            })
+        end
+    end
+
+    -- Most useful first, then alphabetical so two runs read the same
+    table.sort(base, function(a, b)
+        if a.unlocks ~= b.unlocks then return a.unlocks > b.unlocks end
+        return a.name < b.name
+    end)
+
+    return base, complete
+end
+
 --- Mutation paths that need something beyond two parents
 --- These are the ones a planner must not treat as ordinary steps.
 --- @param uid string

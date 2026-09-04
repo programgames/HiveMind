@@ -149,6 +149,81 @@ function planner.plan(options)
     }
 end
 
+--- Plan the crosses needed to obtain SEVERAL species at once
+--- The template wants eleven alleles carried by seven bees, and planning them
+--- one at a time is both tedious and wasteful: two carriers usually share most
+--- of their tree, and a species bred for one is available for the next. Merging
+--- the plans is what turns "seven chains" into one ordered list.
+---
+--- The order is the order of the merged steps, and it already respects
+--- dependencies: solve() emits a species' parents before the species itself,
+--- and the deduplication keeps the FIRST occurrence, which is the earliest a
+--- step could run.
+--- @param options table {registry, available, targets, maxDepth}
+--- @return table|nil plan {steps, missing, targets, reachable}
+--- @return string|nil error
+function planner.planMany(options)
+    options = options or {}
+
+    local targets = options.targets
+    if type(targets) ~= "table" or #targets == 0 then
+        return nil, "aucune espece visee"
+    end
+
+    -- A species bred for one target is in stock for the next, so availability
+    -- grows as the merged plan progresses. Without this the same cross is
+    -- planned twice and the second one fails on a princess already spent.
+    local produced = {}
+    local base = options.available or function() return false end
+    local function available(uid)
+        return produced[uid] == true or base(uid)
+    end
+
+    local steps, seenStep = {}, {}
+    local missing, seenMissing = {}, {}
+    local outcomes = {}
+
+    for _, target in ipairs(targets) do
+        local plan, err = planner.plan({
+            registry = options.registry,
+            available = available,
+            target = target,
+            maxDepth = options.maxDepth,
+        })
+
+        if not plan then return nil, err end
+
+        for _, step in ipairs(plan.steps) do
+            if not seenStep[step.target] then
+                seenStep[step.target] = true
+                table.insert(steps, step)
+                produced[step.target] = true
+            end
+        end
+
+        for _, entry in ipairs(plan.missing) do
+            if not seenMissing[entry.uid] then
+                seenMissing[entry.uid] = true
+                table.insert(missing, entry)
+            end
+        end
+
+        table.insert(outcomes, {
+            uid = target,
+            held = plan.held == true,
+            reachable = plan.reachable,
+            steps = #plan.steps,
+        })
+    end
+
+    return {
+        targets = outcomes,
+        steps = steps,
+        missing = missing,
+        reachable = #missing == 0,
+    }
+end
+
 --- Readable rendering of a plan
 --- @param plan table
 --- @param naming function|nil uid -> display name

@@ -315,6 +315,73 @@ checkTruthy("methode absente expliquee", absent_err and absent_err:find("absente
 os.remove(CACHE)
 
 print("")
+print("-- balayage des especes de base --")
+
+do
+    -- Three hundred component calls in one go freeze the SERVER, not just this
+    -- computer. The sweep is sliced, and calling it again continues.
+    local CACHE2 = TMP .. "/hivemind-species-sweep.lua"
+    os.remove(CACHE2)
+
+    local swept = species.new({apiary = APIARY, cachePath = CACHE2})
+    swept:refresh()
+
+    local before = calls.getBeeParents
+    local first = swept:sweepParents(2)
+
+    check("la tranche demandee est respectee", first.asked, 2)
+    -- Two species asked about, at most two calls each: parents() retries with
+    -- the display name when the uid answers empty, which is what lets a base
+    -- species be told apart from a uid the game does not recognize.
+    checkTruthy("et le jeu n a ete sollicite que pour ces deux especes",
+                (calls.getBeeParents - before) <= 4)
+    check("le balayage n est pas fini", first.complete, false)
+    checkTruthy("et il dit combien il reste", first.remaining > 0)
+
+    -- Base species look exactly like species nobody asked about, so the answer
+    -- is worthless until the sweep is done. Saying so beats a wrong list.
+    local partial, complete = swept:baseSpecies()
+    check("tant que le balayage court, le resultat est marque incomplet",
+          complete, false)
+
+    -- Finish it. parents() learns species listAllSpecies never returned, so
+    -- the total grows while the sweep runs and it takes more than one slice.
+    local last
+    for _ = 1, 10 do
+        last = swept:sweepParents(50)
+        if last.complete then break end
+    end
+
+    check("le balayage finit par se terminer", last.complete, true)
+
+    local base, done = swept:baseSpecies()
+    check("et le resultat est alors complet", done, true)
+
+    -- Nickel and Saffron both have parents; everything else in this world is
+    -- a leaf, including the four uids only getBeeParents ever mentioned
+    local byName = {}
+    for _, entry in ipairs(base) do byName[entry.name] = entry end
+
+    checkTruthy("Forest est une espece de base", byName["Forest"])
+    check("Nickel ne l est pas", byName["Nickel"], nil)
+    check("Saffron non plus", byName["Saffron"], nil)
+
+    -- The whole point of the ordering: nobody should start with the species
+    -- that leads nowhere
+    checkTruthy("les porteuses les plus utiles sont en tete",
+                base[1].unlocks >= base[#base].unlocks)
+    check("Ferrous debloque Nickel", byName["Ferrous"].unlocks, 1)
+
+    -- Asking twice must not re-ask the game: the cache is the whole point
+    local settled = calls.getBeeParents
+    swept:sweepParents(50)
+    check("un balayage deja fait ne coute plus rien",
+          calls.getBeeParents, settled)
+
+    os.remove(CACHE2)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
