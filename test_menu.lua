@@ -248,6 +248,15 @@ local screenText = io.open("lib/screen.lua"):read("a")
 -- out of the machine.
 do
     local discoverText = io.open("tools/discover.lua"):read("a")
+    local probeText = io.open("tools/probe.lua"):read("a")
+
+    -- internet.request() only CREATES the request. Both tools announced a
+    -- delivery and sent nothing, silently, every single time -- the reports
+    -- simply never arrived and nothing said so.
+    check("discover attend vraiment la reponse avant de crier victoire",
+          discoverText:find("for chunk in handle do", 1, true) ~= nil)
+    check("probe aussi",
+          probeText:find("for _ in handle do", 1, true) ~= nil)
     check("discover sait envoyer son rapport",
           discoverText:find("--upload", 1, true) ~= nil
           and discoverText:find("report_mailbox", 1, true) ~= nil)

@@ -20,6 +20,10 @@ local config = {}
 -- machine at the wrong neighbour. A prefix is enough to identify one.
 local GENETICS = "65d3da44"   -- sampler, genetic transposer, imprinter
 local BREEDING = "95625858"   -- mutatron, apiary, template chest
+-- Third bench, found by tools/discover on 2026-09-04: replicator (side 2) and
+-- DNA extractor (side 5). No ME Interface sits on it yet, so it can move
+-- nothing in or out of the network -- see config.interfaces.
+local PRODUCTION = "c33193aa" -- replicator, dna extractor
 
 -- Sides are resolved lazily: this module is loaded by desktop tests too, where
 -- the OpenComputers libraries do not exist.
@@ -74,6 +78,10 @@ config.interfaces = {
     -- If it turns out to be the wrong way round, staging fails with a clear
     -- reason rather than silently, so the mistake is cheap.
     [GENETICS] = "983cd2bd",   -- sampler, genetic transposer, imprinter
+    -- No entry for PRODUCTION on purpose: discover found no ME Interface on
+    -- that transposer at all. Inventing an address here would make every
+    -- delivery fail as "la machine refuse cet objet", which is the one error
+    -- message that has already cost an evening.
 }
 
 config.template_chest = {
@@ -201,23 +209,25 @@ config.machines = {
     -- slot happens to accept it. Run tools/probe once they are placed, then
     -- tools/discover for the sides, then set enabled = true.
     replicator = {
-        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        transposer = PRODUCTION, machine = 2, source = nil, enabled = false,
         -- The template decides which bee comes out, so it is what the machine
         -- reads; the bee it prints is the output.
         slots = {template = 0, labware = 1, output = 3},
     },
     dna_extractor = {
-        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        transposer = PRODUCTION, machine = 5, source = nil, enabled = false,
         -- The bee is consumed and the DNA leaves as a fluid, so there is no
         -- item output to drain -- only an input to keep fed.
         slots = {labware = 1, input = 2},
     },
     -- These two are the player's business: they make what the others drink.
     -- The program reads their tanks to warn, and never moves anything.
+    -- Never seen by discover: not placed against any transposer yet.
     protein_liquifier = {
-        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        transposer = PRODUCTION, machine = nil, source = nil, enabled = false,
         slots = {input = 2},
     },
+    -- Never seen by discover either.
     mutagen_producer = {
         transposer = BREEDING, machine = nil, source = nil, enabled = false,
         slots = {input = 2},

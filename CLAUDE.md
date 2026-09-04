@@ -57,6 +57,7 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 | **Un appel de composant bloque le SERVEUR, pas seulement l'ordinateur** | Ne jamais passer un long délai à `waitForPrincess` ou `selectAndProduce` : le monde s'arrête, le watchdog tue l'hôte. Démarrer, puis **sonder** |
 | Un répertoire du même nom masque un programme | L'état va dans `/home/hivemind-state`, pas `/home/hivemind` |
 | Le CDN de GitHub sert des fichiers périmés plusieurs minutes, **par fichier** | Chaque téléchargement porte `?nocache=<jeton unique>` |
+| **`internet.request()` ne fait que CRÉER la requête** | Rien n'est envoyé tant que le handle n'est pas lu. `pcall(internet.request, ...)` puis « envoyé ! » a menti silencieusement dans `discover` et `probe` : les rapports n'arrivaient jamais et rien ne le disait. Toujours `for chunk in handle do end` |
 
 ---
 
@@ -174,6 +175,13 @@ les machines nomment un transposer par son index.
 |---|---|---|
 | `65d3da44` | `983cd2bd` | Sampler (5), Genetic Transposer (3), Imprinter (2), interface (4) |
 | `95625858` | `4c447a5c` | Mutatron (5), Apiary (3), coffre à templates (4), interface (2) |
+| `c33193aa` | **aucune** | Replicator (2), DNA Extractor (5) |
+
+**Le troisième banc n'a pas de ME Interface** (relevé le 2026-09-04). Les deux
+machines sont vues, adressables, et ne peuvent recevoir ni rendre aucun objet :
+il n'y a pas de source. Tant qu'une ME Interface + un Adapter ne sont pas posés
+contre `c33193aa`, `replicator` et `dna_extractor` restent `enabled = false`.
+Le Protein Liquifier et le Mutagen Producer ne sont contre aucun transposer.
 
 **Jamais d'index de position en config** : ajouter un transposer au réseau les
 renumérote tous et chaque machine pointe alors vers le mauvais voisin, sans

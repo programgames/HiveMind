@@ -177,6 +177,35 @@ local function renderConfig(discovered)
     return table.concat(lines, "\n") .. "\n"
 end
 
+    --- POST a body and wait for the answer
+    --- internet.request() only CREATES the request: it hands back a handle, and
+    --- nothing is actually sent until that handle is read. Calling it inside a
+    --- pcall and reporting success made this tool announce "depose dans la boite
+    --- aux lettres" while sending nothing at all, twice, for two different
+    --- tools. autoreport drains the handle, which is why only autoreport worked.
+    --- @param url string
+    --- @param body string
+    --- @return boolean ok
+    --- @return string response
+    local function post(url, body)
+        local net_ok, internet = pcall(require, "internet")
+        if not net_ok then return false, "bibliotheque internet absente" end
+
+        local requested, handle = pcall(internet.request, url, body,
+            {["Content-Type"] = "text/plain"}, "POST")
+
+        if not requested then return false, tostring(handle) end
+
+        local chunks = {}
+        local read_ok = pcall(function()
+            for chunk in handle do table.insert(chunks, chunk) end
+        end)
+
+        if not read_ok then return false, "reponse illisible" end
+
+        return true, table.concat(chunks)
+    end
+
 local function main(args)
     local write, doUpload = false, false
     for _, arg in ipairs(args) do
@@ -331,8 +360,7 @@ local function main(args)
         return
     end
 
-    local net_ok, internet = pcall(require, "internet")
-    if not net_ok or not component.isAvailable("internet") then
+    if not component.isAvailable("internet") then
         print("Pas de carte Internet: le rapport reste sur le disque.")
         return
     end
@@ -345,11 +373,11 @@ local function main(args)
         return
     end
 
-    local sent = pcall(internet.request, mailbox, body,
-        {["Content-Type"] = "text/plain"}, "POST")
+    local sent, answer = post(mailbox, body)
 
     print(sent and "Topologie deposee dans la boite aux lettres."
-                or "Envoi impossible: le rapport reste sur le disque.")
+                or ("Envoi impossible (" .. tostring(answer)
+                    .. "): le rapport reste sur le disque."))
 end
 
 main({...})

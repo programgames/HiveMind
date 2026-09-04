@@ -248,19 +248,42 @@ local function main(args)
     if not doUpload then return end
 
     local body = table.concat(report, "\n") .. "\n"
-    local net_ok, internet = pcall(require, "internet")
-
-    if not net_ok or not component.isAvailable("internet") then
-        print("Pas de carte Internet.")
+    if not component.isAvailable("internet") then
+        print("Pas de carte Internet: le resultat reste a l ecran.")
         return
     end
 
     local mailbox = config.report_mailbox
-    if mailbox then
-        pcall(internet.request, mailbox, body,
-            {["Content-Type"] = "text/plain"}, "POST")
-        print("Resultat depose dans la boite aux lettres.")
+    if not mailbox then
+        print("Aucune boite aux lettres dans lib/config.lua.")
+        return
     end
+
+    -- internet.request() only CREATES the request: it hands back a handle, and
+    -- NOTHING is sent until that handle is read. Calling it inside a pcall and
+    -- declaring success announced a delivery that never happened -- silently,
+    -- every time. autoreport drains the handle, which is why autoreport was the
+    -- only tool whose reports ever arrived.
+    local net_ok, internet = pcall(require, "internet")
+    if not net_ok then
+        print("Bibliotheque internet absente.")
+        return
+    end
+
+    local requested, handle = pcall(internet.request, mailbox, body,
+        {["Content-Type"] = "text/plain"}, "POST")
+
+    if not requested then
+        print("Envoi impossible: " .. tostring(handle))
+        return
+    end
+
+    local read_ok = pcall(function()
+        for _ in handle do end
+    end)
+
+    print(read_ok and "Resultat depose dans la boite aux lettres."
+                   or "Envoi parti sans reponse lisible.")
 end
 
 main({...})
