@@ -389,4 +389,36 @@ check("une ecriture sans effet est detectee",
 check("et comptee comme un echec d'ecriture",
       text:find("Ecritures echouees", 1, true) ~= nil)
 
+
+-- ---------------------------------------------------------------------------
+-- The launcher stub
+--
+-- Two full copies of the installer failed to stay in step twice: different file
+-- lists once, and a copy old enough to take "--clean" for a branch name once,
+-- which fetched seventeen files from a branch called --clean. So the launcher
+-- stops being a copy and becomes a forwarder with nothing in it to go stale.
+
+do
+    local source = io.open("tools/hminstall.lua"):read("a")
+    local block = source:match("local LAUNCHER_STUB = (table%.concat%b())")
+
+    check("l installeur ecrit un relais, pas une copie", block ~= nil)
+
+    if block then
+        local stub = load("return " .. block)()
+
+        check("le relais est du Lua valide", load(stub) ~= nil)
+        check("il transmet ses arguments",
+              stub:find("chunk(...)", 1, true) ~= nil)
+        check("il ne contient aucune liste de fichiers",
+              stub:find("lib/config.lua", 1, true) == nil)
+        check("et il dit quoi faire s il ne trouve pas l installeur",
+              stub:find("Installeur introuvable", 1, true) ~= nil)
+    end
+
+    -- Silence is how the drift lasted so long
+    check("un echec d ecriture du relais est annonce",
+          source:find("ECHEC de la mise a niveau de", 1, true) ~= nil)
+end
+
 os.exit(failed and 1 or 0)

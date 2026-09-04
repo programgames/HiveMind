@@ -278,21 +278,54 @@ local function main(args)
 
         local updatedItself, updateError = false, nil
 
-        -- Keep the launcher copy in step with the downloaded one. They drifted:
-        -- /home/hminstall.lua sat at a seventeen-file list while tools/ had
-        -- twenty, so "hminstall" and "tools/hminstall" installed different
-        -- things and lib/genetics.lua was in only one of them.
+        -- /home/hminstall.lua is what "hminstall" runs, and keeping a full
+        -- copy of this file there in step failed twice: once they drifted to
+        -- different file lists, once the old one took "--clean" for a branch
+        -- name and fetched seventeen files from a branch called --clean.
+        --
+        -- So it stops being a copy. A stub that forwards has no file list, no
+        -- flag parsing and no version -- nothing that can go stale.
+        local LAUNCHER_STUB = table.concat({
+            "-- HiveMind installer launcher, written by tools/hminstall.lua",
+            "--",
+            "-- Deliberately empty of logic: a full copy of the installer here",
+            "-- went stale twice, once installing a shorter file list than",
+            "-- tools/hminstall.lua, once taking --clean for a branch name.",
+            "-- This forwards every argument to the real one instead.",
+            "",
+            'local REAL = "/home/tools/hminstall.lua"',
+            "",
+            "local chunk, err = loadfile(REAL)",
+            "if not chunk then",
+            '    print("Installeur introuvable: " .. tostring(err))',
+            '    print("Attendu dans " .. REAL)',
+            '    print("Retelecharge-le depuis le depot.")',
+            "    return",
+            "end",
+            "",
+            "return chunk(...)",
+            "",
+        }, "\n")
+
         local launcher = absolute("hminstall.lua")
         if running and absolute(running) == absolute("tools/hminstall.lua") then
             local existing_copy = io.open(launcher, "r")
             local existing_body = existing_copy and existing_copy:read("*all") or nil
             if existing_copy then existing_copy:close() end
 
-            if existing_body and existing_body ~= ownBody then
-                local synced = write(launcher, ownBody)
+            if existing_body ~= LAUNCHER_STUB then
+                local synced, sync_err = write(launcher, LAUNCHER_STUB)
+
+                print("")
                 if synced then
-                    print("")
-                    print("Copie de lancement remise a niveau : " .. launcher)
+                    print("Copie de lancement remplacee par un relais : " .. launcher)
+                    print("'hminstall' et 'tools/hminstall' feront la meme chose.")
+                else
+                    -- Silence here is how the drift lasted so long
+                    print("ECHEC de la mise a niveau de " .. launcher
+                        .. " : " .. tostring(sync_err))
+                    print("Tant que ce fichier est vieux, tape TOUJOURS"
+                        .. " 'tools/hminstall'.")
                 end
             end
         end
