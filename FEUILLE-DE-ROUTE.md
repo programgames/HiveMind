@@ -31,7 +31,7 @@ gènes d'espèce dans AE2 et des templates fabriqués au besoin.
 **Rien ne peut avancer sans ça.** Quatre choses, toutes sur des faces déjà
 libres. Aucune machine à déplacer.
 
-### 0.1 — Un deuxième Genetic Imprinter
+### ✅ 0.1 — Un deuxième Genetic Imprinter
 
 **Problème** : un Imprinter tient un seul template. Avec deux profils
 (élevage, production), il faudrait échanger le template à chaque changement —
@@ -45,7 +45,7 @@ Sampler, l'Imprinter actuel et le Genetic Transposer.
 **Résultat attendu** : « imprime cette abeille en profil production » devient
 un choix de machine, pas une manipulation.
 
-### 0.2 — Un coffre côté génétique
+### ✅ 0.2 — Un coffre côté génétique
 
 **Problème** : un template posé dans AE2 est perdu parmi ses jumeaux.
 
@@ -58,7 +58,7 @@ position connue.
 les objets qui se ressemblent, et deux templates se ressemblent parfaitement.
 Tu en perdrais définitivement.
 
-### 0.3 — ~~Un coffre côté Replicator~~ — annulé
+### 0.3 — ✅ ~~Un coffre côté Replicator~~ — annulé
 
 **Ne le pose pas.** Je l'avais mis par symétrie, il ne sert à rien.
 
@@ -70,7 +70,7 @@ geste qui te prend cinq secondes à la main.
 Et si l'expérience de l'étape 1 réussit, il devient inutile même pour ça : les
 templates viendraient d'AE2, et **le Replicator a déjà sa propre interface ME**.
 
-### 0.4 — Deux templates identiques, pour l'expérience de l'étape 1
+### ✅ 0.4 — Deux templates identiques, pour l'expérience de l'étape 1
 
 Prends deux templates vierges, ajoute-leur **le même gene sample** à la table
 de craft. Tu obtiens deux templates au contenu identique, appelons-les T et T′.
@@ -78,7 +78,7 @@ de craft. Tu obtiens deux templates au contenu identique, appelons-les T et T′
 - **T** → dans le réseau AE2
 - **T′** → dans le coffre de l'étape 0.2
 
-### 0.5 — Envoie-moi la topologie
+### ✅ 0.5 — Envoie-moi la topologie
 
 ```
 tools/hminstall --clean
@@ -105,8 +105,18 @@ transposer sait en faire une « photographie » complète, données cachées
 comprises, et la ranger dans un Database upgrade. On demande ensuite au réseau
 l'objet décrit par cette photographie.
 
-**L'expérience** : je photographie T′ depuis le coffre, je demande au réseau, et
-je regarde ce qui arrive.
+**L'expérience** : `tools/nbtprobe`. Il photographie T′ depuis le coffre,
+demande le même au réseau, et compare les **empreintes** — pas les étiquettes,
+qui sont identiques par construction.
+
+```
+tools/nbtprobe --upload          liste le coffre, ne bouge rien
+tools/nbtprobe --yes --upload    tente la demande
+```
+
+Sans `--yes` il ne fait que lister le coffre avec l'empreinte de chaque
+template, ce qui est déjà utile. Avec `--yes`, un template sort du réseau et y
+est **rendu ensuite, quel que soit le verdict**.
 
 - Un template **avec un gène dedans** → ça marche, les templates peuvent rester
   dans AE2, en nombre illimité, choisis automatiquement

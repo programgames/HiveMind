@@ -42,6 +42,7 @@ local FILES = {
     "tools/calibrate.lua",
     "tools/discover.lua",
     "tools/probe.lua",
+    "tools/nbtprobe.lua",
     "tools/upload.lua",
     "tools/autoreport.lua",
     "tools/hminstall.lua",

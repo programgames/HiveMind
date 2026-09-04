@@ -286,6 +286,30 @@ do
     check("discover liste tous les coffres",
           discoverText:find("discovered.chests", 1, true) ~= nil)
 
+-- The experiment pulls a template out of AE2. Leaving it in a dock would keep
+-- it out of the network forever, and a dock left configured keeps pulling.
+do
+    local nbtText = io.open("tools/nbtprobe.lua"):read("a")
+
+    check("l experience NBT rend toujours le quai",
+          select(2, nbtText:gsub("releaseDock", "")) >= 4)
+    check("elle ne demande rien sans --yes",
+          nbtText:find("Rien n a ete deplace", 1, true) ~= nil)
+    check("elle verifie que le meme template est dans le reseau",
+          nbtText:find("templates dans le reseau", 1, true) ~= nil)
+    check("elle compare deux empreintes, pas deux etiquettes",
+          nbtText:find("delivered == wanted", 1, true) ~= nil)
+    check("elle tranche par un verdict lisible",
+          nbtText:find("VERDICT : OUI", 1, true) ~= nil
+          and nbtText:find("VERDICT : NON", 1, true) ~= nil)
+    check("et empreinte tout le coffre au passage",
+          nbtText:find("empreinte(s) distincte(s)", 1, true) ~= nil)
+
+    check("l installeur la connait",
+          io.open("tools/hminstall.lua"):read("a")
+              :find("tools/nbtprobe.lua", 1, true) ~= nil)
+end
+
     check("discover liste les interfaces adressables",
           discoverText:find("component.list(\"me_interface\")", 1, true) ~= nil)
     check("et dit ou les reporter",
