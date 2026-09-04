@@ -58,13 +58,17 @@ position connue.
 les objets qui se ressemblent, et deux templates se ressemblent parfaitement.
 Tu en perdrais définitivement.
 
-### 0.3 — Un coffre côté Replicator
+### 0.3 — ~~Un coffre côté Replicator~~ — annulé
 
-**Où** : une face libre du transposer qui touche le Replicator et l'extracteur
-ADN (il lui en reste trois).
+**Ne le pose pas.** Je l'avais mis par symétrie, il ne sert à rien.
 
-**Même rôle** : les templates complets d'espèce, en attente d'entrer dans la
-machine.
+Un coffre là-bas n'aurait servi qu'à **poser le tout premier template** dans un
+Replicator vide. Or le slot template ne se vide jamais par automatisation : une
+fois posé, il y reste. Donc ce coffre servirait exactement une fois, pour un
+geste qui te prend cinq secondes à la main.
+
+Et si l'expérience de l'étape 1 réussit, il devient inutile même pour ça : les
+templates viendraient d'AE2, et **le Replicator a déjà sa propre interface ME**.
 
 ### 0.4 — Deux templates identiques, pour l'expérience de l'étape 1
 
