@@ -58,13 +58,13 @@ config.state_directory = "/home/hivemind-state"
 --
 -- The address is unguessable but the contents are readable by whoever holds it:
 -- machine state, network inventory and component addresses. Nothing else.
---- EPUISEE le 2026-09-04: cette adresse repond 429, quota d'URL gratuite
---- atteint (50 requetes). Tant qu'elle est nil, les outils publient directement
---- sur paste.rs et affichent l'URL, qu'il faut alors recopier une fois.
---- Pour retrouver la boucle automatique: cree une nouvelle adresse sur
---- webhook.site et remplace la ligne ci-dessous.
---- Ancienne: https://webhook.site/a64b4014-f132-4513-a6d2-eb642030b462
-config.report_mailbox = nil
+--- Une URL gratuite webhook.site s'epuise (429 apres une cinquantaine de
+--- requetes). Quand celle-ci lachera, lib/publish.lua le DIRA et basculera sur
+--- paste.rs en affichant une URL a recopier une fois -- au lieu d'annoncer un
+--- envoi qui n'a pas eu lieu, ce qui a coute une soiree.
+--- Pour repartir: nouvelle adresse sur webhook.site, remplacer la ligne.
+--- Epuisee le 2026-09-04: a64b4014-f132-4513-a6d2-eb642030b462
+config.report_mailbox = "https://webhook.site/576cdfea-c586-4f32-a290-e2380944b8f5"
 
 -- Templates never enter the ME network: they all share one item id and one
 -- label, so AE2 could not tell them apart and we could never pull a specific
