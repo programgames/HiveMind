@@ -745,6 +745,349 @@ function genetics.duplicateHandler()
     return {steps = genetics.DUPLICATE_STEPS}
 end
 
+-- ---------------------------------------------------------------------------
+-- Genetic Replicator
+--
+-- The one machine that makes a bee out of nothing: a template holding all
+-- thirteen chromosomes, Liquid DNA, and it prints the bee that template
+-- describes. That is the difference between a library and an insurance policy.
+--
+-- It always produces Ignoble stock, so this is for drones. The player supplies
+-- the DNA; the program only says when there is none.
+
+--- Check the shape of a machine before anything is moved into it
+--- The Gendustry documentation was wrong about the other three -- it put
+--- labware at slot 3 and an output at slot 4, in an inventory that holds four
+--- slots total, so every delivery would have gone nowhere with no error at all.
+--- These two have never been inspected in a real world, so they are checked
+--- rather than trusted.
+--- @param machine table
+--- @return boolean ok
+--- @return string|nil error
+local function shapeAgrees(machine)
+    local size = machine.transport
+        and machine.transport:inventorySize(machine.link)
+
+    if not size then
+        return false, "machine injoignable: le transposer ne voit pas cet"
+            .. " inventaire. Verifie qu elle est bien collee a lui."
+    end
+
+    for role, slot in pairs(machine.link.slots or {}) do
+        if type(slot) == "number" then
+            local resolved = machine:resolveSlot(slot)
+            if resolved > size then
+                return false, string.format(
+                    "slot %s annonce en %d, or la machine n en a que %d."
+                    .. " Lance tools/probe avant de t en servir.",
+                    role, resolved, size)
+            end
+        end
+    end
+
+    return true
+end
+
+--- Build and check the parameters of a replication job
+--- @param options table {labware, timeout}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.replicateParams(options)
+    options = options or {}
+
+    return {
+        labware = options.labware or {name = "gendustry:labware"},
+        timeout = options.timeout,
+    }
+end
+
+genetics.REPLICATE_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "verifier-la-forme-du-replicator",
+        verify = function(job, context)
+            return job.params.shapeChecked == true
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local ok, reason = shapeAgrees(machine)
+            if not ok then return jobs.FAILED, reason end
+
+            job.params.shapeChecked = true
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "vider-la-sortie-du-replicator",
+        verify = function(job, context)
+            local machine = machineOf(context, "replicator")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local moved, cleared = drainOutput(machine)
+            if moved > 0 then
+                report(context, "sortie du replicator recoltee: "
+                    .. moved .. " item(s)")
+            end
+
+            if not cleared then
+                return jobs.RETRY, "la sortie du replicator ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "verifier-le-template-complet",
+        verify = function(job, context)
+            local machine = machineOf(context, "replicator")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.template) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            -- Same reason as the imprinter, and it matters more here: this
+            -- template needs all thirteen chromosomes including the species,
+            -- and AE2 cannot tell a full one from an empty one.
+            return jobs.FAILED,
+                "aucun template dans le replicator (slot "
+                .. machine:resolveSlot(machine.link.slots.template) .. ")."
+                .. " Pose a la main un template COMPLET, 13 chromosomes sur 13,"
+                .. " gene Species compris: c est lui qui decide quelle abeille"
+                .. " sort."
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "verifier-le-dna",
+        verify = function(job, context)
+            -- A live reading, never remembered: the tank drains while the job
+            -- runs, so a remembered "it was full" is worth nothing
+            return false
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local tank = context.transport:tank(machine.link)
+
+            -- No readable tank is not the same as an empty one: a transposer
+            -- that cannot see fluids should not stop a job that would work
+            if tank and (tank.amount or 0) == 0 then
+                return jobs.RETRY,
+                    "plus de DNA liquide dans le replicator. C est toi qui le"
+                    .. " fournis: remplis-le et relance la file."
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "charger-le-labware",
+        verify = function(job, context)
+            local machine = machineOf(context, "replicator")
+            if not machine then return false end
+
+            local labware = machine.link.slots.labware
+            if labware == nil then return true end
+            return machine:slot(labware) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local labware = machine.link.slots.labware
+            if labware == nil then return jobs.DONE end
+
+            local ok, reason = machine:load(job.params.labware, labware, 1)
+            if not ok then
+                return jobs.RETRY, "labware indisponible: " .. tostring(reason)
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "attendre-l-abeille-repliquee",
+        verify = function(job, context)
+            local machine = machineOf(context, "replicator")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) ~= nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local wait = job.params.timeout
+                or (context.config and context.config.genetics
+                    and context.config.genetics.sample_timeout_seconds)
+                or 120
+
+            local stack, reason =
+                machine:awaitOutput(machine.link.slots.output, wait)
+            if not stack then return jobs.RETRY, tostring(reason) end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "recolter-l-abeille-repliquee",
+        verify = function(job, context)
+            local machine = machineOf(context, "replicator")
+            if not machine then return false end
+            return machine:slot(machine.link.slots.output) == nil
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "replicator")
+            if not machine then return jobs.FAILED, err end
+
+            local produced = machine:slot(machine.link.slots.output)
+            if produced then
+                job.params.produced = tostring(produced.label)
+                report(context, "abeille repliquee: " .. job.params.produced
+                    .. " (Ignoble, comme toujours)")
+            end
+
+            machine:unload(machine.link.slots.output)
+
+            if machine:slot(machine.link.slots.output) then
+                return jobs.RETRY, "la sortie du replicator ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.replicateHandler()
+    return {steps = genetics.REPLICATE_STEPS}
+end
+
+-- ---------------------------------------------------------------------------
+-- DNA Extractor
+--
+-- Turns bees into Liquid DNA, which is what the Replicator drinks. Its input is
+-- the one place in the system where a bee is meant to be destroyed, so what
+-- goes in is chosen narrowly: surplus drones of a species whose Species gene is
+-- already safe in the library. Everything else is worth more alive.
+
+--- Build and check the parameters of an extraction job
+--- @param options table {bee, count}
+--- @return table|nil params
+--- @return string|nil error
+function genetics.extractParams(options)
+    options = options or {}
+
+    local bee = options.bee
+    if type(bee) ~= "table" or not bee.label then
+        return nil, "abeille manquante ou sans etiquette"
+    end
+
+    local count = tonumber(options.count) or 1
+    if count < 1 then
+        return nil, "quantite invalide: " .. tostring(options.count)
+    end
+
+    return {
+        bee = {name = bee.name or "forestry:bee_drone_ge", label = bee.label},
+        labware = options.labware or {name = "gendustry:labware"},
+        count = count,
+        fed = 0,
+        timeout = options.timeout,
+    }
+end
+
+genetics.EXTRACT_STEPS = {
+    -- -----------------------------------------------------------------------
+    {
+        name = "verifier-la-forme-de-l-extracteur",
+        verify = function(job, context)
+            return job.params.shapeChecked == true
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "dna_extractor")
+            if not machine then return jobs.FAILED, err end
+
+            local ok, reason = shapeAgrees(machine)
+            if not ok then return jobs.FAILED, reason end
+
+            job.params.shapeChecked = true
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "alimenter-l-extracteur",
+        verify = function(job, context)
+            return (job.params.fed or 0) >= job.params.count
+        end,
+        run = function(job, context)
+            local machine, err = machineOf(context, "dna_extractor")
+            if not machine then return jobs.FAILED, err end
+
+            local slots = machine.link.slots
+
+            -- The input slots of Gendustry machines refuse automated
+            -- extraction, so a bee already sitting there is not a blockage to
+            -- clear: it is the previous one, still being consumed.
+            if machine:slot(slots.input) then
+                return jobs.RETRY,
+                    "l extracteur digere encore l abeille precedente"
+            end
+
+            if slots.labware ~= nil and not machine:slot(slots.labware) then
+                local fine = machine:load(job.params.labware, slots.labware, 1)
+                if not fine then
+                    return jobs.RETRY, "labware indisponible pour l extracteur"
+                end
+            end
+
+            local ok, reason = machine:load(job.params.bee, slots.input, 1)
+            if not ok then
+                return jobs.RETRY, "abeille indisponible: " .. tostring(reason)
+            end
+
+            job.params.fed = (job.params.fed or 0) + 1
+            report(context, string.format("%s -> extracteur ADN (%d/%d)",
+                job.params.bee.label, job.params.fed, job.params.count))
+
+            if job.params.fed < job.params.count then
+                return jobs.RETRY, "abeille suivante au prochain passage"
+            end
+
+            return jobs.DONE
+        end,
+    },
+}
+
+--- The handler to register with the job queue
+--- @return table handler
+function genetics.extractHandler()
+    return {steps = genetics.EXTRACT_STEPS}
+end
+
 --- Build and check the parameters of a gene campaign
 --- One extraction is a lottery ticket. Getting a particular gene means buying
 --- tickets until it comes up, and that is a loop, not a job an operator should

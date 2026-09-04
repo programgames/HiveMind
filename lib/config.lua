@@ -190,21 +190,37 @@ config.machines = {
         -- into driver 0, exactly where symmetry said it would.
         slots = {template = 0, labware = 1, bee = 2, output = 3},
     },
+    -- Not built in the world yet. The slot maps below are the shape MEASURED on
+    -- the other three genetics machines -- 0 written into, 1 labware, 2 read
+    -- from, 3 output -- applied by symmetry, not read off a manual: the manual
+    -- put labware at 3 and an output at 4 in a four-slot inventory, and was
+    -- wrong three times out of three.
+    --
+    -- So the first step of every job using these checks the shape before it
+    -- moves anything, and refuses rather than dropping a bee into whatever
+    -- slot happens to accept it. Run tools/probe once they are placed, then
+    -- tools/discover for the sides, then set enabled = true.
     replicator = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
-        slots = {template = 1, output = 2},
+        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        -- The template decides which bee comes out, so it is what the machine
+        -- reads; the bee it prints is the output.
+        slots = {template = 0, labware = 1, output = 3},
     },
     dna_extractor = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
-        slots = {input = 1, labware = 2},
+        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        -- The bee is consumed and the DNA leaves as a fluid, so there is no
+        -- item output to drain -- only an input to keep fed.
+        slots = {labware = 1, input = 2},
     },
+    -- These two are the player's business: they make what the others drink.
+    -- The program reads their tanks to warn, and never moves anything.
     protein_liquifier = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
-        slots = {input = 1},
+        transposer = GENETICS, machine = nil, source = nil, enabled = false,
+        slots = {input = 2},
     },
     mutagen_producer = {
-        transposer = 2, machine = nil, source = nil, enabled = false,
-        slots = {input = 1},
+        transposer = BREEDING, machine = nil, source = nil, enabled = false,
+        slots = {input = 2},
     },
 }
 
@@ -391,6 +407,10 @@ config.gene_carriers = {
 
 config.genetics = {
     sample_timeout_seconds = 120,
+    -- Drones kept per species before any are fed to the DNA Extractor. A bee is
+    -- cheap to keep and expensive to re-obtain, and the extractor destroys
+    -- what it takes.
+    drone_reserve = 16,
 }
 
 config.breeding = {

@@ -127,6 +127,13 @@ local transposer = {
         return stack and (stack.size or 1) or 0
     end),
 
+    -- The Replicator and the Liquifier expose no component; their tanks are
+    -- only readable through the transposer that already serves their slots
+    getFluidInTank = callable(function(side)
+        if world.tanks == nil then return nil end
+        return world.tanks[side]
+    end),
+
     getStackInSlot = callable(function(side, slot)
         if side == SIDE_SOURCE then
             if world.interfaceOverride then return world.interfaceOverride end
@@ -520,6 +527,47 @@ check("sans se le disputer", second, 1)
 twoBenches:releaseDock(first, {transposer = 1})
 check("la liberation vise la bonne interface",
       configured[#configured], "genetique:1")
+
+-- ---------------------------------------------------------------------------
+-- Fluid tanks
+--
+-- Four of the seven machines have no component at all. Warning that the DNA is
+-- low instead of failing on it is the only thing separating a run that stops
+-- politely from one that reports a machine refusing items.
+
+do
+    local reader = newTransport()
+    local link = {transposer = 1, machine = SIDE_MACHINE, source = SIDE_SOURCE}
+
+    world.tanks = {}
+    check("aucun reservoir lisible rend une liste vide", #reader:tanks(link), 0)
+    checkTruthy("et aucun reservoir du tout, pas une erreur",
+                reader:tank(link) == nil)
+
+    world.tanks = {
+        [SIDE_MACHINE] = {
+            {amount = 200, capacity = 2000, label = "Liquid DNA"},
+            {amount = 1500, capacity = 2000, label = "Mutagen"},
+        },
+    }
+
+    local tanks = reader:tanks(link)
+    check("les reservoirs sont lus par le transposer", #tanks, 2)
+    check("et leur remplissage calcule", tanks[1].ratio, 0.1)
+    check("le plus rempli est celui qu on remonte",
+          (reader:tank(link) or {}).label, "Mutagen")
+
+    -- An empty tank carries no fluid and therefore no name. Skipping it would
+    -- hide exactly the state worth warning about.
+    world.tanks = {[SIDE_MACHINE] = {{amount = 0, capacity = 8000}}}
+    local empty = reader:tanks(link)[1]
+    check("un reservoir vide est rapporte quand meme", empty and empty.ratio, 0)
+
+    -- A machine with no side declared must not be read from side nil
+    check("un lien sans face ne lit rien", #reader:tanks({transposer = 1}), 0)
+
+    world.tanks = nil
+end
 
 print("")
 print("=== Resultats ===")

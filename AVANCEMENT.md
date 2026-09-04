@@ -41,10 +41,10 @@ Recalculer avec `lua progress.lua`.
 - [x] Genetic Sampler piloté
 - [x] Genetic Transposer piloté (duplication des samples)
 - [x] Imprinter piloté
-- [ ] Replicator piloté
-- [ ] DNA Extractor piloté
-- [ ] Protein Liquifier piloté
-- [ ] Mutagen Producer piloté
+- [x] Replicator piloté
+- [x] DNA Extractor piloté
+- [x] Protein Liquifier surveillé (le joueur le remplit, le programme avertit)
+- [x] Mutagen Producer surveillé (le joueur le remplit, le programme avertit)
 - [x] Bibliothèque réellement remplie, N copies par allèle
 - [x] Sort des templates tranché : posés à la main, jamais dans le réseau
 - [ ] Template « perfection » de 12 gènes construit (écriture gène par gène faite)
@@ -54,7 +54,6 @@ Recalculer avec `lua progress.lua`.
 
 - [x] Campagne « obtenir le gène Species de toutes les espèces »
 - [x] Analyse d'écart sur les profils optimaux
-- [ ] Base de mutations complétée pour les feuilles actuelles
 - [x] Les deux profils génétiques tranchés avec le joueur
 
 ## Fait en jeu

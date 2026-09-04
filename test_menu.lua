@@ -112,6 +112,59 @@ check("il signale le raccourci qui coute un drone au lieu de treize",
 check("il annonce le cout total avant de confirmer",
       text:find("au pire", 1, true) ~= nil)
 
+-- The Replicator is the only machine that makes a bee out of nothing, which is
+-- what turns the gene library from a museum into insurance
+check("la replication est atteignable", wired.replicateBee == true)
+check("elle exige un template complet, espece comprise",
+      text:find("13 chromosomes sur 13", 1, true) ~= nil)
+check("elle ne va jamais chercher le template dans le reseau",
+      text:find("template complet et un template vide portent le meme nom",
+                1, true) ~= nil)
+check("elle annonce que le produit sera Ignoble",
+      text:find("sera Ignoble", 1, true) ~= nil)
+
+-- The extractor is the one place a bee is destroyed on purpose
+check("l alimentation de l extracteur est atteignable",
+      wired.feedExtractor == true)
+check("elle refuse les especes dont le gene Species manque",
+      text:find("gene Species pas encore acquis", 1, true) ~= nil)
+check("elle garde une reserve de drones",
+      text:find("drone_reserve", 1, true) ~= nil
+      and settingsText:find("drone_reserve", 1, true) ~= nil)
+check("elle dit clairement que les abeilles sont detruites",
+      text:find("seront DETRUITES", 1, true) ~= nil)
+
+-- "machine indisponible" is true and useless; four machines are declared and
+-- not built
+check("une machine non branchee explique quoi faire",
+      text:find("tools/discover", 1, true) ~= nil
+      and text:find("tools/probe", 1, true) ~= nil)
+
+-- The player fills the tanks, so the only useful moment to mention them is
+-- before an option that needs them is chosen
+check("les reservoirs sont surveilles", wired.fluidLevels ~= nil
+      or text:find("function hivemind.fluidLevels", 1, true) ~= nil)
+check("un reservoir vide se distingue d un reservoir bas",
+      text:find("plus de \" .. reading.fluid", 1, true) ~= nil
+      or text:find("reading.empty", 1, true) ~= nil)
+check("une machine non construite n est pas un probleme",
+      text:find("link.enabled ~= false and link.machine ~= nil", 1, true) ~= nil)
+
+-- Filling a template by hand is eleven separate campaigns and the carrier
+-- species of each one typed from memory
+check("la recolte groupee est atteignable", wired.harvestProfile == true)
+check("elle ne relance pas un gene deja en file",
+      text:find("Deja en file : ", 1, true) ~= nil)
+check("elle distingue ce qui manque de ce qui est introuvable",
+      text:find("A ATTRAPER D ABORD", 1, true) ~= nil)
+check("elle prefere le porteur dont on a le plus de drones",
+      text:find("Prefer the carrier we hold most of", 1, true) ~= nil)
+check("elle croise la table du pack et les genomes lus",
+      text:find("context.library:carriersOf(entry.slot, entry.allele)",
+                1, true) ~= nil)
+check("elle previent quand le labware ne suffira pas",
+      text:find("pas assez de labware", 1, true) ~= nil)
+
 check("les porteurs sont declares en config",
       settingsText:find("config.gene_carriers", 1, true) ~= nil)
 
@@ -188,8 +241,41 @@ check("un chromosome dont l uid ne suit pas l etiquette est signale",
       text:find("ne nomment pas leur allele", 1, true) ~= nil)
 
 -- The menu redraws straight after an action and pushes its output off the top
+local screenText = io.open("lib/screen.lua"):read("a")
+
 check("chaque action laisse le temps de lire",
-      text:find("Entree pour revenir au menu", 1, true) ~= nil)
+      screenText:find("Entree pour revenir au menu", 1, true) ~= nil)
+check("le menu marque la pause apres chaque action",
+      text:find("screen.pause()", 1, true) ~= nil)
+
+-- Pausing was never the whole fix: the previous output is still on screen when
+-- the menu draws over it
+check("et efface avant de redessiner",
+      text:find("screen.clear()", 1, true) ~= nil)
+check("l ecran est mis a sa taille maximale au demarrage",
+      text:find("screen.maximise()", 1, true) ~= nil)
+
+-- Forty lines of menu on a twenty-five line screen scroll away as they are
+-- drawn, cleared or not
+check("le menu se replie quand l ecran est trop court",
+      text:find("fullMenuHeight", 1, true) ~= nil
+      and text:find("local columns = (width >= 76) and 2 or 1", 1, true) ~= nil)
+check("un choix inconnu se lit avant de disparaitre",
+      text:find("Choix inconnu", 1, true) ~= nil)
+
+do
+    local screenLib = dofile("lib/screen.lua")
+
+    -- Off OpenComputers there is no gpu and no term, and every one of these is
+    -- called before the menu can draw anything
+    check("l ecran repond hors du jeu sans lever d erreur",
+          screenLib.height() == 25 and screenLib.width() == 80
+          and screenLib.clear() == false)
+
+    local width, height = screenLib.maximise()
+    check("maximiser sans carte graphique rend une taille utilisable",
+          tonumber(width) ~= nil and tonumber(height) ~= nil)
+end
 
 -- The apiary keeps its drone, so every read leaves one behind. Reading that one
 -- costs nothing; replacing it costs a bee and usually fails anyway.

@@ -552,6 +552,60 @@ function Transport:inventorySize(link)
     return tonumber(size)
 end
 
+--- Read the fluid tanks of whatever sits on a transposer side
+--- The Replicator, the Protein Liquifier and the Mutagen Producer expose no
+--- OpenComputers component at all, so nothing can ask them anything -- but the
+--- transposer that already moves their items can read their tanks. That is the
+--- whole difference between warning "il manque du DNA" and failing on it.
+--- @param link table Machine link
+--- @param onMachineSide boolean|nil false to read the source side instead
+--- @return table[] tanks {amount, capacity, label, ratio}
+function Transport:tanks(link, onMachineSide)
+    if type(link) ~= "table" then return {} end
+
+    local transposer = self:transposerFor(link.transposer)
+    if not transposer then return {} end
+
+    local side = (onMachineSide == false) and link.source or link.machine
+    if side == nil then return {} end
+
+    local ok, list = invoke(transposer, "getFluidInTank", side)
+    if not ok or type(list) ~= "table" then return {} end
+
+    local tanks = {}
+    for _, tank in pairs(list) do
+        if type(tank) == "table" then
+            local amount = tonumber(tank.amount) or 0
+            local capacity = tonumber(tank.capacity) or 0
+
+            table.insert(tanks, {
+                amount = amount,
+                capacity = capacity,
+                -- An empty tank has no fluid and therefore no name; reporting
+                -- it as unknown rather than skipping it is the point, since
+                -- "empty" is exactly the state worth warning about
+                label = tank.label or tank.name,
+                ratio = capacity > 0 and (amount / capacity) or nil,
+            })
+        end
+    end
+
+    return tanks
+end
+
+--- The fullest tank on a side, which is the one that matters
+--- A machine with several tanks reports them in an order nothing documents.
+--- @param link table
+--- @param onMachineSide boolean|nil
+--- @return table|nil tank
+function Transport:tank(link, onMachineSide)
+    local best
+    for _, tank in ipairs(self:tanks(link, onMachineSide)) do
+        if not best or tank.amount > best.amount then best = tank end
+    end
+    return best
+end
+
 function Transport:inspect(link, slot)
     local transposer = self:transposerFor(link.transposer)
     if not transposer then return nil end

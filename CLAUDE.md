@@ -143,6 +143,17 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   Species visé, mais les 12 tirages ratés enrichissent quand même le pool.
 - **`waitForPrincess()` échoue si l'apiary porte l'upgrade Automation.**
   L'apiary piloté ne doit pas l'avoir ; celui de production, si.
+- **Le partage des roles avec le joueur est trance** : le programme pilote le
+  DNA Extractor (il y envoie le surplus de drones) et le Replicator (template
+  complet -> abeille). Le **Protein Liquifier** et le **Mutagen Producer** sont
+  a la charge du joueur ; le programme se contente de **lire leurs reservoirs
+  et d'avertir**. Un `transposer.getFluidInTank(face)` suffit : ces machines
+  n'exposent aucun composant, mais le transposer qui deplace deja leurs objets
+  voit leurs cuves.
+- **Un template pour le Replicator doit etre COMPLET, 13 chromosomes sur 13**,
+  gene Species compris — c'est lui qui decide quelle abeille sort. Ce n'est pas
+  le meme objet que les templates de profil (11 chromosomes, sans Species), qui
+  servent a l'Imprinter.
 - **Le Replicator produit toujours de l'Ignoble**, et l'Imprinter tue parfois
   les Ignoble → réplication réservée aux drones.
 - **MeatballCraft a réécrit l'arbre** : Common = basalte + eau (15 %),

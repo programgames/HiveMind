@@ -26,6 +26,7 @@ local FILES = {
     "hivemind.lua",
     "lib/config.lua",
     "lib/genome.lua",
+    "lib/screen.lua",
     "lib/state.lua",
     "lib/species.lua",
     "lib/jobs.lua",

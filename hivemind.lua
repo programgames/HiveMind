@@ -61,6 +61,7 @@ local multiply = need("lib.multiply")
 local genetics = need("lib.genetics")
 local planner = need("lib.planner")
 local genome = need("lib.genome")
+local screen = need("lib.screen")
 
 local hivemind = {}
 
@@ -68,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.73.0"
+hivemind.VERSION = "0.74.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -271,6 +272,8 @@ function hivemind.bootstrap(options)
     register("duplicate", genetics, "duplicateHandler", "lib/genetics.lua")
     register("campaign",  genetics, "campaignHandler",  "lib/genetics.lua")
     register("imprint",   genetics, "imprintHandler",   "lib/genetics.lua")
+register("replicate", genetics, "replicateHandler", "lib/genetics.lua")
+register("extract",   genetics, "extractHandler",   "lib/genetics.lua")
 
     local queue = jobs.new({
         path = stateDirectory .. "/jobs.lua",
@@ -1770,6 +1773,504 @@ function hivemind.speciesSweep(context)
     print(created .. " campagne(s) en file. Choisis 6 pour les faire tourner.")
 end
 
+--- Explain what to do about a machine that is not wired up yet
+--- Four machines are declared but disabled, because nothing was built when they
+--- were written. "machine indisponible" is a true answer and a useless one.
+--- @param name string Key in config.machines
+--- @param humanName string
+--- @return boolean available
+local function machineReady(context, name, humanName)
+    if context.machines and context.machines[name] then return true end
+
+    print("")
+    print(humanName .. " pas encore branche.")
+    print("")
+    print("Dans l ordre, une seule fois :")
+    print("  1. Pose la machine contre un transposer")
+    print("  2. Lance  tools/discover   pour relever sa face")
+    print("  3. Lance  tools/probe      pour relever ses slots")
+    print("  4. Dans lib/config.lua, renseigne machine/source et")
+    print("     passe enabled a true")
+    print("")
+    print("Les slots supposes sont deja ecrits, mais le programme refusera")
+    print("de bouger quoi que ce soit tant qu ils ne collent pas.")
+    return false
+end
+
+--- Print a bee from a complete template
+--- The Replicator is the only machine that makes a bee out of nothing, and it
+--- is what turns the gene library into insurance: losing the last Robotic drone
+--- stops mattering once its template exists.
+--- @param context table
+function hivemind.replicateBee(context)
+    print("")
+    print("=== REPLIQUER UNE ABEILLE ===")
+    print("Le replicator fabrique une abeille a partir d un template COMPLET")
+    print("(13 chromosomes sur 13, gene Species compris) et de DNA liquide.")
+    print("")
+
+    if not machineReady(context, "replicator", "Le Genetic Replicator") then
+        return
+    end
+
+    local machine = context.machines.replicator
+    local template = machine:slot(machine.link.slots.template)
+
+    if not template then
+        print("Aucun template dans le replicator.")
+        print("")
+        print("Pose-le a la main dans le slot "
+            .. machine:resolveSlot(machine.link.slots.template) .. ".")
+        print("Le programme ne peut pas le choisir: dans le reseau ME, un")
+        print("template complet et un template vide portent le meme nom.")
+        return
+    end
+
+    print("Template en place : " .. tostring(template.label))
+
+    local tank = context.transport:tank(machine.link)
+    if tank then
+        print(string.format("DNA liquide : %d / %d",
+            tank.amount or 0, tank.capacity or 0))
+        if (tank.amount or 0) == 0 then
+            print("Vide. C est toi qui le fournis.")
+        end
+    end
+
+    print("")
+    print("  L abeille produite sera Ignoble: reserve cela aux drones.")
+    io.write("Confirmer ? (o/N): ")
+
+    local answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local params, err = genetics.replicateParams({})
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("replicate", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+end
+
+--- Feed surplus bees to the DNA Extractor
+--- This is the one place in the system where a bee is destroyed on purpose, so
+--- what goes in is chosen narrowly: only species whose Species gene is already
+--- in the library, and only the surplus above a reserve. A bee is cheap to keep
+--- and expensive to re-obtain.
+--- @param context table
+function hivemind.feedExtractor(context)
+    print("")
+    print("=== TRANSFORMER LES DRONES INUTILES EN DNA ===")
+    print("Le DNA liquide alimente le replicator. Chaque abeille envoyee est")
+    print("detruite: seules partent celles dont le gene Species est deja")
+    print("en bibliotheque, et seulement au-dela d une reserve.")
+    print("")
+
+    if not machineReady(context, "dna_extractor", "Le DNA Extractor") then
+        return
+    end
+
+    local RESERVE = (config.genetics and config.genetics.drone_reserve) or 16
+
+    context.library:scan()
+    local held = context.library:speciesGenes()
+
+    local stock = {}
+    for _, item in ipairs(context.transport:findAll(
+            {name = "forestry:bee_drone_ge"}) or {}) do
+        local label = tostring(item.label or "")
+        local species = label:gsub("%s+Drone$", "")
+        if species ~= "" and species ~= label then
+            stock[species] = (stock[species] or 0) + (tonumber(item.size) or 0)
+        end
+    end
+
+    local spendable, kept = {}, {}
+    local names = {}
+    for species in pairs(stock) do table.insert(names, species) end
+    table.sort(names)
+
+    for _, species in ipairs(names) do
+        local count = stock[species]
+        local surplus = count - RESERVE
+
+        if not held[species] then
+            -- Its Species gene exists nowhere else: destroying these is how a
+            -- species is lost for good
+            table.insert(kept, species .. " (gene Species pas encore acquis)")
+        elseif surplus < 1 then
+            table.insert(kept, string.format("%s (%d, reserve %d)",
+                species, count, RESERVE))
+        else
+            table.insert(spendable,
+                {species = species, count = count, surplus = surplus})
+        end
+    end
+
+    if #kept > 0 then
+        print("Gardees :")
+        for _, line in ipairs(kept) do print("  " .. line) end
+        print("")
+    end
+
+    if #spendable == 0 then
+        print("Rien a envoyer. Accumule des drones (option 3) ou recolte")
+        print("d abord les genes Species manquants (option i).")
+        return
+    end
+
+    print("Envoyables :")
+    for index, entry in ipairs(spendable) do
+        print(string.format("  %d. %-18s %d en stock, %d au-dela de la reserve",
+            index, entry.species, entry.count, entry.surplus))
+    end
+
+    print("")
+    io.write("Numero (vide = annuler): ")
+    local answer = io.read()
+    local pick = tonumber(answer and answer:gsub("%s+", ""))
+
+    local chosen = pick and spendable[pick]
+    if not chosen then
+        print("Annule.")
+        return
+    end
+
+    io.write("Combien ? [" .. chosen.surplus .. "]: ")
+    answer = io.read()
+    local count = tonumber(answer and answer:gsub("%s+", "")) or chosen.surplus
+
+    if count < 1 or count > chosen.surplus then
+        print("Hors bornes: entre 1 et " .. chosen.surplus .. ".")
+        return
+    end
+
+    print("")
+    print("  " .. count .. " x " .. chosen.species
+        .. " Drone seront DETRUITES pour faire du DNA.")
+    io.write("Confirmer ? (o/N): ")
+
+    answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local params, err = genetics.extractParams({
+        bee = {label = chosen.species .. " Drone"},
+        count = count,
+    })
+
+    if not params then
+        print("Parametres invalides: " .. tostring(err))
+        return
+    end
+
+    local id, submit_err = context.queue:submit("extract", params)
+    if not id then
+        print("Impossible de creer la tache: " .. tostring(submit_err))
+        return
+    end
+
+    print("Tache #" .. id .. " creee. Choisis 6 pour la faire tourner.")
+end
+
+--- Fluids the player supplies, and whether any of them has run out
+---
+--- Four machines are the player's business, not the program's: the Protein
+--- Liquifier and the Mutagen Producer make what the others drink, and the
+--- Replicator drinks DNA. The program never fills them. But failing on an empty
+--- tank and saying "la machine refuse l objet" is the worst of both worlds, so
+--- it reads them and says which one is empty.
+---
+--- Machines that are not built report nothing at all rather than zero: an
+--- absent Replicator is not a Replicator that is out of DNA.
+--- @param context table
+--- @return table[] readings {machine, label, amount, capacity, ratio, low}
+function hivemind.fluidLevels(context)
+    -- Below a tenth, a run that has already started can still finish; at zero
+    -- nothing will start at all. Both are worth saying, differently.
+    local LOW = 0.10
+
+    local watched = {
+        {key = "mutatron", name = "Mutatron", fluid = "mutagene"},
+        {key = "replicator", name = "Replicator", fluid = "DNA liquide"},
+        {key = "protein_liquifier", name = "Protein Liquifier", fluid = "proteines"},
+        {key = "mutagen_producer", name = "Mutagen Producer", fluid = "mutagene"},
+    }
+
+    local readings = {}
+
+    for _, entry in ipairs(watched) do
+        local link = (config.machines or {})[entry.key]
+
+        -- enabled = false means "not built yet", and a machine nobody has
+        -- placed must not appear as a problem
+        if link and link.enabled ~= false and link.machine ~= nil then
+            local ok, tank = pcall(function()
+                return context.transport:tank(link)
+            end)
+
+            -- The Mutatron has a driver and answers directly; everything else
+            -- is read through the transposer
+            if entry.key == "mutatron" and context.machines
+               and context.machines.mutatron then
+                local fine, amount, capacity = pcall(function()
+                    return context.machines.mutatron:tank()
+                end)
+                if fine and capacity and capacity > 0 then
+                    tank = {amount = amount, capacity = capacity,
+                            ratio = amount / capacity, label = entry.fluid}
+                    ok = true
+                end
+            end
+
+            if ok and type(tank) == "table" then
+                table.insert(readings, {
+                    machine = entry.name,
+                    fluid = entry.fluid,
+                    label = tank.label,
+                    amount = tank.amount or 0,
+                    capacity = tank.capacity or 0,
+                    ratio = tank.ratio,
+                    low = (tank.ratio ~= nil and tank.ratio < LOW)
+                          or (tank.amount or 0) == 0,
+                    empty = (tank.amount or 0) == 0,
+                })
+            end
+        end
+    end
+
+    return readings
+end
+
+--- One line per fluid that needs the player's attention, or none
+--- @param context table
+--- @return string[] warnings
+function hivemind.fluidWarnings(context)
+    local warnings = {}
+
+    for _, reading in ipairs(hivemind.fluidLevels(context)) do
+        if reading.empty then
+            table.insert(warnings, reading.machine .. " : plus de "
+                .. reading.fluid .. " -- a toi de le remplir")
+        elseif reading.low then
+            table.insert(warnings, string.format("%s : %s bas (%d/%d)",
+                reading.machine, reading.fluid,
+                reading.amount, reading.capacity))
+        end
+    end
+
+    return warnings
+end
+
+--- Queue everything a profile still needs, in one choice
+--- Filling a template by hand means running eleven separate campaigns and
+--- typing the carrier species of each missing allele from memory. The program
+--- already knows what is missing and who carries it; this joins the two.
+--- @param context table
+function hivemind.harvestProfile(context)
+    print("")
+    print("=== RECOLTER TOUT CE QUI MANQUE POUR UN PROFIL ===")
+
+    local profiles = config.profiles or {}
+    local names = {}
+    for name in pairs(profiles) do table.insert(names, name) end
+    table.sort(names)
+
+    if #names == 0 then
+        print("Aucun profil declare dans lib/config.lua.")
+        return
+    end
+
+    for index, name in ipairs(names) do
+        print("  " .. index .. " = " .. name)
+    end
+    print("  " .. (#names + 1) .. " = les deux")
+
+    io.write("Profil: ")
+    local answer = io.read()
+    local pick = tonumber(answer and answer:gsub("%s+", ""))
+
+    local wanted = {}
+    if pick == #names + 1 then
+        wanted = names
+    elseif pick and names[pick] then
+        wanted = {names[pick]}
+    else
+        print("Annule.")
+        return
+    end
+
+    context.library:scan()
+
+    -- One allele can be wanted by both profiles; queueing it twice would spend
+    -- a second batch of bees on a gene already coming
+    local targets, order = {}, {}
+    for _, name in ipairs(wanted) do
+        for _, entry in ipairs(context.library:missingForProfile(profiles[name])) do
+            local key = entry.slot .. "/" .. entry.allele
+            if not targets[key] then
+                targets[key] = entry
+                table.insert(order, key)
+            end
+        end
+    end
+
+    if #order == 0 then
+        print("")
+        print("Rien ne manque: les profils choisis sont complets.")
+        print("Choisis e pour la liste des samples a assembler.")
+        return
+    end
+
+    -- Drones in stock, by species. A carrier nobody owns is a hunting note,
+    -- not a job: queueing it would fail on the first step.
+    local stock = {}
+    for _, item in ipairs(context.transport:findAll(
+            {name = "forestry:bee_drone_ge"}) or {}) do
+        local label = tostring(item.label or "")
+        local species = label:gsub("%s+Drone$", "")
+        if species ~= "" and species ~= label then
+            stock[species] = (stock[species] or 0) + (tonumber(item.size) or 0)
+        end
+    end
+
+    local queued = {}
+    for _, job in ipairs(context.queue:list()) do
+        if job.kind == "campaign" and job.status ~= "complete"
+           and job.status ~= "cancelled" and job.params then
+            queued[tostring(job.params.chromosome) .. "/"
+                .. tostring(job.params.allele)] = true
+        end
+    end
+
+    local plan, toHunt, alreadyGoing = {}, {}, {}
+
+    for _, key in ipairs(order) do
+        local entry = targets[key]
+
+        -- Two sources, and both are needed: the table transcribed from the
+        -- pack's quests, and whatever reading real genomes has taught us
+        local found, carriers = {}, {}
+        local byAllele = (config.gene_carriers or {})[entry.slot]
+        for _, one in ipairs((byAllele and byAllele[entry.allele]) or {}) do
+            if not found[one] then found[one] = true table.insert(carriers, one) end
+        end
+        for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
+            if not found[one] then found[one] = true table.insert(carriers, one) end
+        end
+
+        local chromosome = entry.chromosome or entry.slot
+
+        if queued[tostring(chromosome) .. "/" .. tostring(entry.allele)] then
+            table.insert(alreadyGoing, chromosome .. " = " .. entry.allele)
+        else
+            -- Prefer the carrier we hold most of: a campaign spends bees, and
+            -- running out mid-way parks the job for nothing
+            local best, bestStock
+            for _, one in ipairs(carriers) do
+                if (stock[one] or 0) > (bestStock or 0) then
+                    best, bestStock = one, stock[one]
+                end
+            end
+
+            if best then
+                table.insert(plan, {
+                    species = best, stock = bestStock,
+                    chromosome = chromosome, allele = entry.allele,
+                    slot = entry.slot,
+                })
+            else
+                table.insert(toHunt, string.format("%s = %s  <- %s",
+                    chromosome, entry.allele,
+                    #carriers > 0 and table.concat(carriers, " ou ")
+                                  or "porteur inconnu"))
+            end
+        end
+    end
+
+    if #alreadyGoing > 0 then
+        print("")
+        print("Deja en file : " .. table.concat(alreadyGoing, ", "))
+    end
+
+    if #toHunt > 0 then
+        print("")
+        print("A ATTRAPER D ABORD (aucun drone en stock) :")
+        for _, line in ipairs(toHunt) do print("  " .. line) end
+    end
+
+    if #plan == 0 then
+        print("")
+        print("Rien a lancer maintenant.")
+        return
+    end
+
+    print("")
+    print("A LANCER :")
+
+    local budget, worst = 13, 0
+    for _, item in ipairs(plan) do
+        local spend = math.min(budget, item.stock)
+        worst = worst + spend
+        print(string.format("  %-22s %-10s <- %s (%d en stock, budget %d)",
+            tostring(item.chromosome), item.allele, item.species,
+            item.stock, spend))
+    end
+
+    local labware = 0
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:labware"}) or {}) do
+        labware = labware + (tonumber(item.size) or 0)
+    end
+
+    print("")
+    print("  " .. #plan .. " campagne(s), au pire " .. worst .. " abeille(s)")
+    print("  labware en stock : " .. labware)
+
+    if labware < worst then
+        print("  ATTENTION: pas assez de labware, la file s arretera en route.")
+    end
+
+    io.write("Confirmer ? (o/N): ")
+    answer = io.read()
+    if not answer or not (answer:lower():sub(1, 1) == "o"
+                       or answer:lower():sub(1, 1) == "y") then
+        print("Annule.")
+        return
+    end
+
+    local created = 0
+    for _, item in ipairs(plan) do
+        local params = genetics.campaignParams({
+            bee = {label = item.species .. " Drone"},
+            chromosome = tostring(item.chromosome),
+            allele = item.allele,
+            bees = math.min(budget, item.stock),
+        })
+
+        if params then
+            local id = context.queue:submit("campaign", params)
+            if id then created = created + 1 end
+        end
+    end
+
+    print(created .. " campagne(s) en file. Choisis 6 pour les faire tourner.")
+end
+
 --- Rank the species worth breeding, by how many missing genes each one brings
 --- A source species is needed exactly once: one individual, one successful
 --- sample, and the allele is in the library forever. So the useful question is
@@ -2222,6 +2723,15 @@ local function headline(context)
         .. (blocked > 0 and (", " .. blocked .. " bloquee(s)") or ""))
 
     print(table.concat(parts, "  |  "))
+
+    -- The player fills these, so the only useful moment to mention them is
+    -- before an option is chosen that will need them
+    local ok, warnings = pcall(hivemind.fluidWarnings, context)
+    if ok then
+        for _, warning in ipairs(warnings or {}) do
+            print("  ! " .. warning)
+        end
+    end
 end
 
 local ENTRIES = {
@@ -2250,12 +2760,20 @@ local ENTRIES = {
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
     {key = "i", label = "Recolter tous les genes Species",
      hint = "une campagne par espece en stock", action = "speciesSweep"},
+    {key = "t", label = "Recolter ce qui manque",
+     hint = "toutes les campagnes d un profil, d un coup", action = "harvestProfile"},
     {key = "e", label = "Construire un template",
      hint = "ce qui manque pour chaque profil", action = "templateHelp"},
     {key = "h", label = "Quoi croiser ensuite",
      hint = "les especes classees par gene apporte", action = "breedingPlan"},
     {key = "f", label = "Imprimer une abeille",
      hint = "applique le template pose dans la machine", action = "imprintBee"},
+
+    {key = "r", label = "Repliquer une abeille",
+     hint = "template complet + DNA -> une abeille", action = "replicateBee"},
+    {key = "x", label = "Drones inutiles -> DNA",
+     hint = "detruit le surplus pour alimenter le replicator",
+     action = "feedExtractor"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",
@@ -2270,9 +2788,77 @@ local ENTRIES = {
      hint = "relit la liste complete depuis le jeu", action = "refreshSpecies"},
 }
 
+--- How many lines the full menu needs, groups, blanks and prompt included
+--- @return number
+local function fullMenuHeight()
+    local lines = 8   -- title, headline, advice, "0 Quitter", prompt
+    for _, entry in ipairs(ENTRIES) do
+        lines = lines + (entry.group and 2 or 1)
+    end
+    return lines
+end
+
+--- Draw the options, folding them when the screen is too short
+--- The full listing is forty lines and a tier 2 screen holds twenty-five, so on
+--- small hardware the groups and the hints go and the keys pair up two per
+--- line. The keys themselves never change: the compact menu is the same menu.
+--- @param width number
+--- @param height number
+local function drawOptions(width, height)
+    if height >= fullMenuHeight() then
+        for _, entry in ipairs(ENTRIES) do
+            if entry.group then
+                print("")
+                print("  " .. entry.group)
+            else
+                print(string.format("    %s  %-28s %s",
+                    entry.key, entry.label, entry.hint))
+            end
+        end
+        return
+    end
+
+    local options = {}
+    for _, entry in ipairs(ENTRIES) do
+        if not entry.group then table.insert(options, entry) end
+    end
+
+    print("")
+
+    -- Two columns need room for two labels; below that one column, truncated,
+    -- which is still readable where a wrapped line is not
+    local columns = (width >= 76) and 2 or 1
+    local cell = math.floor((width - 4) / columns) - 4
+
+    local rows = math.ceil(#options / columns)
+    for row = 1, rows do
+        local parts = {}
+        for column = 0, columns - 1 do
+            local entry = options[row + column * rows]
+            if entry then
+                local label = entry.label
+                if #label > cell then label = label:sub(1, cell) end
+                table.insert(parts, string.format("%s  %-" .. cell .. "s",
+                    entry.key, label))
+            end
+        end
+        print("  " .. table.concat(parts, "  "))
+    end
+end
+
 local function menu(context)
+    -- A tier 3 pair reaches 160x50, and the whole menu fits there. Asking once
+    -- costs nothing and is the difference between folding and not.
+    screen.maximise()
+
     while true do
-        print("")
+        -- Erasing is the actual fix. Without it every option's output is still
+        -- on screen when the menu redraws over it, which is what made a genome
+        -- read unreadable however slowly it was printed.
+        screen.clear()
+
+        local width, height = screen.size()
+
         print("=== HiveMind " .. hivemind.VERSION .. " ===")
 
         -- Reading the world before drawing the menu costs one transposer call
@@ -2290,15 +2876,7 @@ local function menu(context)
             end
         end
 
-        for _, entry in ipairs(ENTRIES) do
-            if entry.group then
-                print("")
-                print("  " .. entry.group)
-            else
-                print(string.format("    %s  %-28s %s",
-                    entry.key, entry.label, entry.hint))
-            end
-        end
+        drawOptions(width, height)
 
         print("")
         print("    0  Quitter")
@@ -2326,10 +2904,13 @@ local function menu(context)
             -- top of the screen. A genome read is thirteen lines nobody gets
             -- to see if the next thing printed is a menu.
             print("")
-            io.write("-- Entree pour revenir au menu --")
-            io.read()
+            screen.pause()
         else
-            print("Choix invalide: tape un chiffre de 0 a 9.")
+            -- The invalid branch needs the pause too, or the complaint is the
+            -- one line that scrolls away before it is read
+            print("")
+            print("Choix inconnu: " .. choice)
+            screen.pause()
         end
     end
 end

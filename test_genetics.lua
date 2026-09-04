@@ -358,7 +358,9 @@ local function buildStack()
         handlers = {sample = genetics.sampleHandler(),
                     duplicate = genetics.duplicateHandler(),
                     campaign = genetics.campaignHandler(),
-                    imprint = genetics.imprintHandler()},
+                    imprint = genetics.imprintHandler(),
+                    replicate = genetics.replicateHandler(),
+                    extract = genetics.extractHandler()},
         clock = function() ticks = ticks + 1 return ticks end,
         maxAttempts = 2,
     })
@@ -842,6 +844,54 @@ check("refuse", (genetics.campaignParams({
     bee = {label = "X Drone"}, allele = "4"})), nil)
 
 print("")
+print("")
+print("-- replicator et extracteur ADN --")
+
+-- Neither machine exists in the world yet, and that is the state these have to
+-- survive: a job asking for one must fail saying so, not crash the queue and
+-- take every other pending job down with it.
+
+check("replicateParams fournit le labware par defaut",
+      genetics.replicateParams({}).labware.name, "gendustry:labware")
+
+check("extractParams refuse une abeille absente",
+      (genetics.extractParams({})), nil)
+check("extractParams refuse une quantite nulle",
+      (genetics.extractParams({bee = {label = "Meadows Drone"}, count = 0})), nil)
+
+local feed = genetics.extractParams({bee = {label = "Meadows Drone"}, count = 3})
+check("extractParams compte les abeilles a detruire", feed.count, 3)
+check("et part de zero", feed.fed, 0)
+check("nom d item deduit pour l extracteur", feed.bee.name,
+      "forestry:bee_drone_ge")
+
+os.remove(QUEUE)
+reset()
+
+do
+    local pending, ctx = buildStack()
+
+    pending:submit("replicate", genetics.replicateParams({}))
+    pending:submit("extract", genetics.extractParams({
+        bee = {label = "Meadows Drone"}, count = 1}))
+
+    local result = pending:run(ctx, {maxSteps = 20})
+    checkTruthy("la file survit a deux machines non branchees",
+                type(result) == "table")
+
+    local said = {}
+    for _, job in ipairs(pending:list()) do
+        said[job.kind] = tostring(job.error or "")
+    end
+
+    checkTruthy("le replicator manquant est nomme",
+                (said.replicate or ""):find("replicator", 1, true) ~= nil)
+    checkTruthy("l extracteur manquant est nomme",
+                (said.extract or ""):find("dna_extractor", 1, true) ~= nil)
+end
+
+os.remove(QUEUE)
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
