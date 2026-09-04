@@ -216,6 +216,11 @@ local transposerComponent = {
         local stack = from[fromSlot]
         if not stack then return false end
 
+        -- Gendustry input slots refuse automated extraction. The mock let
+        -- everything out, so a blocked slot -- the single most common thing to
+        -- go wrong in game -- could not be reproduced here at all.
+        if world.mutatronLocked and fromSide == SIDE_MUTATRON then return false end
+
         if toSide == SIDE_INTERFACE then
             -- Anything pushed into the interface leaves for the network
             table.insert(world.collected, stack.label)
@@ -386,7 +391,9 @@ queue:submit("breed", PARAMS)
 local report = queue:run(context, {maxSteps = 40})
 
 check("tache terminee", queue:get(1).status, jobs.COMPLETE)
-check("sept etapes", report.steps, 7)
+-- Eight since the cross saves the new species' gene on its way out: an
+-- species obtained once must never have to be obtained again.
+check("huit etapes", report.steps, 8)
 check("le Mutatron a tourne une fois", world.produceCalls, 1)
 check("mutagene consomme une fois", world.mutagen, 7000)
 check("un cycle d'apiary", world.cycleRuns, 1)
@@ -524,6 +531,152 @@ checkTruthy("l'intruse est rendue au reseau",
             table.concat(world.collected, ","):find("Embittered Princess", 1, true))
 
 os.remove(QUEUE)
+
+print("")
+print("-- un slot que le Mutatron ne rend pas: on demande la main --")
+
+do
+    -- The one failure the player cannot delegate. It used to park the job with
+    -- a message nobody read, or kill it outright after three passes; either way
+    -- the cross was lost over a five second gesture.
+    os.remove(QUEUE)
+    reset()
+    world.mutatronLocked = true
+    world.mutatron[oc(0)] = {name = "forestry:bee_princess_ge",
+                             label = "Embittered Princess", size = 1}
+
+    local queue, context = buildStack()
+    queue:submit("breed", PARAMS)
+
+    local report = queue:run(context, {maxSteps = 40})
+
+    check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
+    checkTruthy("le geste nomme l'intruse",
+                queue:get(1).action
+                and queue:get(1).action:find("Embittered Princess", 1, true))
+    checkTruthy("et le slot, tel que le joueur le voit",
+                queue:get(1).action and queue:get(1).action:find("Mutatron"))
+    checkTruthy("dit a l'imperatif",
+                queue:get(1).action and queue:get(1).action:find("retire"))
+    check("la passe le compte comme une attente", report.waiting, 1)
+    check("le Mutatron n'a rien produit", world.produceCalls, 0)
+
+    -- And the job survives: this is the whole point
+    queue:run(context, {maxSteps = 40})
+    queue:run(context, {maxSteps = 40})
+    check("la tache est toujours la apres deux passes",
+          queue:get(1).status, jobs.WAITING)
+
+    -- The player clears the slot and says so
+    world.mutatron[oc(0)] = nil
+    world.mutatronLocked = false
+    queue:resume(1)
+
+    for _ = 1, 4 do queue:run(context, {maxSteps = 60}) end
+    check("et le croisement va jusqu au bout",
+          queue:get(1).status, jobs.COMPLETE)
+
+    os.remove(QUEUE)
+end
+
+print("")
+print("-- une espece obtenue est une espece sauvee --")
+
+do
+    -- Les genes d une abeille sont fixes a la naissance, et une espece perdue
+    -- se rattrape en refaisant toute la chaine. Le gene Species doit partir en
+    -- file au moment ou l espece existe, pas quand on y repense.
+    local function stackWithLibrary(saved, droneCount)
+        local queue, context = buildStack()
+
+        queue.handlers.campaign = {steps = {
+            {name = "faux", verify = function() return true end,
+             run = function() return jobs.DONE end},
+        }}
+
+        context.queue = queue
+        context.config = {genetics = {autosave_species = true,
+                                      autosave_min_drones = 4}}
+        context.species = {
+            list = function()
+                return {["forestry.speciesCommon"] = {uid = "forestry.speciesCommon",
+                                                      name = "Common"}}
+            end,
+        }
+        context.library = {
+            speciesGenes = function() return saved end,
+        }
+
+        table.insert(world.network, {name = "forestry:bee_drone_ge",
+                                     label = "Common Drone", size = droneCount})
+
+        return queue, context
+    end
+
+    -- PARAMS is one table shared by every block in this file, and submit()
+    -- stores it by reference: the flag this step writes would arrive already
+    -- set, and the step would skip itself before doing anything.
+    local function freshParams()
+        return breeding.params({
+            target = "forestry.speciesCommon",
+            princess = {name = "forestry:bee_princess_ge", label = "Forest Princess"},
+            drone = {name = "forestry:bee_drone_ge", label = "Meadows Drone"},
+        })
+    end
+
+    -- The species is new: the hunt goes out on its own
+    os.remove(QUEUE)
+    reset()
+    local queue, context = stackWithLibrary({}, 9)
+    queue:submit("breed", freshParams())
+    queue:run(context, {maxSteps = 40})
+
+    local hunt = nil
+    for _, job in ipairs(queue:list()) do
+        if job.kind == "campaign" then hunt = job end
+    end
+
+    checkTruthy("une chasse au gene d espece est en file", hunt)
+    check("elle vise le bon chromosome", hunt.params.chromosome, "Species")
+    check("et le bon allele", hunt.params.allele, "Common")
+    check("sur les drones de cette espece", hunt.params.bee.label, "Common Drone")
+    check("le budget ne depasse pas le stock", hunt.params.budget, 9)
+    check("le croisement reste termine", queue:get(1).status, jobs.COMPLETE)
+
+    -- Already in the library: thirteen drones for a sample the Genetic
+    -- Transposer copies for one blank would be pure waste
+    os.remove(QUEUE)
+    reset()
+    local queue2, context2 = stackWithLibrary({Common = true}, 9)
+    queue2:submit("breed", freshParams())
+    queue2:run(context2, {maxSteps = 40})
+
+    local second = nil
+    for _, job in ipairs(queue2:list()) do
+        if job.kind == "campaign" then second = job end
+    end
+
+    check("un gene deja en bibliotheque ne relance rien", second, nil)
+
+    -- Not enough drones: a campaign with nothing to spend parks itself at once
+    -- and clutters the queue with a chore nobody can do
+    os.remove(QUEUE)
+    reset()
+    local queue3, context3 = stackWithLibrary({}, 1)
+    queue3:submit("breed", freshParams())
+    queue3:run(context3, {maxSteps = 40})
+
+    local third = nil
+    for _, job in ipairs(queue3:list()) do
+        if job.kind == "campaign" then third = job end
+    end
+
+    check("un seul drone ne declenche pas de chasse", third, nil)
+    checkTruthy("mais le programme le dit",
+                table.concat(log, " "):find("a sauver plus tard"))
+
+    os.remove(QUEUE)
+end
 
 print("")
 print("=== Resultats ===")

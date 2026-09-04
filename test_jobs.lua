@@ -475,6 +475,109 @@ do
     os.remove(PATH)
 end
 
+print("")
+print("-- une tache qui attend un geste du joueur --")
+
+do
+    -- A Gendustry input slot refuses automated extraction, a tank runs dry, a
+    -- consumable is not in the network: none of those is a bad plan, and none
+    -- of them is something the program can fix. Answering FAILED killed the job
+    -- over a five second gesture; answering RETRY parked it silently and nobody
+    -- ever learned what to do.
+    os.remove(PATH)
+
+    local gestureMade = false
+
+    local queue = jobs.new({
+        path = PATH,
+        maxAttempts = 2,
+        handlers = {
+            stuck = {steps = {
+                {name = "vider-le-slot",
+                 verify = function() return gestureMade end,
+                 run = function()
+                     return jobs.NEEDS_PLAYER,
+                         "retire l abeille du slot 2 du Sampler"
+                 end},
+                {name = "suite",
+                 verify = function() return false end,
+                 run = function() return jobs.DONE end},
+            }},
+        },
+        clock = clock,
+    })
+
+    local id = queue:submit("stuck", {})
+    local report = queue:run({}, {maxSteps = 10})
+
+    local job = queue:get(id)
+
+    check("la tache est mise en attente du joueur", job.status, jobs.WAITING)
+    check("et elle porte le geste a faire, mot pour mot",
+          job.action, "retire l abeille du slot 2 du Sampler")
+    check("ce n est pas une erreur", job.error, nil)
+    check("la passe le compte comme une attente", report.waiting, 1)
+    check("et pas comme un echec", report.failed, 0)
+
+    -- The one thing that must not happen: the job dying because the player was
+    -- slower than maxAttempts. Three passes with the gesture undone is the
+    -- normal case, not a fault.
+    check("aucune tentative n est consommee", job.attempts, 0)
+    queue:run({}, {maxSteps = 10})
+    queue:run({}, {maxSteps = 10})
+    check("et la tache survit aux passes suivantes",
+          queue:get(id).status, jobs.WAITING)
+
+    -- Waiting is not pending: picking it up again would fail on the same slot
+    -- and reprint the same instruction forever
+    check("elle ne revient pas dans les taches a faire", #queue:pending(), 0)
+    check("mais elle se retrouve dans celles qui attendent", #queue:waiting(), 1)
+
+    -- The player does the gesture and says so
+    gestureMade = true
+    check("relancer une tache qui attend marche", queue:resume(id), true)
+    check("le geste affiche disparait", queue:get(id).action, nil)
+
+    queue:run({}, {maxSteps = 10})
+    check("et la tache va jusqu au bout", queue:get(id).status, jobs.COMPLETE)
+
+    os.remove(PATH)
+end
+
+print("")
+print("-- ce qu'on ne doit pas confondre avec une attente --")
+
+do
+    os.remove(PATH)
+
+    local queue = jobs.new({
+        path = PATH,
+        maxAttempts = 1,
+        handlers = {
+            broken = {steps = {
+                {name = "casse",
+                 verify = function() return false end,
+                 run = function() return jobs.FAILED, "raison inconnue" end},
+            }},
+        },
+        clock = clock,
+    })
+
+    local id = queue:submit("broken", {})
+    queue:run({}, {maxSteps = 10})
+
+    -- A cause the program does not understand stays an error. Dressing every
+    -- failure up as a chore would send the player looking for a slot to clear
+    -- that does not exist.
+    check("un echec sans geste connu reste un echec",
+          queue:get(id).status, jobs.ERROR)
+    check("et ne se deguise pas en attente", #queue:waiting(), 0)
+    check("l etat 'attend un geste' a un nom lisible",
+          jobs.label(jobs.WAITING), "attend un geste")
+
+    os.remove(PATH)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

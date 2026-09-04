@@ -506,7 +506,7 @@ end
 check("deux genes recoltes", reached, 2)
 
 print("")
-print("-- un consommable manquant fait attendre, pas echouer --")
+print("-- un consommable manquant demande un geste, il ne fait pas echouer --")
 
 os.remove(QUEUE)
 reset()
@@ -516,9 +516,11 @@ queue, context = buildStack()
 queue:submit("sample", genetics.sampleParams({bee = {label = "Meadows Drone"}}))
 queue:run(context, {maxSteps = 40})
 
-check("la tache attend", queue:get(1).status, jobs.PENDING)
+check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
 checkTruthy("elle nomme ce qui manque",
-            queue:get(1).error and queue:get(1).error:find("sample vierge"))
+            queue:get(1).action and queue:get(1).action:find("sample vierge"))
+checkTruthy("et le dit comme un geste a faire",
+            queue:get(1).action and queue:get(1).action:find("reseau ME"))
 check("aucune abeille gaspillee", world.runs, 0)
 
 print("")
@@ -583,9 +585,9 @@ queue:submit("duplicate", genetics.duplicateParams(
     {sample = {label = "Bee Sample - Species: Ender"}}))
 queue:run(context, {maxSteps = 40})
 
-check("la tache attend", queue:get(1).status, jobs.PENDING)
+check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
 checkTruthy("elle nomme la source manquante",
-            queue:get(1).error and queue:get(1).error:find("sample source"))
+            queue:get(1).action and queue:get(1).action:find("sample source"))
 check("rien n'a ete copie", world.copies, nil)
 
 print("")
@@ -628,11 +630,15 @@ queue:submit("duplicate", genetics.duplicateParams(
     {sample = {label = "Bee Sample - Fertility: 2"}}))
 for _ = 1, 8 do queue:run(context, {maxSteps = 60}) end
 
-check("la tache s'arrete en erreur", queue:get(1).status, jobs.ERROR)
+-- It used to die here. A slot that only a hand can empty is a chore, not a
+-- fault: the job keeps its progress and waits for the gesture.
+check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
 checkTruthy("elle nomme l'intrus et le slot",
-            queue:get(1).error and queue:get(1).error:find("Flowering: Slower"))
-checkTruthy("et demande un retrait manuel",
-            queue:get(1).error and queue:get(1).error:find("a la main"))
+            queue:get(1).action and queue:get(1).action:find("Flowering: Slower"))
+checkTruthy("et dit le geste a l'imperatif",
+            queue:get(1).action and queue:get(1).action:find("retire"))
+checkTruthy("aucune erreur affichee en plus du geste",
+            queue:get(1).error == nil)
 checkTruthy("sans tourner en rond indefiniment", (world.copies or 0) <= 4)
 
 print("")
@@ -768,9 +774,11 @@ queue, context = buildStack()
 queue:submit("imprint", genetics.imprintParams({bee = {label = "Meadows Drone"}}))
 for _ = 1, 4 do queue:run(context, {maxSteps = 60}) end
 
-check("la tache est en erreur", queue:get(1).status, jobs.ERROR)
+check("la tache attend le joueur", queue:get(1).status, jobs.WAITING)
 checkTruthy("elle dit ou poser le template",
-            queue:get(1).error and queue:get(1).error:find("a la main"))
+            queue:get(1).action and queue:get(1).action:find("pose le template"))
+checkTruthy("et nomme la machine", 
+            queue:get(1).action and queue:get(1).action:find("Imprinter"))
 check("aucune abeille gaspillee", world.imprints, nil)
 check("aucun template pris dans le reseau", (function()
     for _, item in ipairs(world.network) do

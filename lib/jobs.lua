@@ -22,6 +22,13 @@ local jobs = {}
 jobs.DONE = "done"       -- step achieved, move to the next one
 jobs.RETRY = "retry"     -- nothing wrong, just not now (no energy, machine busy)
 jobs.FAILED = "failed"   -- this job cannot proceed
+-- A hand is needed, and only a hand: a Gendustry input slot that refuses
+-- automated extraction, an empty tank, a consumable the network does not hold.
+-- Answering FAILED there killed jobs over a five second gesture, and RETRY
+-- parked them silently so nobody ever learned what to do. This one carries the
+-- gesture itself and never counts as an attempt: a job waiting on a human is
+-- not a job going wrong.
+jobs.NEEDS_PLAYER = "needs_player"
 
 -- Job lifecycle
 jobs.PENDING = "pending"
@@ -29,6 +36,7 @@ jobs.RUNNING = "running"
 jobs.COMPLETE = "complete"
 jobs.ERROR = "error"
 jobs.CANCELLED = "cancelled"
+jobs.WAITING = "waiting"   -- parked on a gesture, resumed by the player
 
 --- What each kind and each state is called on screen
 --- The keys are internal names -- "campaign", "pending" -- and they were being
@@ -49,6 +57,7 @@ jobs.LABELS = {
     complete  = "terminee",
     cancelled = "annulee",
     failed    = "echouee",
+    waiting   = "attend un geste",
 }
 
 --- Name something for a human, falling back to the internal name
@@ -189,6 +198,55 @@ function Queue:pending()
     return waiting
 end
 
+--- Jobs stopped on a gesture only the player can make
+--- Deliberately NOT in pending(): the queue would pick them up again on the
+--- same pass, fail on the same slot, and print the same instruction forever.
+--- @return table[] jobs
+function Queue:waiting()
+    self:load()
+
+    local held = {}
+    for _, job in ipairs(self.data.queue) do
+        if job.status == jobs.WAITING then table.insert(held, job) end
+    end
+
+    return held
+end
+
+--- Put a waiting job back in the queue, the gesture having been made
+--- The step is not advanced: it re-verifies against the world, so telling the
+--- program the slot is clear when it is not costs one pass, not a wrong action.
+--- @param id number
+--- @return boolean ok
+--- @return string|nil error
+function Queue:resume(id)
+    local job = self:get(id)
+    if not job then return false, "tache introuvable" end
+
+    if job.status ~= jobs.WAITING then
+        return false, "cette tache n attend pas de geste"
+    end
+
+    job.status = jobs.PENDING
+    job.action = nil
+    job.attempts = 0
+    job.updated = self.clock()
+
+    return self:save()
+end
+
+--- Put every waiting job back in the queue
+--- @return number resumed
+function Queue:resumeAll()
+    local count = 0
+
+    for _, job in ipairs(self:waiting()) do
+        if self:resume(job.id) then count = count + 1 end
+    end
+
+    return count
+end
+
 --- Stop a job without running it further
 --- @param id number
 --- @return boolean ok
@@ -276,6 +334,7 @@ function Queue:step(job, context)
             job.step = job.step + 1
             job.attempts = 0
             job.error = nil
+            job.action = nil
             -- Leaving RUNNING here made a merely waiting job look busy in every
             -- report, and only pending() accepting both statuses kept the queue
             -- from stalling on it.
@@ -308,10 +367,25 @@ function Queue:step(job, context)
         return jobs.RETRY, detail
     end
 
+    -- Waiting on a hand is not an attempt. Counting it would retire a job after
+    -- three passes for something the player had simply not done yet, and the
+    -- job would die exactly when the gesture was about to be made.
+    if outcome == jobs.NEEDS_PLAYER then
+        job.status = jobs.WAITING
+        job.action = detail or "un geste est necessaire, la raison n a pas ete dite"
+        job.error = nil
+        job.updated = self.clock()
+        self:save()
+        return jobs.NEEDS_PLAYER, job.action
+    end
+
     if outcome == jobs.DONE or outcome == true then
         job.step = job.step + 1
         job.attempts = 0
         job.error = nil
+        -- The gesture that was asked for has served its purpose; leaving it
+        -- written would keep showing a chore that is already done
+        job.action = nil
         job.status = (job.step > #handler.steps) and jobs.COMPLETE or jobs.PENDING
         job.updated = self.clock()
         self:save()
@@ -347,7 +421,7 @@ function Queue:run(context, options)
     self:load()
 
     local report = {steps = 0, completed = 0, retried = 0, failed = 0,
-                    blocked = false, exhausted = false}
+                    waiting = 0, blocked = false, exhausted = false}
     local limit = options.maxSteps or 1000
 
     -- A campaign that keeps succeeding keeps going: thirty cycles of several
@@ -393,6 +467,12 @@ function Queue:run(context, options)
 
         if outcome == jobs.DONE then
             if job.status == jobs.COMPLETE then report.completed = report.completed + 1 end
+        elseif outcome == jobs.NEEDS_PLAYER then
+            -- Not counted as blocked: the pass is not stuck, it has a chore to
+            -- hand back. Calling that "bloquee" told the player to go looking
+            -- for a cause the program had already identified.
+            report.waiting = report.waiting + 1
+            parked[job.id] = true
         elseif outcome == jobs.RETRY then
             report.retried = report.retried + 1
             -- Set aside for this pass rather than retried immediately, which
@@ -408,8 +488,12 @@ function Queue:run(context, options)
             parked[job.id] = true
         end
 
-        -- Safety net against a verify/run pair that never advances
-        if job.step == before_step and job.status ~= jobs.COMPLETE then
+        -- Safety net against a verify/run pair that never advances. A job
+        -- waiting on a gesture has not advanced either, and that is normal --
+        -- flagging it blocked would send the player hunting for a fault while
+        -- the program is holding out the exact thing to do.
+        if job.step == before_step and job.status ~= jobs.COMPLETE
+           and job.status ~= jobs.WAITING then
             report.blocked = true
             parked[job.id] = true
         end
@@ -427,10 +511,18 @@ function Queue:describe()
     for _, job in ipairs(self.data.queue) do
         local handler = self.handlers[job.kind]
         local total = handler and handler.steps and #handler.steps or "?"
-        table.insert(lines, string.format("#%-3d %-24s %-11s etape %s/%s%s",
+        -- The gesture comes before the error: a job that is waiting has no
+        -- error, and what the reader needs is the thing to go and do
+        local suffix = ""
+        if job.action then
+            suffix = "  -> " .. job.action
+        elseif job.error then
+            suffix = "  (" .. job.error .. ")"
+        end
+
+        table.insert(lines, string.format("#%-3d %-24s %-16s etape %s/%s%s",
             job.id, jobs.label(job.kind), jobs.label(job.status),
-            tostring(job.step), tostring(total),
-            job.error and ("  (" .. job.error .. ")") or ""))
+            tostring(job.step), tostring(total), suffix))
     end
 
     return lines

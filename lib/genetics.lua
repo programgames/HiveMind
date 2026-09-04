@@ -115,10 +115,14 @@ local function finishLoadedStep(machineName, inputKey, wantedLabel)
             job.params.clearAttempts = (job.params.clearAttempts or 0) + 1
 
             if job.params.clearAttempts > 3 then
-                return jobs.FAILED, "le slot " .. machine:resolveSlot(slots[inputKey])
-                    .. " tient " .. tostring(occupant.label)
-                    .. " et la machine ne le consomme pas."
-                    .. " Retire-le a la main, puis relance la file."
+                -- Three passes answer the question: this machine keeps what it
+                -- reads. Only a hand empties that slot, so the job waits for one
+                -- instead of dying and taking its progress with it.
+                job.params.clearAttempts = 0
+                return jobs.NEEDS_PLAYER, "retire "
+                    .. tostring(occupant.label) .. " du slot "
+                    .. machine:resolveSlot(slots[inputKey])
+                    .. " (la machine ne le consomme pas et ne le rend pas)"
             end
 
             report(context, "travail engage a finir: " .. tostring(occupant.label))
@@ -257,10 +261,13 @@ genetics.SAMPLE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    return jobs.RETRY, entry.role .. ": le sampler tient encore "
-                        .. tostring(occupant.label) .. " dans le slot "
+                    -- Nothing the program can do: Gendustry refuses
+                    -- automated extraction from an input. Said as the gesture
+                    -- it is, so the queue hands back a chore and not a fault.
+                    return jobs.NEEDS_PLAYER, "retire "
+                        .. tostring(occupant.label) .. " du slot "
                         .. sampler:resolveSlot(entry.slot)
-                        .. ", et ne le rend pas. Retire-le a la main."
+                        .. " du Sampler (il occupe la place " .. entry.role .. ")"
                 end
             end
 
@@ -270,8 +277,10 @@ genetics.SAMPLE_STEPS = {
                     if not ok then
                         -- A missing consumable is a supply problem, not a bad
                         -- plan: waiting costs nothing, failing loses the job
-                        return jobs.RETRY, entry.role .. " indisponible: "
-                            .. tostring(reason)
+                        -- Not a bad plan and not a transient wait: the
+                        -- network simply has none. Only a hand fixes that.
+                        return jobs.NEEDS_PLAYER, "mets " .. entry.role
+                            .. " dans le reseau ME (" .. tostring(reason) .. ")"
                     end
                 end
             end
@@ -447,11 +456,11 @@ genetics.DUPLICATE_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    return jobs.RETRY, entry.role
-                        .. ": le transposer tient encore "
-                        .. tostring(occupant.label) .. " dans le slot "
+                    return jobs.NEEDS_PLAYER, "retire "
+                        .. tostring(occupant.label) .. " du slot "
                         .. machine:resolveSlot(entry.slot)
-                        .. ", et ne le rend pas. Retire-le a la main."
+                        .. " du Genetic Transposer (il occupe la place "
+                        .. entry.role .. ")"
                 end
             end
 
@@ -459,8 +468,10 @@ genetics.DUPLICATE_STEPS = {
                 if not machine:slot(entry.slot) then
                     local ok, reason = machine:load(entry.spec, entry.slot, 1)
                     if not ok then
-                        return jobs.RETRY, entry.role .. " indisponible: "
-                            .. tostring(reason)
+                        -- Not a bad plan and not a transient wait: the
+                        -- network simply has none. Only a hand fixes that.
+                        return jobs.NEEDS_PLAYER, "mets " .. entry.role
+                            .. " dans le reseau ME (" .. tostring(reason) .. ")"
                     end
                 end
             end
@@ -615,12 +626,11 @@ genetics.IMPRINT_STEPS = {
             -- Never fetched from the network: a filled template and an empty
             -- one share an id and a label there, so AE2 would hand back
             -- whichever it liked and the bee would come out wrong.
-            return jobs.FAILED,
-                "aucun template dans l imprinter (slot "
-                .. machine:resolveSlot(machine.link.slots.template) .. ")."
-                .. " Pose-le a la main: un template rempli et un vide sont"
-                .. " indiscernables dans le reseau ME, le programme ne peut pas"
-                .. " choisir le bon."
+            return jobs.NEEDS_PLAYER,
+                "pose le template dans le slot "
+                .. machine:resolveSlot(machine.link.slots.template)
+                .. " de l Imprinter: rempli ou vide, ils sont indiscernables"
+                .. " dans le reseau ME, le programme ne peut pas choisir"
         end,
     },
 
@@ -657,17 +667,20 @@ genetics.IMPRINT_STEPS = {
 
                 if occupant and entry.spec.label
                    and occupant.label ~= entry.spec.label then
-                    return jobs.RETRY, entry.role .. ": l imprinter tient encore "
-                        .. tostring(occupant.label) .. " dans le slot "
+                    return jobs.NEEDS_PLAYER, "retire "
+                        .. tostring(occupant.label) .. " du slot "
                         .. machine:resolveSlot(entry.slot)
-                        .. ", et ne le rend pas. Retire-le a la main."
+                        .. " de l Imprinter (il occupe la place "
+                        .. entry.role .. ")"
                 end
 
                 if not occupant then
                     local ok, reason = machine:load(entry.spec, entry.slot, 1)
                     if not ok then
-                        return jobs.RETRY, entry.role .. " indisponible: "
-                            .. tostring(reason)
+                        -- Not a bad plan and not a transient wait: the
+                        -- network simply has none. Only a hand fixes that.
+                        return jobs.NEEDS_PLAYER, "mets " .. entry.role
+                            .. " dans le reseau ME (" .. tostring(reason) .. ")"
                     end
                 end
             end
@@ -882,12 +895,11 @@ genetics.REPLICATE_STEPS = {
             -- Same reason as the imprinter, and it matters more here: this
             -- template needs all thirteen chromosomes including the species,
             -- and AE2 cannot tell a full one from an empty one.
-            return jobs.FAILED,
-                "aucun template dans le replicator (slot "
-                .. machine:resolveSlot(machine.link.slots.template) .. ")."
-                .. " Pose a la main un template COMPLET, 13 chromosomes sur 13,"
-                .. " gene Species compris: c est lui qui decide quelle abeille"
-                .. " sort."
+            return jobs.NEEDS_PLAYER,
+                "pose un template COMPLET (13 chromosomes sur 13, gene Species"
+                .. " compris) dans le slot "
+                .. machine:resolveSlot(machine.link.slots.template)
+                .. " du Replicator: c est lui qui decide quelle abeille sort"
         end,
     },
 
@@ -1098,13 +1110,17 @@ genetics.EXTRACT_STEPS = {
             if slots.labware ~= nil and not machine:slot(slots.labware) then
                 local fine = machine:load(job.params.labware, slots.labware, 1)
                 if not fine then
-                    return jobs.RETRY, "labware indisponible pour l extracteur"
+                    return jobs.NEEDS_PLAYER,
+                        "mets du labware dans le reseau ME, le DNA Extractor"
+                        .. " n en a plus"
                 end
             end
 
             local ok, reason = machine:load(job.params.bee, slots.input, 1)
             if not ok then
-                return jobs.RETRY, "abeille indisponible: " .. tostring(reason)
+                return jobs.NEEDS_PLAYER, "mets "
+                    .. tostring(job.params.bee.label or "l abeille")
+                    .. " dans le reseau ME (" .. tostring(reason) .. ")"
             end
 
             job.params.fed = (job.params.fed or 0) + 1

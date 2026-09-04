@@ -52,6 +52,76 @@ local function machineOf(context, name)
     return machine
 end
 
+--- Display name of a species uid, as an item label spells it
+--- The plan works in uids ("forestry.speciesCultivated") and the network works
+--- in labels ("Cultivated Drone"). Getting this wrong queues a hunt for a bee
+--- that does not exist under that name.
+--- @param context table
+--- @param uid string|nil
+--- @return string|nil name
+local function displayName(context, uid)
+    if type(uid) ~= "string" or uid == "" then return nil end
+
+    local registry = context and context.species
+    if registry and type(registry.list) == "function" then
+        local ok, all = pcall(registry.list, registry)
+        if ok and type(all) == "table" and all[uid] and all[uid].name then
+            return all[uid].name
+        end
+    end
+
+    -- A uid with no dot is already a display name, which is what the bundled
+    -- fallback table uses
+    if not uid:find("%.") then return uid end
+
+    return nil
+end
+
+--- How many drones of a species the network holds
+--- @param context table
+--- @param name string
+--- @return number count
+local function droneStock(context, name)
+    if not context or not context.transport then return 0 end
+
+    local wanted = name .. " Drone"
+    local count = 0
+
+    local ok, items = pcall(function()
+        return context.transport:findAll({name = "forestry:bee_drone_ge"})
+    end)
+
+    if not ok or type(items) ~= "table" then return 0 end
+
+    for _, item in ipairs(items) do
+        if item.label == wanted then count = count + (tonumber(item.size) or 0) end
+    end
+
+    return count
+end
+
+--- Is a hunt for this species' gene already queued
+--- Queueing it twice spends a second batch of drones on a gene already coming.
+--- @param context table
+--- @param name string
+--- @return boolean
+local function alreadyHunting(context, name)
+    if not context or not context.queue then return false end
+
+    local ok, list = pcall(function() return context.queue:list() end)
+    if not ok or type(list) ~= "table" then return false end
+
+    for _, job in ipairs(list) do
+        if job.kind == "campaign" and job.status ~= "complete"
+           and job.status ~= "cancelled" and job.params
+           and job.params.bee and job.params.bee.label == (name .. " Drone") then
+            return true
+        end
+    end
+
+    return false
+end
+
 --- Is the machine able to work right now
 --- @return string|nil retry Reason to come back later, nil when ready
 local function notReady(machine)
@@ -100,8 +170,10 @@ breeding.STEPS = {
             local ok, reason = mutatron:load(spec, mutatron:slots().labware, 1)
 
             if not ok then
-                -- Missing labware is a supply problem, not a broken plan
-                return jobs.RETRY, "labware indisponible: " .. tostring(reason)
+                -- Missing labware is a supply problem, not a broken plan, and
+                -- not something the program can solve on its own either
+                return jobs.NEEDS_PLAYER,
+                    "mets du labware dans le reseau ME (" .. tostring(reason) .. ")"
             end
 
             return jobs.DONE
@@ -139,26 +211,35 @@ breeding.STEPS = {
                         -- Gendustry machines refuse extraction from their input
                         -- slots, so nothing automated can clear this. Naming the
                         -- slot the player actually sees is the whole point.
-                        return false, role .. ": le Mutatron refuse de rendre le slot "
-                            .. mutatron:resolveSlot(slot) .. ", qui contient "
-                            .. tostring(occupant)
-                            .. ". Retire-la a la main puis relance."
+                        return false, "retire " .. tostring(occupant)
+                            .. " du slot " .. mutatron:resolveSlot(slot)
+                            .. " du Mutatron (il occupe la place " .. role .. ")",
+                            true
                     end
                 end
 
                 local ok, reason = mutatron:load(spec, slot, 1)
                 if not ok then
-                    return false, role .. " indisponible: " .. tostring(reason)
+                    return false, "mets " .. tostring(spec.label or role)
+                        .. " dans le reseau ME (" .. tostring(reason) .. ")",
+                        true
                 end
 
                 return true
             end
 
-            local placed, why = place(job.params.princess, slots.in1, "princesse")
-            if not placed then return jobs.RETRY, why end
+            -- place() says whether what stops it is a chore or a wait: a slot
+            -- the Mutatron refuses to give back and a bee the network does not
+            -- hold both need a hand, and neither clears itself with time.
+            local placed, why, gesture = place(job.params.princess, slots.in1, "princesse")
+            if not placed then
+                return gesture and jobs.NEEDS_PLAYER or jobs.RETRY, why
+            end
 
-            placed, why = place(job.params.drone, slots.in2, "drone")
-            if not placed then return jobs.RETRY, why end
+            placed, why, gesture = place(job.params.drone, slots.in2, "drone")
+            if not placed then
+                return gesture and jobs.NEEDS_PLAYER or jobs.RETRY, why
+            end
 
             return jobs.DONE
         end,
@@ -344,6 +425,64 @@ breeding.STEPS = {
             if #apiary:outputs() > 0 then
                 -- Usually the network is full or the interface is saturated
                 return jobs.RETRY, "la sortie de l'apiary ne se vide pas"
+            end
+
+            return jobs.DONE
+        end,
+    },
+
+    -- -----------------------------------------------------------------------
+    {
+        name = "sauver-le-gene-d-espece",
+        -- Never a reason to redo the cross: whatever happens here, the bees are
+        -- already in the network and the job has succeeded.
+        verify = function(job) return job.params.speciesSaved == true end,
+        run = function(job, context)
+            job.params.speciesSaved = true
+
+            local settings = (context.config and context.config.genetics) or {}
+            if settings.autosave_species == false then return jobs.DONE end
+
+            local name = displayName(context, job.params.target)
+            if not name then return jobs.DONE end
+
+            -- Already in the library: a second sample costs thirteen drones for
+            -- something the Genetic Transposer copies for one blank
+            local ok, saved = pcall(function()
+                return context.library:speciesGenes()
+            end)
+            if ok and type(saved) == "table" and saved[name] then
+                return jobs.DONE
+            end
+
+            -- A campaign with no bees to spend parks itself immediately, so it
+            -- is not queued at all: the cross that just ran usually leaves one
+            -- drone, and one drone is a coin flip.
+            local minimum = tonumber(settings.autosave_min_drones) or 4
+            local stock = droneStock(context, name)
+
+            if stock < minimum then
+                report(context, "gene d espece de " .. name .. " a sauver plus"
+                    .. " tard: " .. stock .. " drone(s), il en faut " .. minimum)
+                return jobs.DONE
+            end
+
+            if alreadyHunting(context, name) then return jobs.DONE end
+
+            local genetics = require("lib.genetics")
+            local params = genetics.campaignParams({
+                bee = {label = name .. " Drone"},
+                chromosome = "Species",
+                allele = name,
+                bees = math.min(13, stock),
+            })
+
+            if not params or not context.queue then return jobs.DONE end
+
+            local id = context.queue:submit("campaign", params)
+            if id then
+                report(context, "espece nouvelle: chasse #" .. id
+                    .. " en file pour sauver le gene " .. name)
             end
 
             return jobs.DONE
