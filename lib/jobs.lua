@@ -60,6 +60,56 @@ jobs.LABELS = {
     waiting   = "attend un geste",
 }
 
+--- What a job is trying to obtain, in a few words
+--- "#25 croisement" tells a reader nothing when ten crosses are in flight.
+--- The goal is in the parameters; only the naming of a species uid has to come
+--- from outside, because the queue has no registry.
+--- @param job table
+--- @param naming function|nil uid -> display name
+--- @return string|nil goal
+function jobs.goal(job, naming)
+    local params = job and job.params
+    if type(params) ~= "table" then return nil end
+
+    local function named(uid)
+        if type(uid) ~= "string" then return nil end
+        if naming then
+            local ok, display = pcall(naming, uid)
+            if ok and display then return display end
+        end
+        return uid
+    end
+
+    if job.kind == "breed" then return named(params.target) end
+    if job.kind == "multiply" then return params.species end
+
+    if job.kind == "campaign" then
+        if params.chromosome then
+            return params.chromosome
+                .. (params.allele and (" " .. params.allele) or "")
+        end
+    end
+
+    local bee = params.bee or params.sample
+    if type(bee) == "table" and bee.label then
+        return (tostring(bee.label):gsub("%s+Drone$", ""))
+    end
+
+    return nil
+end
+
+--- What an outcome is called on screen
+--- done, retry and needs_player are internal names that leaked into the log.
+--- @param outcome string
+--- @return string
+function jobs.outcomeLabel(outcome)
+    if outcome == jobs.DONE then return "fait" end
+    if outcome == jobs.RETRY then return "plus tard" end
+    if outcome == jobs.NEEDS_PLAYER then return "IL FAUT TA MAIN" end
+    if outcome == jobs.FAILED then return "ECHEC" end
+    return tostring(outcome)
+end
+
 --- Name something for a human, falling back to the internal name
 --- A kind added later shows its own name rather than disappearing.
 --- @param key string|nil
@@ -292,9 +342,12 @@ end
 --- Advance one job by a single step
 --- @param job table
 --- @param context table Passed through to verify/run: machines, transport, ui
+--- @param announce function|nil Called (job, name, index, total) when the step
+---   is about to really run. NOT called for a step verify found already done:
+---   those are instantaneous and were most of what the log printed.
 --- @return string outcome One of jobs.DONE, jobs.RETRY, jobs.FAILED
 --- @return string|nil detail
-function Queue:step(job, context)
+function Queue:step(job, context, announce)
     self:load()
 
     local handler = self.handlers[job.kind]
@@ -343,6 +396,13 @@ function Queue:step(job, context)
             self:save()
             return jobs.DONE, "etape deja accomplie: " .. tostring(step.name)
         end
+    end
+
+    -- Said before the work, because a step can hold a machine for two minutes
+    -- and a silent pause is indistinguishable from a frozen program. Said
+    -- HERE, because a step already accomplished takes no time at all.
+    if type(announce) == "function" then
+        pcall(announce, job, step.name, job.step, #handler.steps)
     end
 
     if type(step.run) ~= "function" then
@@ -451,18 +511,14 @@ function Queue:run(context, options)
 
         local before_step = job.step
 
-        if type(options.onStep) == "function" then
-            local handler = self.handlers[job.kind]
-            local step = handler and handler.steps and handler.steps[job.step]
+        local handler = self.handlers[job.kind]
+        local total = handler and handler.steps and #handler.steps or 0
 
-            pcall(options.onStep, job, step and step.name or nil)
-        end
-
-        local outcome, detail = self:step(job, context)
+        local outcome, detail = self:step(job, context, options.onStep)
         report.steps = report.steps + 1
 
         if type(options.onProgress) == "function" then
-            pcall(options.onProgress, job, outcome, detail)
+            pcall(options.onProgress, job, outcome, detail, before_step, total)
         end
 
         if outcome == jobs.DONE then

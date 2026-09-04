@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.0.1"
+hivemind.VERSION = "1.1.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -975,6 +975,25 @@ function hivemind.harvestApiary(context)
     return collected
 end
 
+--- uid -> display name, from the live registry
+--- Several screens built this closure inline. A job carries species uids and a
+--- reader needs names, so it belongs in one place.
+--- @param context table
+--- @return function
+local function namingFrom(context)
+    local all = {}
+
+    pcall(function()
+        local registry = context and context.species
+        if registry and registry.list then all = registry:list() or {} end
+    end)
+
+    return function(uid)
+        local entry = all[uid]
+        return (entry and entry.name) or uid
+    end
+end
+
 -- Forward declaration: planChain calls this, and the definition sits after it
 -- so the reading order follows the order things happen.
 local queueChain
@@ -1350,22 +1369,80 @@ function hivemind.runQueue(context, options)
         if pending > 0 then
             print("Execution de " .. screen.count(pending, "tache") .. "...")
 
+            -- One line per step that ACTUALLY works. Three lines each, with the
+            -- step name repeated in "etape deja accomplie: X", meant that of
+            -- seven hundred lines about ten carried anything: a mutation, a
+            -- harvest, a gesture to make. They looked exactly like the rest.
+            local naming = namingFrom(context)
+
+            -- The step's own report ("mutation Yellow Queen", "recolte: 7
+            -- items") arrives through context.log, which printed on its own
+            -- line. Held here instead, and put at the end of the step's line.
+            local said = nil
+            local previousLog = context.log
+            context.log = function(text) said = tostring(text) end
+
+            local function title(job)
+                local goal = jobs.goal(job, naming)
+                return jobs.label(job.kind) .. (goal and (" " .. goal) or "")
+            end
+
+            -- Widths chosen so a report of a couple of words lands on the same
+            -- line; anything longer goes underneath rather than being cut,
+            -- because the long ones are the ones worth reading.
+            local ROOM = 26
+
             local report = context.queue:run(context, {
                 budget = options.budget,
 
-                -- Said BEFORE the step runs: waiting on a machine takes up to
-                -- two minutes and prints nothing, so the screen sat on
-                -- "Execution de 1 tache(s)..." and looked frozen.
-                onStep = function(job, name)
-                    print(string.format("  #%d %s : %s...", job.id,
-                        jobs.label(job.kind), name or ("etape " .. job.step)))
+                -- Announced before the work: a step can hold a machine for two
+                -- minutes, and a silent pause looks like a frozen program. The
+                -- queue only calls this for a step that really runs.
+                onStep = function(job, name, index, total)
+                    said = nil
+                    io.write(string.format("#%-4d%s %d/%d %s", job.id,
+                        screen.fit(title(job), 20), index, total,
+                        screen.fit((name or "?"):gsub("%-", " "), 20)))
                 end,
 
                 onProgress = function(job, outcome, detail)
-                    print(string.format("       -> %s%s", outcome,
-                        detail and ("  " .. detail) or ""))
+                    -- The step's own words say what happened; the outcome only
+                    -- matters when it is not simply "done".
+                    local tail = said
+                    if outcome ~= jobs.DONE then
+                        tail = jobs.outcomeLabel(outcome)
+                    end
+
+                    if tail and #tail <= ROOM then
+                        print(" " .. tail)
+                    elseif tail then
+                        print("")
+                        for _, line in ipairs(screen.wrap(tail, 66)) do
+                            print("     " .. line)
+                        end
+                    else
+                        print("")
+                    end
+
+                    -- A gesture or a failure must never be cut: they are the
+                    -- only lines that ask something of the reader.
+                    if (outcome == jobs.NEEDS_PLAYER or outcome == jobs.FAILED)
+                       and detail then
+                        for _, line in ipairs(screen.wrap(detail, 66)) do
+                            print("     " .. line)
+                        end
+                    end
+
+                    if job.status == jobs.COMPLETE then
+                        print(string.format("#%-4d%s TERMINE", job.id,
+                            screen.fit(title(job), 20)))
+                    end
+
+                    said = nil
                 end,
             })
+
+            context.log = previousLog
 
             print(screen.count(report.steps, "etape") .. ", "
                 .. report.completed .. " " .. screen.plural(report.completed, "terminee")
@@ -1398,7 +1475,11 @@ function hivemind.runQueue(context, options)
         print("IL FAUT TA MAIN — " .. screen.count(#waiting, "tache")
             .. " " .. screen.plural(#waiting, "attend") .. " :")
         for _, job in ipairs(waiting) do
-            print(string.format("  #%-3d %s", job.id, tostring(job.action)))
+            -- The one thing on this screen the reader has to act on; cutting
+            -- it at the terminal's whim is the last place to allow that
+            local lines = screen.wrap(tostring(job.action), 66)
+            print(string.format("  #%-4d%s", job.id, lines[1]))
+            for index = 2, #lines do print("       " .. lines[index]) end
         end
 
         if not interactive then return end
