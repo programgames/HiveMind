@@ -143,6 +143,11 @@ check("et se fait tant qu ils sont dans le coffre",
       text:find("QUE tant que le template est dans le coffre", 1, true) ~= nil)
 check("un template sans fiche est signale comme non demandable",
       text:find("PAS DE FICHE: pas demandable", 1, true) ~= nil)
+
+-- And the names have to be visible without going through the naming screen
+check("l etat detaille montre les templates nommes",
+      io.open("lib/library.lua"):read("a")
+          :find("Templates nommes", 1, true) ~= nil)
 check("elle annonce que le produit est une reine Ignoble",
       text:find("Il en sort une REINE", 1, true) ~= nil)
 

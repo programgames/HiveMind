@@ -605,7 +605,28 @@ function Library:describe()
             #shortages, self.minimumCopies))
     end
 
-    table.insert(lines, string.format("Templates indexes : %d", #self:templates()))
+    -- A count answers "how many" and never "which one", and which one is the
+    -- only question anybody has: every template shares a label, so this list is
+    -- the only place their names exist.
+    local templates = self:templates()
+    table.insert(lines, string.format("Templates nommes : %d", #templates))
+
+    local shown = 0
+    for _, entry in ipairs(templates) do
+        if shown < 15 then
+            shown = shown + 1
+            table.insert(lines, string.format("  %-22s coffre %-3d %s",
+                tostring(entry.name or entry.species or "sans nom"),
+                entry.slot,
+                -- Without a Database entry it cannot be asked of the network,
+                -- which makes it a template we can see and not use
+                entry.page and ("fiche " .. entry.page) or "PAS DEMANDABLE"))
+        end
+    end
+
+    if #templates > shown then
+        table.insert(lines, "  ... et " .. (#templates - shown) .. " autre(s)")
+    end
 
     return lines
 end

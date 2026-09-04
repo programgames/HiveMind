@@ -405,6 +405,37 @@ do
 end
 
 print("")
+print("")
+print("-- ce que le resume montre --")
+
+reset()
+os.remove(PATH)
+
+do
+    local shelf = newLibrary()
+    chest[1] = {name = "gendustry:gene_template", label = "Genetic Template", id = "A"}
+
+    local entry = shelf:registerTemplate(1, {name = "elevage"})
+    entry.name = "elevage"
+    shelf:save()
+
+    local text = table.concat(shelf:describe(), "\n")
+
+    -- A count answers "how many" and never "which one", which is the only
+    -- question anybody has about templates
+    checkTruthy("le resume nomme les templates",
+                text:find("elevage", 1, true) ~= nil)
+    checkTruthy("et dit lesquels ne sont pas demandables",
+                text:find("PAS DEMANDABLE", 1, true) ~= nil)
+
+    shelf:keepPhotograph(entry)
+    text = table.concat(shelf:describe(), "\n")
+
+    checkTruthy("une fois la fiche prise, il le dit aussi",
+                text:find("fiche ", 1, true) ~= nil
+                and text:find("PAS DEMANDABLE", 1, true) == nil)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
