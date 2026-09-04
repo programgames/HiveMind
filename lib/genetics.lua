@@ -566,6 +566,10 @@ function genetics.imprintParams(options)
     return {
         bee = {name = bee.name or "forestry:bee_drone_ge", label = bee.label},
         labware = options.labware or {name = "gendustry:labware"},
+        -- Which Imprinter. Two of them, one template each, is what removes
+        -- template swapping; a job that did not say which one would always
+        -- print the same profile.
+        machine = options.machine or "imprinter",
         timeout = options.timeout,
     }
 end
@@ -575,12 +579,12 @@ genetics.IMPRINT_STEPS = {
     {
         name = "vider-la-sortie-de-l-imprinter",
         verify = function(job, context)
-            local machine = machineOf(context, "imprinter")
+            local machine = machineOf(context, job.params.machine or "imprinter")
             if not machine then return false end
             return machine:slot(machine.link.slots.output) == nil
         end,
         run = function(job, context)
-            local machine, err = machineOf(context, "imprinter")
+            local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
             local moved, cleared = drainOutput(machine)
@@ -600,12 +604,12 @@ genetics.IMPRINT_STEPS = {
     {
         name = "verifier-le-template",
         verify = function(job, context)
-            local machine = machineOf(context, "imprinter")
+            local machine = machineOf(context, job.params.machine or "imprinter")
             if not machine then return false end
             return machine:slot(machine.link.slots.template) ~= nil
         end,
         run = function(job, context)
-            local machine, err = machineOf(context, "imprinter")
+            local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
             -- Never fetched from the network: a filled template and an empty
@@ -624,7 +628,7 @@ genetics.IMPRINT_STEPS = {
     {
         name = "charger-l-abeille",
         verify = function(job, context)
-            local machine = machineOf(context, "imprinter")
+            local machine = machineOf(context, job.params.machine or "imprinter")
             if not machine then return false end
 
             local slots = machine.link.slots
@@ -634,7 +638,7 @@ genetics.IMPRINT_STEPS = {
                 and machine:slot(slots.labware) ~= nil
         end,
         run = function(job, context)
-            local machine, err = machineOf(context, "imprinter")
+            local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
             local slots = machine.link.slots
@@ -676,12 +680,12 @@ genetics.IMPRINT_STEPS = {
     {
         name = "attendre-l-abeille-imprimee",
         verify = function(job, context)
-            local machine = machineOf(context, "imprinter")
+            local machine = machineOf(context, job.params.machine or "imprinter")
             if not machine then return false end
             return machine:slot(machine.link.slots.output) ~= nil
         end,
         run = function(job, context)
-            local machine, err = machineOf(context, "imprinter")
+            local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
             local wait = job.params.timeout
@@ -700,12 +704,12 @@ genetics.IMPRINT_STEPS = {
     {
         name = "recolter-l-abeille",
         verify = function(job, context)
-            local machine = machineOf(context, "imprinter")
+            local machine = machineOf(context, job.params.machine or "imprinter")
             if not machine then return false end
             return machine:slot(machine.link.slots.output) == nil
         end,
         run = function(job, context)
-            local machine, err = machineOf(context, "imprinter")
+            local machine, err = machineOf(context, job.params.machine or "imprinter")
             if not machine then return jobs.FAILED, err end
 
             local slots = machine.link.slots

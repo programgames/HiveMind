@@ -152,6 +152,27 @@ check("et le slot du coffre est presente comme un souvenir",
 check("l etat detaille montre les templates nommes",
       io.open("lib/library.lua"):read("a")
           :find("Templates nommes", 1, true) ~= nil)
+-- Two Imprinters with a profile each is what removes template swapping; a job
+-- that never said which machine always printed the same profile
+check("l impression choisit sa machine",
+      text:find("machine = chosen.name", 1, true) ~= nil)
+check("et le job s en sert au lieu d un nom fige",
+      io.open("lib/genetics.lua"):read("a")
+          :find("machineOf(context, job.params.machine or \"imprinter\")",
+                1, true) ~= nil)
+check("elle dit quel slot template est vide avant de choisir",
+      text:find("SLOT VIDE", 1, true) ~= nil)
+
+-- The extractor's tank fills instead of emptying: reporting it as "out of ADN"
+-- would be exactly backwards
+check("la cuve de l extracteur est surveillee",
+      text:find("DNA Extractor", 1, true) ~= nil)
+check("une cuve qui se remplit n est pas traitee comme une cuve qui se vide",
+      text:find("fills = true", 1, true) ~= nil
+      and text:find("a transferer", 1, true) ~= nil)
+check("et une cuve pleine dit que la machine est bloquee",
+      text:find("il ne produira plus rien tant que", 1, true) ~= nil)
+
 check("elle annonce que le produit est une reine Ignoble",
       text:find("Il en sort une REINE", 1, true) ~= nil)
 

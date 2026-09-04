@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.86.0"
+hivemind.VERSION = "0.87.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1405,27 +1405,68 @@ function hivemind.imprintBee(context)
     print("L imprinter ecrase les genes de l abeille par ceux du template.")
     print("")
 
-    local imprinter = context.machines and context.machines.imprinter
-    if not imprinter then
-        print("Imprinter absent de la configuration.")
+    -- Two Imprinters, one profile each: choosing a profile is choosing a
+    -- machine, which is the whole reason there are two.
+    local candidates = {}
+    for _, name in ipairs(config.enabledMachines()) do
+        local link = config.machines[name]
+        if link.slots and link.slots.template and link.slots.bee
+           and context.machines[name] then
+            table.insert(candidates, {name = name, profile = link.profile})
+        end
+    end
+
+    if #candidates == 0 then
+        print("Aucun imprinter dans la configuration.")
         return
     end
 
-    -- The template is placed by hand and stays: a filled one and an empty one
-    -- are indistinguishable in AE2, so the program must never pick one itself
+    local chosen = candidates[1]
+
+    if #candidates > 1 then
+        print("Quelle machine ?")
+        for index, entry in ipairs(candidates) do
+            local machine = context.machines[entry.name]
+            local held = machine:slot(machine.link.slots.template)
+
+            print(string.format("  %d = %-14s profil %-12s %s", index,
+                entry.name, tostring(entry.profile or "non declare"),
+                held and "template en place" or "SLOT VIDE"))
+        end
+
+        io.write("Machine: ")
+        local answer = io.read()
+        local pick = tonumber(answer and answer:gsub("%s+", ""))
+
+        chosen = pick and candidates[pick]
+        if not chosen then print("Annule.") return end
+    end
+
+    local imprinter = context.machines[chosen.name]
+
     local template = imprinter:slot(imprinter.link.slots.template)
 
     if not template then
-        print("Aucun template dans l imprinter.")
         print("")
-        print("Fabrique-le a la table de craft (option e), puis pose-le a la")
-        print("main dans le slot " .. imprinter:resolveSlot(imprinter.link.slots.template)
-            .. " de l imprinter. Le programme ne peut pas le choisir")
-        print("lui-meme: un template rempli et un vide portent le meme nom.")
-        return
+        print("Aucun template dans " .. chosen.name .. ".")
+
+        -- A named template carries a fingerprint, and the network answers a
+        -- request built from its description. What stays impossible is taking
+        -- one back out, so this only works on an empty slot.
+        if not placeTemplate(context, chosen.name) then
+            print("")
+            print("Fabrique-le a la table de craft (option e), pose-le dans le")
+            print("coffre, nomme-le (option n), remets-le dans le reseau: je")
+            print("pourrai alors le demander moi-meme.")
+            return
+        end
+
+        template = imprinter:slot(imprinter.link.slots.template)
     end
 
-    print("Template en place : " .. tostring(template.label))
+    print("Template en place : " .. tostring(template.label)
+        .. "  (" .. chosen.name .. ", profil "
+        .. tostring(chosen.profile or "non declare") .. ")")
     print("")
 
     local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
@@ -1442,7 +1483,9 @@ function hivemind.imprintBee(context)
         return
     end
 
-    local params, err = genetics.imprintParams({bee = beeSpec})
+    local params, err = genetics.imprintParams({
+        bee = beeSpec, machine = chosen.name,
+    })
     if not params then
         print("Parametres invalides: " .. tostring(err))
         return
@@ -2185,8 +2228,14 @@ function hivemind.fluidLevels(context)
 
     local watched = {
         {key = "mutatron", name = "Mutatron", fluid = "mutagene"},
-        {key = "replicator", name = "Replicator", fluid = "DNA liquide"},
-        {key = "protein_liquifier", name = "Protein Liquifier", fluid = "proteines"},
+        {key = "replicator", name = "Replicator", fluid = "ADN"},
+        -- The one tank that fills instead of emptying: it says there is ADN to
+        -- move, which is the only signal the player has that the extractor did
+        -- its work.
+        {key = "dna_extractor", name = "DNA Extractor", fluid = "ADN",
+         fills = true},
+        {key = "protein_liquifier", name = "Protein Liquifier",
+         fluid = "proteines", fills = true},
         {key = "mutagen_producer", name = "Mutagen Producer", fluid = "mutagene"},
     }
 
@@ -2217,16 +2266,26 @@ function hivemind.fluidLevels(context)
             end
 
             if ok and type(tank) == "table" then
+                local amount = tank.amount or 0
+
                 table.insert(readings, {
                     machine = entry.name,
                     fluid = entry.fluid,
                     label = tank.label,
-                    amount = tank.amount or 0,
+                    amount = amount,
                     capacity = tank.capacity or 0,
                     ratio = tank.ratio,
-                    low = (tank.ratio ~= nil and tank.ratio < LOW)
-                          or (tank.amount or 0) == 0,
-                    empty = (tank.amount or 0) == 0,
+                    -- A tank that FILLS is the opposite problem: empty is
+                    -- normal, full is what needs the player. Reporting it as
+                    -- "out of ADN" would be exactly backwards.
+                    fills = entry.fills or false,
+                    low = not entry.fills
+                          and ((tank.ratio ~= nil and tank.ratio < LOW)
+                               or amount == 0),
+                    empty = not entry.fills and amount == 0,
+                    ready = entry.fills and amount > 0,
+                    full = entry.fills and tank.ratio ~= nil
+                           and tank.ratio > 0.90,
                 })
             end
         end
@@ -2242,7 +2301,15 @@ function hivemind.fluidWarnings(context)
     local warnings = {}
 
     for _, reading in ipairs(hivemind.fluidLevels(context)) do
-        if reading.empty then
+        if reading.full then
+            table.insert(warnings, string.format(
+                "%s : cuve pleine (%d/%d) -- il ne produira plus rien tant que"
+                .. " tu n auras pas vide", reading.machine,
+                reading.amount, reading.capacity))
+        elseif reading.ready then
+            table.insert(warnings, string.format("%s : %d de %s a transferer",
+                reading.machine, reading.amount, reading.fluid))
+        elseif reading.empty then
             table.insert(warnings, reading.machine .. " : plus de "
                 .. reading.fluid .. " -- a toi de le remplir")
         elseif reading.low then

@@ -150,7 +150,7 @@ données cachées, pas seulement les templates.
 
 ---
 
-## Étape 2 — Savoir quel template est lequel
+## Étape 2 — ✅ FAIT : savoir quel template est lequel
 
 **Problème** : même dans un coffre, si tu déplaces un template à la main, mon
 index devient faux **en silence**, et j'imprime n'importe quoi sur tes abeilles.
@@ -166,18 +166,19 @@ au lieu d'écrire des gènes au hasard sur une abeille.
 
 ---
 
-## Étape 3 — Le deuxième Imprinter dans la configuration
+## Étape 3 — ✅ FAIT : le deuxième Imprinter
 
 **Problème** : le programme ne connaît qu'un Imprinter.
 
 **Solution** : deux machines déclarées, un profil associé à chacune.
 
-**Résultat attendu** : tu choisis le profil, le programme choisit la machine.
-Plus aucun échange de template.
+**Fait** : l'option `f` demande quelle machine, affiche le profil de chacune et
+dit laquelle a son slot template vide. La tâche retient la machine choisie —
+sans ça, elle imprimait toujours le même profil quoi qu'on demande.
 
 ---
 
-## Étape 4 — Surveiller la cuve du DNA Extractor
+## Étape 4 — ✅ FAIT : surveiller la cuve du DNA Extractor
 
 **Problème** : je surveille les réservoirs du Mutatron, du Replicator, du
 Liquifier et du Mutagen Producer — mais pas celui de l'extracteur. Or c'est
@@ -185,14 +186,17 @@ justement celui qui te dirait **qu'il y a du DNA à transférer**.
 
 **Solution** : l'ajouter à la surveillance existante.
 
-**Résultat attendu** : une ligne dans le menu, du genre
-`DNA Extractor : 6400/8000 — il y a du DNA a prendre`.
+**Fait**, avec une nuance qui manquait : cette cuve **se remplit** au lieu de se
+vider. La signaler comme « plus d'ADN » aurait été exactement l'inverse de la
+vérité. Trois états distincts :
 
-**Coût** : quelques lignes. C'est la tâche la plus rentable du lot.
+- `DNA Extractor : 6400 de ADN a transferer` — il y a de quoi prendre
+- `DNA Extractor : cuve pleine — il ne produira plus rien tant que tu n auras pas vide`
+- rien du tout si elle est vide, ce qui est normal
 
 ---
 
-## Étape 5 — Poser un template automatiquement
+## Étape 5 — ✅ FAIT : poser un template automatiquement
 
 **Problème** : aujourd'hui tu poses chaque template à la main, sans que le
 programme puisse t'aider à trouver le bon.
@@ -201,11 +205,12 @@ programme puisse t'aider à trouver le bon.
 **par sa position** dans le coffre et le met dans la machine — à condition que
 le slot soit **vide**.
 
-**Résultat attendu** : « réplique une Robotic » prend le bon template dans le
-coffre et le pose, au lieu de te faire chercher parmi des objets identiques.
+**Fait** : le Replicator **et** les deux Imprinters proposent la liste des
+templates nommés quand leur slot est vide, et vérifient l'empreinte de ce qui
+arrive avant de le laisser entrer dans la machine.
 
-**Limite assumée** : ça ne fonctionne que sur une machine vide. Voir la réserve
-ci-dessous.
+**Limite assumée** : ça ne fonctionne que sur une machine vide, puisque le slot
+template ne se vide jamais. Voir la réserve ci-dessous.
 
 ---
 
