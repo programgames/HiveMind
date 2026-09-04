@@ -37,6 +37,10 @@ local TMP = (os.getenv("TEMP") or os.getenv("TMPDIR") or "/tmp"):gsub("\\", "/")
 local PATH = TMP .. "/hivemind-library-test.lua"
 
 local network, chest
+-- The database pages ARE the template catalogue: a template can only be asked
+-- of the network from a page that already holds its nbt, and there are nine of
+-- them on a tier 1 upgrade.
+local pages, capacity, staged
 
 local function reset()
     network = {
@@ -52,6 +56,9 @@ local function reset()
     }
 
     chest = {}
+    pages = {}
+    capacity = 9
+    staged = nil
 end
 
 local TEMPLATE_LINK = {transposer = 1, machine = 1, source = 3}
@@ -75,7 +82,34 @@ local fakeTransport = {
     fingerprint = function(_, link, slot, dbSlot, onMachineSide)
         local stack = chest[slot]
         if not stack then return nil, "slot vide" end
+        pages[dbSlot] = "hash:" .. tostring(stack.id)
         return "hash:" .. tostring(stack.id)
+    end,
+
+    -- A template can only be asked of the network from a page that already
+    -- holds its nbt, so the pages are the catalogue and their number is a real
+    -- limit -- nine on a tier 1 upgrade.
+    databaseCapacity = function() return capacity end,
+
+    pageFor = function(_, hash)
+        for page, held in pairs(pages) do
+            if held == hash then return page end
+        end
+        return nil
+    end,
+
+    freePage = function(_, reserved)
+        reserved = reserved or {}
+        for page = 1, capacity do
+            if not reserved[page] and not pages[page] then return page end
+        end
+        return nil
+    end,
+
+    stageFromDatabase = function(_, page, link, count)
+        if not pages[page] then return nil, "page vide" end
+        staged = {page = page, link = link}
+        return 1
     end,
 }
 
@@ -300,6 +334,75 @@ check("le genome survit au redemarrage", reread:knownGenomes()["Wintry"], 4)
 check("et reste interrogeable", reread:carriersOf(4, "Up 1")[1], "Wintry")
 
 os.remove(PATH)
+
+print("")
+print("-- garder la photo d'un template --")
+
+reset()
+os.remove(PATH)
+
+do
+    local shelf = newLibrary()
+    chest[1] = {name = "gendustry:gene_template", label = "Genetic Template", id = "A"}
+    chest[2] = {name = "gendustry:gene_template", label = "Genetic Template", id = "B"}
+
+    local first = shelf:registerTemplate(1, {species = "forestry.speciesForest"})
+    local second = shelf:registerTemplate(2, {species = "forestry.speciesRocky"})
+
+    local pageA = shelf:keepPhotograph(first)
+    local pageB = shelf:keepPhotograph(second)
+
+    checkTruthy("chaque template garde sa page", pageA ~= nil and pageB ~= nil)
+    checkTruthy("et deux templates ne partagent pas la meme", pageA ~= pageB)
+
+    -- Docks write to the page matching their own number; the library keeps a
+    -- scratch page. Neither may be stolen.
+    checkTruthy("la page de brouillon n'est jamais prise",
+                pageA ~= 9 and pageB ~= 9)
+
+    -- Asking twice must not spend a second page
+    check("redemander la meme photo ne consomme rien",
+          shelf:keepPhotograph(first), pageA)
+
+    -- The page number drifts, the fingerprint does not
+    pages[pageA] = nil
+    pages[7] = first.hash
+    local dock = shelf:requestTemplate(first, {transposer = 1})
+    checkTruthy("un template se retrouve par empreinte, pas par page",
+                dock ~= nil and staged ~= nil and staged.page == 7)
+
+    -- Losing the photograph entirely is recoverable while the chest holds it
+    pages = {}
+    dock = shelf:requestTemplate(second, {transposer = 1})
+    checkTruthy("une photo perdue est reprise depuis le coffre", dock ~= nil)
+
+    -- ...and not otherwise
+    pages = {}
+    chest[2] = nil
+    check("mais pas si le coffre ne l'a plus",
+          (shelf:requestTemplate(second, {transposer = 1})), nil)
+
+    -- The catalogue is as large as the database, and no larger
+    reset()
+    os.remove(PATH)
+
+    local small = newLibrary()
+    -- One usable page: the catalogue is exactly as large as the database, and
+    -- running out has to say so rather than silently reuse something
+    capacity = 1
+    chest[1] = {name = "gendustry:gene_template", label = "T", id = "X"}
+    chest[2] = {name = "gendustry:gene_template", label = "T", id = "Y"}
+
+    local one = small:registerTemplate(1, {})
+    local two = small:registerTemplate(2, {})
+
+    checkTruthy("une page est trouvee tant qu'il en reste",
+                small:keepPhotograph(one) ~= nil)
+
+    local page, err = small:keepPhotograph(two)
+    checkTruthy("et l'echec dit qu'il faut un upgrade plus grand",
+                page == nil and tostring(err):find("tier superieur", 1, true) ~= nil)
+end
 
 print("")
 print("=== Resultats ===")

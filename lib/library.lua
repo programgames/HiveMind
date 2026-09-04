@@ -368,6 +368,88 @@ function Library:registerTemplate(slot, description)
     return entry
 end
 
+--- Keep a template's photograph on a durable database page
+---
+--- A template can only be requested from the network by a page that already
+--- holds its nbt, and photographing needs the item in hand -- which is exactly
+--- what we no longer have once it is in the network. So the photograph is taken
+--- while the template is still in the chest, and kept.
+---
+--- The page number is only a hint: pages get overwritten, and the fingerprint
+--- is what identifies the template. Losing the page means re-photographing from
+--- the chest, not losing the template.
+--- @param entry table Record from registerTemplate
+--- @return number|nil page
+--- @return string|nil error
+function Library:keepPhotograph(entry)
+    if not self.transport or not self.templateLink then
+        return nil, "aucun acces au coffre a templates"
+    end
+
+    if not entry or not entry.slot then return nil, "template inconnu" end
+
+    -- Already there? The hash finds it whatever page it drifted to.
+    --
+    -- Except the scratch page: registerTemplate fingerprints through it, so it
+    -- always holds the last template looked at. Adopting it as a durable page
+    -- means the next fingerprint silently overwrites the photograph, and the
+    -- template becomes unrequestable without anything saying so.
+    local existing = self.transport:pageFor(entry.hash)
+    if existing and existing ~= self.scratchDbSlot then
+        entry.page = existing
+        self:save()
+        return existing
+    end
+
+    -- Never take a page another template is using
+    local reserved = {[self.scratchDbSlot] = true}
+    for _, other in pairs(self.index.templates) do
+        if other.page and other ~= entry then reserved[other.page] = true end
+    end
+
+    local page = self.transport:freePage(reserved)
+    if not page then
+        return nil, "plus une seule page libre dans la database ("
+            .. tostring(self.transport:databaseCapacity())
+            .. " au total): un upgrade de tier superieur en donnerait plus"
+    end
+
+    local hash, err =
+        self.transport:fingerprint(self.templateLink, entry.slot, page, true)
+
+    if not hash then return nil, err end
+
+    entry.page = page
+    entry.hash = hash
+    self:save()
+
+    return page
+end
+
+--- Ask the network for a recorded template, staged so a transposer can take it
+--- @param entry table Record from registerTemplate
+--- @param link table Machine link of the bench that will receive it
+--- @return number|nil dock
+--- @return string|nil error
+function Library:requestTemplate(entry, link)
+    if not self.transport then return nil, "aucun transport" end
+    if not entry then return nil, "template inconnu" end
+
+    local page = self.transport:pageFor(entry.hash)
+
+    -- The photograph is gone: retake it, which needs the template in the chest
+    if not page then
+        local kept, err = self:keepPhotograph(entry)
+        if not kept then
+            return nil, "photo perdue et le coffre ne la rend pas: "
+                .. tostring(err)
+        end
+        page = kept
+    end
+
+    return self.transport:stageFromDatabase(page, link, 1)
+end
+
 --- Fingerprint whatever sits in a template chest slot
 --- @param slot number
 --- @return string|nil hash

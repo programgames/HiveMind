@@ -364,6 +364,116 @@ function Transport:stage(spec, count, link)
     return dock
 end
 
+--- How many pages the Database upgrade holds
+--- It decides how many templates can be addressed at once, because a template
+--- can only be requested from a page that already holds its photograph -- and
+--- photographing needs the item in hand, which is exactly what we no longer
+--- have once it is in the network. Tier 1 holds nine, tier 3 eighty-one.
+--- @return number pages
+function Transport:databaseCapacity()
+    if self.databasePages then return self.databasePages end
+
+    -- No method reports it, so it is measured: a valid empty page answers nil,
+    -- an invalid one raises.
+    local pages = 0
+    for page = 1, 81 do
+        local ok = invoke(self.database, "get", page)
+        if not ok then break end
+        pages = page
+    end
+
+    self.databasePages = pages
+    return pages
+end
+
+--- A page nothing is using
+--- Docks write to the page matching their own number, and the library keeps a
+--- scratch page, so those are stepped over rather than fought with.
+--- @param reserved table<number, boolean>|nil Extra pages to leave alone
+--- @return number|nil page
+function Transport:freePage(reserved)
+    reserved = reserved or {}
+
+    local capacity = self:databaseCapacity()
+
+    -- Docks use the page matching their own number: see stage()
+    for _, dock in ipairs(self.docks or {}) do reserved[dock] = true end
+
+    for page = 1, capacity do
+        if not reserved[page] then
+            local ok, entry = invoke(self.database, "get", page)
+            if ok and type(entry) ~= "table" then return page end
+        end
+    end
+
+    return nil
+end
+
+--- Find the database page holding a fingerprint
+--- The page number is a hint that can go stale -- pages get overwritten -- but
+--- the fingerprint identifies the item itself. Asking the database which page
+--- holds a hash survives any reshuffling; only losing the photograph does not.
+--- @param hash string
+--- @return number|nil page
+function Transport:pageFor(hash)
+    if type(hash) ~= "string" or hash == "" then return nil end
+
+    local ok, page = invoke(self.database, "indexOf", hash)
+    if ok and tonumber(page) then return tonumber(page) end
+
+    return nil
+end
+
+--- Ask the network for one EXACT item, named by a database page
+---
+--- This is what stage() cannot do. stage() starts from a filter, which can only
+--- name an item id, so AE2 hands over an arbitrary match -- and for templates,
+--- every template matches. Starting from a page that already holds the item's
+--- full nbt asks for that one item and no other.
+---
+--- Proven in game on 2026-09-04, with a control: two templates of different
+--- contents, two requests, two exact deliveries.
+--- @param page number Database page holding the photograph
+--- @param link table Machine link, for the interface and the dock side
+--- @param count number|nil
+--- @return number|nil dock
+--- @return string|nil error
+function Transport:stageFromDatabase(page, link, count)
+    count = count or 1
+
+    if not tonumber(page) then return nil, "page de database invalide" end
+
+    local entry_ok, entry = invoke(self.database, "get", page)
+    if not entry_ok or type(entry) ~= "table" then
+        return nil, "la page " .. tostring(page) .. " de la database est vide"
+    end
+
+    local dock, dock_err = self:reserveDock(link)
+    if not dock then return nil, dock_err end
+
+    local interface = self:interfaceFor(link)
+
+    -- Hand back whatever the previous operation left, and wait for it to go
+    invoke(interface, "setInterfaceConfiguration", dock)
+
+    local emptied, occupant = self:awaitDockEmpty(link, dock)
+    if not emptied then
+        self:releaseDock(dock, link)
+        return nil, "le quai " .. dock .. " ne se vide pas (contient encore '"
+            .. tostring(occupant) .. "')"
+    end
+
+    local called, configured = invoke(interface, "setInterfaceConfiguration",
+        dock, self.database.address, page, count)
+
+    if not called or configured == false then
+        self:releaseDock(dock, link)
+        return nil, "configuration du quai impossible: " .. tostring(configured)
+    end
+
+    return dock
+end
+
 --- Wait until the interface physically holds the staged item
 --- Identity is checked, not just quantity: a leftover from a previous operation
 --- satisfies a size check while being an entirely different item, which is how

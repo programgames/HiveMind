@@ -110,6 +110,12 @@ local me = {
         end
 
         if world.neverStocks then return true end
+
+        -- Remembered so a test can prove the dock was configured from a
+        -- database PAGE rather than from a filter: that distinction is the
+        -- whole difference between "a template" and "this template".
+        world.interfaceConfig = {dock = dock, dbSlot = entry, count = count}
+
         world.interface[dock] = {stack = world.database[entry], count = count or 1}
         return true
     end),
@@ -190,11 +196,29 @@ local transposer = {
 local database = {
     address = "db-0000",
     clear = callable(function(slot) world.database[slot] = nil return true end),
-    get = callable(function(slot) return world.database[slot] end),
+    -- A valid empty page answers nil; an invalid one raises. That is the only
+    -- way to learn the upgrade's tier, and the tier decides how many templates
+    -- can be addressed at once.
+    get = callable(function(slot)
+        if slot > (world.databasePages or 9) then
+            error("invalid database slot")
+        end
+        return world.database[slot]
+    end),
     computeHash = callable(function(slot)
         local stack = world.database[slot]
         if not stack then return nil end
         return "hash:" .. stack.label
+    end),
+    -- The page number is a hint; the fingerprint identifies the item. Asking
+    -- which page holds a hash is what survives the database being reshuffled.
+    indexOf = callable(function(hash)
+        for slot, stack in pairs(world.database) do
+            if type(stack) == "table" and ("hash:" .. tostring(stack.label)) == hash then
+                return slot
+            end
+        end
+        return nil
     end),
 }
 
@@ -570,6 +594,65 @@ do
 end
 
 print("")
+-- ---------------------------------------------------------------------------
+-- Asking for one EXACT item
+--
+-- stage() starts from a filter, which can only name an item id, so AE2 hands
+-- over an arbitrary match -- and every Genetic Template matches every other.
+-- Starting from a database page that already holds the item's nbt asks for that
+-- one item. Proven in game on 2026-09-04, with a control.
+
+do
+    local exact = newTransport()
+    local link = {transposer = 1, machine = SIDE_MACHINE, source = SIDE_SOURCE}
+
+    world.database = {}
+    check("une page vide est refusee",
+          (exact:stageFromDatabase(7, link)), nil)
+    check("et une page absurde aussi",
+          (exact:stageFromDatabase("sept", link)), nil)
+
+    world.database[7] = {name = "gendustry:gene_template",
+                         label = "Genetic Template"}
+
+    local dock = exact:stageFromDatabase(7, link)
+    checkTruthy("un quai est reserve pour la demande", dock ~= nil)
+
+    -- The whole point: the dock is configured from the PAGE, not from a filter
+    check("le quai est configure depuis la page",
+          world.interfaceConfig and world.interfaceConfig.dbSlot, 7)
+
+    -- Two templates share a label, so only the fingerprint tells them apart
+    check("la page se retrouve par empreinte",
+          exact:pageFor("hash:Genetic Template"), 7)
+    check("une empreinte inconnue ne rend rien",
+          exact:pageFor("hash:autre chose"), nil)
+    check("et une empreinte vide non plus", exact:pageFor(""), nil)
+
+    world.database = {}
+end
+
+do
+    local sized = newTransport()
+    world.database = {}
+    world.databasePages = 9
+
+    check("la taille de la database est mesuree", sized:databaseCapacity(), 9)
+
+    -- Docks write to the page matching their own number, so those are taken.
+    -- This harness declares docks 1 and 2.
+    check("une page libre evite celles des quais", sized:freePage(), 3)
+
+    world.database[3] = {label = "occupee"}
+    check("une page occupee n est pas proposee", sized:freePage(), 4)
+
+    check("et on peut en reserver d autres a la main",
+          sized:freePage({[4] = true}), 5)
+
+    world.database = {}
+    world.databasePages = nil
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)
