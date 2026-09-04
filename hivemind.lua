@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.99.0"
+hivemind.VERSION = "1.0.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1581,6 +1581,7 @@ function hivemind.buildTemplate(context)
         .. screen.plural(#missing, "manquant") .. " sur " .. total .. " :")
 
     local haveCarrier, needCarrier = {}, {}
+    local noCarrier = 0
 
     for _, entry in ipairs(missing) do
         local list = carriers[entry.slot .. "/" .. entry.allele] or {}
@@ -1605,8 +1606,15 @@ function hivemind.buildTemplate(context)
                 .. (held and " (en stock)" or " (a recuperer)")
         end
 
+        if #list == 0 then noCarrier = noCarrier + 1 end
+
         print("  " .. screen.fit(entry.chromosome, 22)
             .. screen.fit(entry.allele, 10) .. " " .. source)
+    end
+
+    if noCarrier > 0 then
+        print("  " .. noCarrier .. " sans porteur connu: lis un genome"
+            .. " (9 puis g) pour les renseigner.")
     end
 
     local toBreed = {}
@@ -1790,14 +1798,8 @@ function hivemind.buildTemplate(context)
         end
     end
 
-    print("")
-    print("Compte ~10 cycles d apiary par croisement, un drone chacun.")
-
-    local actions = {}
-    if #plan.steps > 0 then
-        table.insert(actions, screen.count(#plan.steps, "croisement"))
-    end
-    -- Species, not genes: Rocky carries two of them and is bred once
+    -- Species, not genes: Rocky carries two of the missing genes and is bred
+    -- once, so it counts once in the cost and once in the summary.
     local speciesToGrow = {}
     local growCount = 0
     for _, item in ipairs(tooFew) do
@@ -1807,6 +1809,35 @@ function hivemind.buildTemplate(context)
         end
     end
 
+    -- A cross at 10% takes about ten cycles; an accumulation takes one cycle
+    -- per drone, which is the yield actually observed. The crosses were the
+    -- only half being counted, and they are the smaller one.
+    local crossCycles = 0
+    for _, step in ipairs(plan.steps) do
+        local chance = tonumber(step.chance) or 10
+        if chance > 0 then crossCycles = crossCycles + math.ceil(100 / chance) end
+    end
+
+    local growCycles = 0
+    for name in pairs(speciesToGrow) do
+        growCycles = growCycles + math.max(0,
+            (TARGET_DRONES + 1) - (droneStock[name] or 0))
+    end
+
+    print("")
+    if crossCycles + growCycles > 0 then
+        print("Cout: au moins " .. (crossCycles + growCycles)
+            .. " cycles d apiary.")
+        print("  " .. crossCycles .. " pour les croisements, "
+            .. growCycles .. " pour les accumulations.")
+        print("  Au moins: un croisement dont le parent n existe qu en")
+        print("  princesses en ajoute d autres.")
+    end
+
+    local actions = {}
+    if #plan.steps > 0 then
+        table.insert(actions, screen.count(#plan.steps, "croisement"))
+    end
     if growCount > 0 then
         table.insert(actions, screen.count(growCount, "accumulation"))
     end
