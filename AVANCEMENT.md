@@ -53,7 +53,7 @@ Recalculer avec `lua progress.lua`.
 ## Phase 3 — Campagnes (poids 20)
 
 - [x] Campagne « obtenir le gène Species de toutes les espèces »
-- [ ] Analyse d'écart sur les profils optimaux
+- [x] Analyse d'écart sur les profils optimaux
 - [ ] Base de mutations complétée pour les feuilles actuelles
 - [x] Les deux profils génétiques tranchés avec le joueur
 
