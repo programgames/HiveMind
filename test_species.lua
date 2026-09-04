@@ -393,6 +393,48 @@ do
 end
 
 print("")
+print("-- un cache ecrit avant la regle de nommage --")
+
+do
+    -- Vu en jeu: le correctif etait pousse, l ecran affichait toujours
+    -- "gendustry.bees.species.Apothecary". refresh() corrige les noms, mais le
+    -- cache disque avait ete ecrit avant, et load() le relisait tel quel.
+    -- Remonter CACHE_VERSION aurait jete un balayage de trois cents appels de
+    -- composant: les noms se reparent a la lecture, eux.
+    local OLD = TMP .. "/hivemind-species-vieux-cache.lua"
+    os.remove(OLD)
+
+    local stale = species.new({apiary = APIARY, cachePath = OLD})
+    stale.cache = {
+        version = 1,
+        species = {
+            ["gendustry.bee.NerdySpider"] = {
+                uid = "gendustry.bee.NerdySpider",
+                name = "gendustry.bees.species.NerdySpider",
+            },
+            ["magicbees.speciesNickel"] = {
+                uid = "magicbees.speciesNickel", name = "Nickel",
+            },
+        },
+        parents = {},
+    }
+    stale.loaded = true
+    stale:save()
+
+    local reloaded = species.new({apiary = nil, cachePath = OLD})
+    local all = reloaded:list()
+
+    check("la cle de langue est reparee a la lecture",
+          all["gendustry.bee.NerdySpider"].name, "NerdySpider")
+    check("et marquee comme devinee",
+          all["gendustry.bee.NerdySpider"].derived, true)
+    check("un vrai nom deja en cache n est pas touche",
+          all["magicbees.speciesNickel"].name, "Nickel")
+
+    os.remove(OLD)
+end
+
+print("")
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

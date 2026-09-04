@@ -62,38 +62,6 @@ local function invoke(component, method, ...)
     return pcall(target, ...)
 end
 
---- Load the disk cache, once
---- @return boolean ok
---- @return string|nil error
-function Registry:load()
-    if self.loaded then return true end
-
-    local cached, err = state.load(self.cachePath, nil)
-
-    if err then
-        -- A corrupted cache is rebuildable; say so and carry on empty rather
-        -- than refusing to start.
-        self.loaded = true
-        return false, "cache illisible, il sera reconstruit: " .. err
-    end
-
-    if cached and cached.version == CACHE_VERSION then
-        self.cache = cached
-        self.cache.species = self.cache.species or {}
-        self.cache.parents = self.cache.parents or {}
-    end
-
-    self.loaded = true
-    return true
-end
-
---- Persist what has been learned
---- @return boolean ok
---- @return string|nil error
-function Registry:save()
-    return state.save(self.cachePath, self.cache)
-end
-
 --- Readable name derived from a species uid
 --- listAllSpecies does not return every species: getBeeParents references uids
 --- absent from it, and a species the registry has never heard of is a species
@@ -139,6 +107,49 @@ local function bestName(uid, reported)
     -- split, because "TreeOfLife" may well be the item label.
     local source = looksLikeLangKey(reported) and reported or uid
     return deriveName(source), true
+end
+
+--- Load the disk cache, once
+--- @return boolean ok
+--- @return string|nil error
+function Registry:load()
+    if self.loaded then return true end
+
+    local cached, err = state.load(self.cachePath, nil)
+
+    if err then
+        -- A corrupted cache is rebuildable; say so and carry on empty rather
+        -- than refusing to start.
+        self.loaded = true
+        return false, "cache illisible, il sera reconstruit: " .. err
+    end
+
+    if cached and cached.version == CACHE_VERSION then
+        self.cache = cached
+        self.cache.species = self.cache.species or {}
+        self.cache.parents = self.cache.parents or {}
+
+        -- A cache written before the naming rule existed holds raw lang keys,
+        -- and it is far too expensive to throw away: rebuilding it costs three
+        -- hundred component calls. Names are cheap to fix here, once per boot,
+        -- and nothing else in the cache changes.
+        for uid, entry in pairs(self.cache.species) do
+            if type(entry) == "table" and looksLikeLangKey(entry.name) then
+                entry.name = deriveName(entry.name)
+                entry.derived = true
+            end
+        end
+    end
+
+    self.loaded = true
+    return true
+end
+
+--- Persist what has been learned
+--- @return boolean ok
+--- @return string|nil error
+function Registry:save()
+    return state.save(self.cachePath, self.cache)
 end
 
 --- Pull the full species list from the game
