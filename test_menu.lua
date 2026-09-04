@@ -27,6 +27,10 @@ local source = assert(io.open("hivemind.lua", "r"))
 local text = source:read("*all")
 source:close()
 
+local settings = assert(io.open("lib/config.lua", "r"))
+local settingsText = settings:read("*all")
+settings:close()
+
 -- ---------------------------------------------------------------------------
 
 print("-- entrees du menu --")
@@ -89,6 +93,18 @@ check("l'extraction de gene est atteignable", wired.sampleGene == true)
 -- species whose drones share one genome can never yield anything else however
 -- many are spent. Reading the genome first is one look instead.
 check("la lecture de genome est atteignable", wired.analyseBee == true)
+
+-- A source species is needed exactly once: one individual, one sample, and the
+-- allele is in the library forever. So the useful question is which shortest
+-- list of species covers every gene still missing.
+check("le plan de croisement est atteignable", wired.breedingPlan == true)
+check("les porteurs sont declares en config",
+      settingsText:find("config.gene_carriers", 1, true) ~= nil)
+check("le plan les classe par nombre de genes apportes",
+      text:find("#a.genes ~= #b.genes", 1, true) ~= nil)
+check("et distingue ce qui est deja en stock",
+      text:find("DEJA EN STOCK", 1, true) ~= nil)
+
 check("elle ne detruit pas l abeille",
       text:find("Aucune abeille n est detruite", 1, true) ~= nil)
 check("elle refuse de lire si une princesse peut declencher un cycle",
@@ -178,13 +194,6 @@ check("un module trop ancien est signale, pas fatal",
 -- Templates share one id and one label, so AE2 cannot tell two apart and one
 -- that enters the network is lost. They can only move between a chest and a
 -- machine on the same transposer.
--- The two templates come from a guide for this exact modpack. Three of their
--- values contradict "maximum everywhere" on purpose, so they must not be
--- quietly normalised away.
-local settings = assert(io.open("lib/config.lua", "r"))
-local settingsText = settings:read("*all")
-settings:close()
-
 check("les deux profils sont declares",
       settingsText:find("config.profiles", 1, true) ~= nil
       and settingsText:find("breeding = {", 1, true) ~= nil

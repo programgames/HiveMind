@@ -68,7 +68,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.68.0"
+hivemind.VERSION = "0.69.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1623,6 +1623,104 @@ function hivemind.analyseBee(context)
     end
 end
 
+--- Rank the species worth breeding, by how many missing genes each one brings
+--- A source species is needed exactly once: one individual, one successful
+--- sample, and the allele is in the library forever. So the useful question is
+--- not "how do I get all these bees" but "what is the shortest list of species
+--- that covers every gene still missing".
+--- @param context table
+function hivemind.breedingPlan(context)
+    print("")
+    print("=== QUOI CROISER ENSUITE ===")
+    print("Chaque espece n est necessaire qu une fois: un individu, un")
+    print("echantillonnage reussi, et le gene est acquis pour toujours.")
+    print("")
+
+    local carriers = config.gene_carriers or {}
+    if next(carriers) == nil then
+        print("Aucun porteur de gene declare dans lib/config.lua.")
+        print("Sans cette table je ne peux rien classer.")
+        return
+    end
+
+    context.library:scan()
+
+    -- What each species would bring, counted once per allele even when two
+    -- profiles want the same one
+    local brings, seen = {}, {}
+
+    for name, profile in pairs(config.profiles or {}) do
+        for slot, allele in pairs(profile) do
+            local key = slot .. "/" .. allele
+
+            if not seen[key] and not context.library:has(slot, allele) then
+                seen[key] = true
+
+                local byAllele = carriers[slot]
+                local species = byAllele and byAllele[allele]
+
+                for _, one in ipairs(species or {}) do
+                    brings[one] = brings[one] or {}
+                    table.insert(brings[one], string.format("%s = %s",
+                        tostring(genome.labelForSlot(slot) or slot), allele))
+                end
+            end
+        end
+    end
+
+    -- Species already in the network need no breeding at all, only a sample
+    local held = {}
+    for _, item in ipairs(context.transport:findAll(
+            {name = "forestry:bee_drone_ge"}) or {}) do
+        held[tostring(item.label or ""):gsub("%s+Drone$", "")] = true
+    end
+
+    local ranked = {}
+    for species, genes in pairs(brings) do
+        table.insert(ranked, {species = species, genes = genes, held = held[species]})
+    end
+
+    if #ranked == 0 then
+        print("Aucune espece connue n apporte un gene qui te manque.")
+        print("Soit tu as tout, soit la table des porteurs est incomplete.")
+        return
+    end
+
+    -- Most genes first, and among equals the ones already in stock: those cost
+    -- a sample instead of a breeding chain
+    table.sort(ranked, function(a, b)
+        if #a.genes ~= #b.genes then return #a.genes > #b.genes end
+        if a.held ~= b.held then return a.held == true end
+        return a.species < b.species
+    end)
+
+    print("Par ordre de rendement :")
+    print("")
+
+    for index, entry in ipairs(ranked) do
+        print(string.format("%2d. %-16s %d gene(s)   %s", index, entry.species,
+            #entry.genes,
+            entry.held and "DEJA EN STOCK: echantillonne-la" or "a croiser"))
+
+        for _, gene in ipairs(entry.genes) do
+            print("      " .. gene)
+        end
+    end
+
+    local immediate = 0
+    for _, entry in ipairs(ranked) do
+        if entry.held then immediate = immediate + 1 end
+    end
+
+    print("")
+    if immediate > 0 then
+        print(immediate .. " espece(s) sont deja dans ton reseau: commence par")
+        print("celles-la, elles ne coutent qu une campagne (option d).")
+    end
+
+    print("Pour les autres, l option 5 calcule la chaine de croisements.")
+end
+
 --- Show what each genetic profile still needs, and how a template is built
 --- Templates are not made in a machine. The mod's own text says so: "Genetic
 --- Samples can be added to a Template. Combine them in any crafting table."
@@ -1987,6 +2085,8 @@ local ENTRIES = {
      hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
     {key = "e", label = "Construire un template",
      hint = "ce qui manque pour chaque profil", action = "templateHelp"},
+    {key = "h", label = "Quoi croiser ensuite",
+     hint = "les especes classees par gene apporte", action = "breedingPlan"},
     {key = "f", label = "Imprimer une abeille",
      hint = "applique le template pose dans la machine", action = "imprintBee"},
 

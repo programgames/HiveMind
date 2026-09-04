@@ -319,6 +319,28 @@ config.gene_sources = {
     [8]  = "Rocky (cavernicole)",
 }
 
+-- Which species carries which exact allele.
+--
+-- The strategy this exists for: a source species is needed exactly ONCE. One
+-- individual, one successful sample, and the allele is in the library forever --
+-- the Imprinter propagates it to any line after that. So the question is never
+-- "how do I get all these bees", it is "what is the shortest list of species
+-- that covers every gene still missing".
+--
+-- A species carrying three wanted alleles is worth three times one carrying a
+-- single gene, and the plan is ordered on exactly that.
+--
+-- Keyed by chromosome slot, then by the allele as a Gene Sample LABEL spells it
+-- ("Both 3", not "toleranceBoth3"), because that is what the library indexes.
+--
+-- config.gene_sources above stays as free text for chromosomes nobody has
+-- attributed precisely yet; this table is what the planner reads.
+config.gene_carriers = {
+    -- [slot] = { ["Allele"] = {"Species", "Other species"} }
+    [1] = {["Robotic"] = {"Robotic"}},
+    [2] = {["Immortal"] = {"Temporal"}},
+}
+
 config.genetics = {
     sample_timeout_seconds = 120,
 }
