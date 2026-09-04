@@ -480,6 +480,12 @@ config.genetics = {
     -- elle attend le prochain passage plutot que d encombrer la file.
     autosave_species = true,
     autosave_min_drones = 4,
+    -- Combien de drones utilisables avant de tenter une extraction ciblee.
+    -- Le Sampler tire un chromosome sur treize: 29 donnent 90 % de chances,
+    -- 13 en donnent 65. En dessous, le programme accumule d abord -- et une
+    -- extraction ne prend JAMAIS le dernier drone, donc une espece ne peut
+    -- pas etre perdue par le programme.
+    extraction_target = 29,
     -- Drones kept per species before any are fed to the DNA Extractor. A bee is
     -- cheap to keep and expensive to re-obtain, and the extractor destroys
     -- what it takes.

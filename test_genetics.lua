@@ -929,6 +929,76 @@ do
 end
 
 
+print("")
+print("-- une chasse qui echoue recommence, elle n abandonne pas --")
+
+do
+    -- "Obtiens-moi ce gene" est un objectif qui persiste. Le budget est ce
+    -- qu on peut depenser SANS prendre le dernier drone; quand il s epuise, la
+    -- reponse est d en elever d autres et de revenir, pas de renoncer a un
+    -- gene dont le template a besoin.
+    os.remove(QUEUE)
+    reset()
+
+    queue, context = buildStack()
+    queue.handlers.multiply = {steps = {
+        {name = "faux", verify = function() return true end,
+         run = function() return jobs.DONE end},
+    }}
+
+    -- Le contexte de ces tests ne portait pas la file: une chasse qui doit
+    -- programmer sa propre accumulation en a besoin.
+    context.queue = queue
+
+    local params = genetics.campaignParams({
+        bee = {label = "Meadows Drone"},
+        chromosome = "Species", allele = "Cultivated",
+        bees = 2, refill = 29,
+    })
+
+    queue:submit("campaign", params)
+    for _ = 1, 12 do queue:run(context, {maxSteps = 60}) end
+
+    local grow = nil
+    for _, job in ipairs(queue:list()) do
+        if job.kind == "multiply" then grow = job end
+    end
+
+    checkTruthy("une accumulation est mise en file", grow)
+    check("jusqu au seuil demande", grow and grow.params.target, 29)
+    check("sur la bonne espece", grow and grow.params.species, "Meadows")
+    checkTruthy("et la chasse n est pas abandonnee",
+                queue:get(1).status ~= jobs.COMPLETE)
+
+    os.remove(QUEUE)
+end
+
+print("")
+print("-- une espece qui ne porte pas le gene ne boucle pas a l infini --")
+
+do
+    -- Le bon chromosome avec la MAUVAISE valeur prouve quelque chose: cette
+    -- abeille porte autre chose a cet endroit. Une abeille en tient deux, donc
+    -- un tirage ne dit rien; trois de suite disent que l espece ne l a pas, et
+    -- boucler brulerait des drones sur une abeille qui ne peut pas le donner.
+    local job = {params = {
+        bee = {label = "Rocky Drone"},
+        chromosome = "Lifespan", allele = "Shortest",
+        budget = 99, spent = 0, obtainedList = {}, refill = 29,
+        wrongAllele = 2,
+        obtained = {chromosome = "Lifespan", allele = "Shorter"},
+    }}
+
+    local step = genetics.CAMPAIGN_STEPS[#genetics.CAMPAIGN_STEPS]
+    local outcome, detail = step.run(job, {})
+
+    check("la chasse s arrete", outcome, jobs.FAILED)
+    checkTruthy("elle dit ce qui a ete tire a la place",
+                detail and detail:find("Shortest"))
+    checkTruthy("et renvoie vers la lecture de genome",
+                detail and detail:find("option g"))
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

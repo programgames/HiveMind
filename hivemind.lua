@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.98.0"
+hivemind.VERSION = "0.99.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1497,9 +1497,6 @@ end
 function hivemind.buildTemplate(context)
     print("")
     print("=== FABRIQUER LE TEMPLATE D ELEVAGE ===")
-    print("Prerequis: les especes de base en stock (option 2).")
-    print("Un template d elevage rend chaque lignee suivante plus rapide:")
-    print("Fertility 4 et Lifespan Shortest, c est plus de drones, plus vite.")
 
     local profile = (config.profiles or {}).breeding
     if not profile then
@@ -1556,19 +1553,32 @@ function hivemind.buildTemplate(context)
         end
     end
 
-    -- Which of those we already hold, in either role
-    local owned = {}
+    -- Which of those we already hold, in either role -- and how many drones,
+    -- because only a drone can be spent at the Sampler
+    local owned, droneStock = {}, {}
+
     for _, itemName in ipairs({"forestry:bee_drone_ge", "forestry:bee_princess_ge"}) do
         for _, item in ipairs(context.transport:findAll({name = itemName}) or {}) do
             local label = tostring(item.label or "")
             local name = label:gsub("%s+Drone$", ""):gsub("%s+Princess$", "")
-            if name ~= "" then owned[name] = true end
+
+            if name ~= "" then
+                owned[name] = true
+
+                if itemName == "forestry:bee_drone_ge" then
+                    droneStock[name] = (droneStock[name] or 0)
+                        + (tonumber(item.size) or 0)
+                end
+            end
         end
     end
 
     print("")
+    local total = 0
+    for _ in pairs(profile) do total = total + 1 end
+
     print(screen.count(#missing, "gene") .. " "
-        .. screen.plural(#missing, "manquant") .. " :")
+        .. screen.plural(#missing, "manquant") .. " sur " .. total .. " :")
 
     local haveCarrier, needCarrier = {}, {}
 
@@ -1587,24 +1597,17 @@ function hivemind.buildTemplate(context)
             end
         end
 
-        print(string.format("  %-22s %-10s <- %s", tostring(entry.chromosome),
-            entry.allele,
-            #list > 0 and (table.concat(list, " ou ")
-                .. (held and "  (en stock)" or "  (a obtenir)"))
-                or "porteur inconnu"))
-    end
+        -- "<-" is programmer notation; the sentence says the same thing and
+        -- needs no key to read
+        local source = "porteur inconnu"
+        if #list > 0 then
+            source = "porte par " .. table.concat(list, " ou ")
+                .. (held and " (en stock)" or " (a recuperer)")
+        end
 
-    if #haveCarrier > 0 then
-        print("")
-        print(screen.count(#haveCarrier, "gene") .. " "
-            .. screen.plural(#haveCarrier, "chassable")
-            .. " tout de suite. Choisis 9 puis t.")
+        print("  " .. screen.fit(entry.chromosome, 22)
+            .. screen.fit(entry.allele, 10) .. " " .. source)
     end
-
-    print("")
-    print("« aucun porteur note » ne veut pas dire introuvable: plusieurs de ces")
-    print("valeurs sont celles d abeilles ordinaires. Lis le genome d une")
-    print("abeille que tu as (option g, sous 9): il retiendra qui porte quoi.")
 
     local toBreed = {}
     for name in pairs(needCarrier) do table.insert(toBreed, name) end
@@ -1617,8 +1620,7 @@ function hivemind.buildTemplate(context)
     end
 
     print("")
-    print("PORTEURS A OBTENIR : " .. table.concat(toBreed, ", "))
-    print("Calcul de la chaine complete...")
+    print("ABEILLES A RECUPERER")
 
     local registry = context.species
     local all = registry:list()
@@ -1658,40 +1660,58 @@ function hivemind.buildTemplate(context)
         return
     end
 
-    print("")
-    for _, entry in ipairs(plan.targets) do
-        print(string.format("  %-22s %s", naming(entry.uid),
-            entry.held and "deja en stock"
-                or (entry.reachable and screen.count(entry.steps, "croisement")
-                    or "INATTEIGNABLE")))
-    end
-
-    if #plan.missing > 0 then
-        print("")
-        print("A ATTRAPER D ABORD — rien ne peut les produire :")
-        for _, entry in ipairs(plan.missing) do
-            print("  " .. naming(entry.uid) .. "  (" .. entry.reason .. ")")
-        end
-        print("")
-        print("Choisis 2 pour voir ou elles se trouvent.")
-    end
-
-    -- Shown, never queued. The chain says exactly what one missing wild bee
-    -- costs, and hiding it would leave "INATTEIGNABLE" with no explanation.
+    -- What blocks a target belongs on its own line. Naming it here, then in a
+    -- "A ATTRAPER D ABORD" block, then again under its chain, said Tropical
+    -- three times on one screen.
+    local blocking = {}
     for _, chain in ipairs(plan.blocked or {}) do
-        print("")
-        print("Chaine vers " .. naming(chain.uid) .. " — BLOQUEE, "
-            .. screen.count(#chain.steps, "croisement")
-            .. " qui ne peuvent pas tourner :")
+        local names = {}
+        for _, entry in ipairs(chain.missing) do
+            table.insert(names, naming(entry.uid))
+        end
+        blocking[chain.uid] = table.concat(names, ", ")
+    end
 
-        for index, step in ipairs(chain.steps) do
-            print(string.format("  %2d. %s + %s -> %s", index,
-                naming(step.princess.uid), naming(step.drone.uid),
-                naming(step.target)))
+    for _, entry in ipairs(plan.targets) do
+        local state
+        if entry.held then state = "deja en stock"
+        elseif entry.reachable then state = screen.count(entry.steps, "croisement")
+        else state = "bloquee: il te manque " .. (blocking[entry.uid] or "?") end
+
+        print("  " .. screen.fit(naming(entry.uid), 12) .. state)
+    end
+
+    --- The species raised on the way, without the pairings
+    --- The detail of who crosses with whom is in the queue for anyone who wants
+    --- it. What this screen answers is "which bees will exist that do not
+    --- exist now", and the arrows only got in the way of reading that.
+    --- @param steps table[]
+    --- @return string
+    local function raised(steps)
+        local names = {}
+        for _, step in ipairs(steps) do
+            table.insert(names, naming(step.target))
+        end
+        return table.concat(names, ", ")
+    end
+
+    if #plan.steps > 0 or #(plan.blocked or {}) > 0 then
+        print("")
+        print("A ELEVER EN CHEMIN")
+
+        if #plan.steps > 0 then
+            for _, line in ipairs(screen.wrap(raised(plan.steps), 66)) do
+                print("  " .. line)
+            end
         end
 
-        for _, entry in ipairs(chain.missing) do
-            print("  Il manque " .. naming(entry.uid) .. " (" .. entry.reason .. ")")
+        for _, chain in ipairs(plan.blocked or {}) do
+            for index, line in ipairs(screen.wrap(raised(chain.steps), 46)) do
+                print("  " .. screen.fit(line, 48)
+                    .. (index == 1
+                        and ("vers " .. naming(chain.uid) .. ", plus tard")
+                        or ""))
+            end
         end
     end
 
@@ -1701,21 +1721,107 @@ function hivemind.buildTemplate(context)
         return
     end
 
-    print("")
-    print(screen.count(#plan.steps, "croisement") .. ", dans l ordre :")
-    for index, step in ipairs(plan.steps) do
-        local line = string.format("  %2d. %s + %s -> %s", index,
-            naming(step.princess.uid), naming(step.drone.uid), naming(step.target))
-        if step.chance then line = line .. string.format("  (%.0f%%)", step.chance) end
-        print(line)
+    -- The extractions this template needs are launched HERE. Sending the
+    -- player to another menu for the second half of one goal is how a guided
+    -- path stops guiding.
+    local TARGET_DRONES = (config.genetics or {}).extraction_target or 29
 
-        for _, condition in ipairs(step.conditions or {}) do
-            print("        ! " .. condition)
+    local ready, tooFew = {}, {}
+
+    for _, entry in ipairs(missing) do
+        local list = carriers[entry.slot .. "/" .. entry.allele] or {}
+
+        for _, one in ipairs(list) do
+            if owned[one] then
+                -- Never the last drone: the Sampler destroys what it reads, so
+                -- one is always kept back and the species can never be lost.
+                local stock = droneStock[one] or 0
+                local usable = math.max(0, stock - 1)
+
+                local wanted = {species = one, stock = stock, usable = usable,
+                                chromosome = entry.chromosome,
+                                allele = entry.allele, slot = entry.slot}
+
+                if usable >= TARGET_DRONES then
+                    table.insert(ready, wanted)
+                else
+                    table.insert(tooFew, wanted)
+                end
+                break
+            end
+        end
+    end
+
+    if #ready > 0 then
+        print("")
+        print("A EXTRAIRE MAINTENANT")
+        for _, item in ipairs(ready) do
+            print("  " .. screen.fit(item.chromosome .. " " .. item.allele, 30)
+                .. item.species .. ", " .. screen.count(item.usable, "drone")
+                .. " utilisables")
+        end
+    end
+
+    if #tooFew > 0 then
+        -- Grouped by species: Rocky carries two of the missing genes and was
+        -- printed twice, which also meant two accumulations queued for one bee.
+        local order, byName = {}, {}
+        for _, item in ipairs(tooFew) do
+            if not byName[item.species] then
+                byName[item.species] = {usable = item.usable, genes = {}}
+                table.insert(order, item.species)
+            end
+            table.insert(byName[item.species].genes,
+                item.chromosome .. " " .. item.allele)
+        end
+
+        print("")
+        print("A ACCUMULER D ABORD")
+
+        for _, name in ipairs(order) do
+            local item = byName[name]
+            print("  " .. screen.fit(name, 12)
+                .. screen.count(item.usable, "drone") .. " "
+                .. screen.plural(item.usable, "utilisable")
+                .. ", il en faut " .. TARGET_DRONES)
+            print("    " .. table.concat(item.genes, ", ")
+                .. " " .. screen.plural(#item.genes, "suivra", "suivront")
+                .. " tout " .. screen.plural(#item.genes, "seul", "seuls"))
         end
     end
 
     print("")
-    io.write("Mettre ces croisements en file ? (o/N): ")
+    print("Compte ~10 cycles d apiary par croisement, un drone chacun.")
+
+    local actions = {}
+    if #plan.steps > 0 then
+        table.insert(actions, screen.count(#plan.steps, "croisement"))
+    end
+    -- Species, not genes: Rocky carries two of them and is bred once
+    local speciesToGrow = {}
+    local growCount = 0
+    for _, item in ipairs(tooFew) do
+        if not speciesToGrow[item.species] then
+            speciesToGrow[item.species] = true
+            growCount = growCount + 1
+        end
+    end
+
+    if growCount > 0 then
+        table.insert(actions, screen.count(growCount, "accumulation"))
+    end
+    if #ready + #tooFew > 0 then
+        table.insert(actions, screen.count(#ready + #tooFew, "extraction"))
+    end
+
+    local summary = table.concat(actions, ", ")
+    if #actions > 1 then
+        summary = table.concat(actions, ", ", 1, #actions - 1)
+            .. " et " .. actions[#actions]
+    end
+
+    print("Lancer " .. summary .. " ?")
+    io.write("(o = oui, n = non) : ")
 
     local answer = io.read()
     if not answer or answer:lower():sub(1, 1) ~= "o" then
@@ -1723,9 +1829,47 @@ function hivemind.buildTemplate(context)
         return
     end
 
-    queueChain(context, registry, plan.steps, naming)
+    if #plan.steps > 0 then
+        queueChain(context, registry, plan.steps, naming)
+    end
 
-    print("Chaque espece obtenue verra son gene sauve toute seule.")
+    -- Every extraction carries refill: an exhausted budget breeds more drones
+    -- and starts over, because "obtiens-moi ce gene" is a goal, not a try.
+    local launched = 0
+
+    local grown = {}
+
+    for _, list in ipairs({ready, tooFew}) do
+        for _, item in ipairs(list) do
+            if item.usable < TARGET_DRONES and not grown[item.species] then
+                grown[item.species] = true
+
+                local grow = multiply.params({
+                    species = item.species, target = TARGET_DRONES + 1,
+                })
+                if grow then context.queue:submit("multiply", grow) end
+            end
+
+            local params = genetics.campaignParams({
+                bee = {label = item.species .. " Drone"},
+                chromosome = item.chromosome,
+                allele = item.allele,
+                bees = math.max(1, item.usable),
+                refill = TARGET_DRONES + 1,
+            })
+
+            if params and context.queue:submit("campaign", params) then
+                launched = launched + 1
+            end
+        end
+    end
+
+    if launched > 0 then
+        print(screen.count(launched, "extraction") .. " en file. "
+            .. "Elles recommenceront d elles-memes tant que le gene ne sort pas.")
+    end
+
+    print("Choisis 6 pour tout faire tourner.")
 end
 
 --- What has to be caught by hand, and what can be saved right now

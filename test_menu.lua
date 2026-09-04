@@ -952,8 +952,12 @@ do
     local stop2 = text:find("\nend\n", from2 or 1, true) or #text
     local body2 = from2 and text:sub(from2, stop2) or ""
 
-    check("les chaines bloquees sont affichees",
-          body2:find("BLOQUEE", 1, true) ~= nil)
+    -- Le detail des croisements est parti; ce qui reste est la cause, sur la
+    -- ligne de la cible, et les especes a elever listees sans les paires.
+    check("une cible bloquee dit ce qui la bloque, sur sa ligne",
+          body2:find("bloquee: il te manque", 1, true) ~= nil)
+    check("et sa chaine reste visible comme especes a elever",
+          body2:find("A ELEVER EN CHEMIN", 1, true) ~= nil)
     check("mais seules plan.steps partent en file",
           body2:find("queueChain(context, registry, plan.steps", 1, true) ~= nil)
 end

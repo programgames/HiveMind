@@ -1186,6 +1186,10 @@ function genetics.campaignParams(options)
         chromosome = chromosome,
         allele = allele,
         budget = budget,
+        -- When set, an exhausted budget breeds back up to this many drones and
+        -- starts over instead of giving up. nil keeps the single-attempt
+        -- behaviour, which is what a one-off draw from the menu wants.
+        refill = tonumber(options.refill),
         spent = 0,
         obtainedList = {},
         timeout = options.timeout,
@@ -1221,6 +1225,23 @@ table.insert(genetics.CAMPAIGN_STEPS, {
         local hit = drawn and wanted and drawn.chromosome == wanted
             and (not wantedAllele or drawn.allele == wantedAllele)
 
+        -- The right chromosome with the WRONG value proves something: this bee
+        -- carries another allele there. A bee holds two, so one wrong draw
+        -- means nothing; three in a row means the species almost certainly does
+        -- not carry what we are after, and looping for ever would burn drones
+        -- on a bee that can never give it.
+        if drawn and wanted and wantedAllele
+           and drawn.chromosome == wanted and drawn.allele ~= wantedAllele then
+            job.params.wrongAllele = (job.params.wrongAllele or 0) + 1
+
+            if job.params.wrongAllele >= 3 then
+                return jobs.FAILED, job.params.bee.label .. " a donne "
+                    .. wanted .. " trois fois sans jamais " .. wantedAllele
+                    .. ": cette espece ne le porte probablement pas."
+                    .. " Lis son genome (option g) avant d y depenser plus."
+            end
+        end
+
         report(context, job.params.bee.label .. ": " .. job.params.spent .. "/"
             .. job.params.budget .. " abeille(s), dernier tirage "
             .. ((drawn and drawn.chromosome) or "?"))
@@ -1233,6 +1254,32 @@ table.insert(genetics.CAMPAIGN_STEPS, {
 
         if job.params.spent >= job.params.budget then
             if wanted then
+                -- "Obtiens-moi ce gene" is a standing goal, not one attempt.
+                -- The budget is what can be spent WITHOUT taking the last
+                -- drone; when it runs out the answer is to breed more and come
+                -- back, not to give up on a gene the template needs.
+                if job.params.refill and context and context.queue then
+                    local multiply = require("lib.multiply")
+                    local species = job.params.bee.label:gsub("%s+Drone$", "")
+
+                    local grow = multiply.params({
+                        species = species,
+                        target = job.params.refill,
+                    })
+
+                    if grow and context.queue:submit("multiply", grow) then
+                        -- Rewound to zero, the queue restarts it at step one
+                        -- once the accumulation ahead of it has run.
+                        job.params.spent = 0
+                        job.params.obtained = nil
+                        job.step = 0
+
+                        return jobs.DONE, "budget epuise sans " .. wanted
+                            .. ": accumulation jusqu a " .. job.params.refill
+                            .. " drones, puis on recommence"
+                    end
+                end
+
                 -- Not a failure: thirteen genes went into the library and the
                 -- draw simply did not come up. Saying "failed" would hide that.
                 return jobs.DONE, "budget epuise sans " .. wanted
