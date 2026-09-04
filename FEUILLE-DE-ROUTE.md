@@ -90,7 +90,29 @@ les inscris dans la configuration.
 
 ---
 
-## Étape 1 — L'expérience « peut-on garder les templates dans AE2 ? »
+## Étape 1 — ✅ TRANCHÉE : oui, on peut
+
+**Résultat du 2026-09-04**, avec contrôle : deux templates de contenus
+différents, deux demandes, **deux livraisons exactes**. Un réseau aveugle au NBT
+aurait rendu le même objet aux deux.
+
+```
+slot 1   07a7cfccdb655dba...  ->  EXACT
+slot 2   213820db1ec84096...  ->  EXACT
+```
+
+**Ce que ça change** : les templates peuvent vivre dans AE2, en nombre
+illimité, et le programme peut demander précisément celui qu'il veut. Le coffre
+devient l'endroit où on **pose, empreinte et nomme** un template — pas un
+entrepôt.
+
+Et le principe vaut pour tout ce qui ne se distingue que par son NBT : une
+abeille au génome précis, pas seulement « une abeille de cette espèce ».
+
+**La seule limite** : il faut tenir l'objet une fois pour le photographier. On
+ne désigne pas ce qu'on n'a jamais eu en main.
+
+### L'expérience, pour mémoire
 
 **Problème** : tous les templates portent le même nom. Quand le programme en
 demande un au réseau, AE2 lui en donne un au hasard. Sur le Replicator, ça

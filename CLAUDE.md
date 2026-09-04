@@ -95,6 +95,29 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   consommés. Donc on n'archive pas 500 templates : on garde 500 samples dans
   AE2 et on fabrique un template au besoin. Un coffre vanilla suffit pour les
   quelques templates en cours d'usage.
+- **ON PEUT DEMANDER UN OBJET PRÉCIS À AE2, NBT COMPRIS.** Vérifié le
+  2026-09-04 par `tools/nbtprobe`, avec contrôle : deux templates de contenus
+  différents, deux demandes, deux livraisons exactes. Un pont aveugle aurait
+  rendu le même objet aux deux.
+
+  La chaîne : `transposer.store(face, slot, database, page)` photographie un
+  objet **qu'on tient physiquement**, NBT compris ; puis
+  `me_interface.setInterfaceConfiguration(quai, database, page, 1)` demande au
+  réseau **exactement** cet objet. AE2 range par (id, dégâts, NBT) et honore le
+  filtre.
+
+  Ce qui bloquait n'était pas AE2 mais **le point de départ** : `me.store(filtre,
+  …)` part d'un filtre qui ne sait nommer qu'un id, donc le réseau rend un objet
+  quelconque et la photo est celle de ce quelconque. Partir d'un objet en main
+  lève tout.
+
+  Conséquences : les templates **peuvent** vivre dans AE2, en nombre illimité.
+  Le coffre devient un confort (poser, empreinter, nommer), plus une obligation.
+  Et le principe vaut pour tout ce qui ne se distingue que par son NBT — une
+  abeille au génome précis, pas seulement « une abeille de cette espèce ».
+
+  Limite : il faut **tenir l'objet une fois** pour le photographier. On ne peut
+  pas désigner ce qu'on n'a jamais eu en main.
 - **Les Genetic Templates sont opaques** : même id, même étiquette, ne diffèrent
   que par le NBT. Identifiables uniquement par `transposer.store` +
   `database.computeHash` (SHA-256). Ils ne doivent **jamais** entrer dans le
