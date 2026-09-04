@@ -116,7 +116,7 @@ check("il annonce le cout total avant de confirmer",
 -- what turns the gene library from a museum into insurance
 check("la replication est atteignable", wired.replicateBee == true)
 check("elle exige un template complet, espece comprise",
-      text:find("13 chromosomes sur 13", 1, true) ~= nil)
+      text:find("13 genes sur 13, gene d espece compris", 1, true) ~= nil)
 check("elle peut demander un template nomme au reseau",
       text:find("placeTemplate(context, \"replicator\")", 1, true) ~= nil)
 check("mais jamais par son nom, seulement par empreinte",
@@ -140,7 +140,7 @@ end
 -- only moment the program can ever hold it
 check("nommer les templates est atteignable", wired.nameTemplates == true)
 check("et se fait tant qu ils sont dans le coffre",
-      text:find("QUE tant que le template est dans le coffre", 1, true) ~= nil)
+      text:find("QUE tant que le", 1, true) ~= nil)
 check("un template sans fiche est signale comme non demandable",
       text:find("PAS DE FICHE: pas demandable", 1, true) ~= nil)
 
@@ -419,6 +419,33 @@ check("l ecran est mis a sa taille maximale au demarrage",
 
 -- Forty lines of menu on a twenty-five line screen scroll away as they are
 -- drawn, cleared or not
+-- Choosing "Copier les genes uniques" and landing on a screen titled "METTRE LA
+-- BIBLIOTHEQUE A L ABRI" reads as having picked the wrong option. Eight screens
+-- had drifted from their label, so the rule gets a test rather than good
+-- intentions.
+do
+    -- These print no title of their own: they answer immediately or hand over
+    -- to another screen
+    local titleless = {
+        runQueue = true, harvestApiary = true, manageQueue = true,
+        refreshSpecies = true, submitBreeding = true, planChain = true,
+    }
+
+    local wrong = {}
+    for index, action in ipairs(actions) do
+        if not titleless[action] then
+            local expected = "=== " .. labels[index]:upper() .. " ==="
+            if not text:find(expected, 1, true) then
+                table.insert(wrong, labels[index])
+            end
+        end
+    end
+
+    check("chaque ecran porte le titre de son option: "
+          .. (#wrong > 0 and table.concat(wrong, ", ") or "-"),
+          #wrong == 0)
+end
+
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
 check("les actions destructrices le disent dans le menu",

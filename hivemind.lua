@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.87.0"
+hivemind.VERSION = "0.88.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -296,7 +296,7 @@ end
 --- Print what the world looks like right now
 --- @param context table
 function hivemind.status(context)
-    print("=== ETAT ===")
+    print("=== ETAT DETAILLE ===")
 
     local online, reason = context.transport:isOnline()
 
@@ -758,7 +758,7 @@ end
 --- read off the screen.
 --- @param context table
 function hivemind.slotDiagnostic(context)
-    print("=== SLOTS REELS (lecture brute par le transposer) ===")
+    print("=== VOIR CE QUE TIENNENT LES MACHINES ===")
     print("Decalage actuellement applique : " .. tostring(config.slot_offset))
     print("")
 
@@ -811,7 +811,7 @@ function hivemind.slotDiagnostic(context)
     -- machine links, and it is where staging goes wrong: a dock that keeps the
     -- previous item looks exactly like a delivery that never happened.
     print("")
-    print("=== ME INTERFACE (les quais de chargement) ===")
+    print("=== INTERFACE ME (ses slots de configuration) ===")
 
     local link = config.machines.mutatron
     local anything = false
@@ -842,7 +842,7 @@ function hivemind.slotDiagnostic(context)
     end
 
     if not anything then
-        print("  aucun quai occupe ni configure")
+        print("  aucun slot occupe ni configure")
     end
 
     print("")
@@ -1208,9 +1208,8 @@ end
 function hivemind.accumulateDrones(context)
     print("")
     print("=== ACCUMULER DES DRONES ===")
-    print("Une princesse et un drone de la meme espece deviennent une reine.")
-    print("La reine meurt en laissant une princesse et plusieurs drones, et la")
-    print("princesse repart aussitot. Un drone entre, plusieurs sortent.")
+    print("Une princesse + un drone donnent une reine, qui meurt en laissant")
+    print("une princesse et plusieurs drones. Un drone entre, plusieurs sortent.")
     print("")
 
     local princessSpec = chooseBee(context, "forestry:bee_princess_ge", "princesse")
@@ -1288,10 +1287,9 @@ end
 --- @param context table
 function hivemind.sampleGene(context)
     print("")
-    print("=== EXTRAIRE UN GENE ===")
-    print("Le Sampler detruit l'abeille et tire UN chromosome au hasard sur 13.")
-    print("Viser un gene precis coute donc une treizaine d'abeilles en moyenne,")
-    print("mais les tirages 'rates' remplissent quand meme la bibliotheque.")
+    print("=== EXTRAIRE UN GENE D UNE ABEILLE ===")
+    print("Le Sampler DETRUIT l abeille et tire un gene au hasard sur 13.")
+    print("Viser un gene precis coute donc une treizaine d abeilles.")
     print("")
 
     local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
@@ -1343,9 +1341,9 @@ end
 --- @param context table
 function hivemind.duplicateGene(context)
     print("")
-    print("=== DUPLIQUER UN GENE ===")
-    print("Le Genetic Transposer lit un sample et ecrit une copie dans un")
-    print("sample vierge. La source n'est pas consommee.")
+    print("=== COPIER UN GENE ===")
+    print("Le Genetic Transposer copie un sample dans un sample vierge.")
+    print("L original n est pas consomme.")
     print("")
 
     local samples = context.transport:findAll({name = "gendustry:gene_sample"})
@@ -1402,7 +1400,8 @@ end
 function hivemind.imprintBee(context)
     print("")
     print("=== IMPRIMER UNE ABEILLE ===")
-    print("L imprinter ecrase les genes de l abeille par ceux du template.")
+    print("L Imprinter ecrase les genes de l abeille par ceux du template.")
+    print("Son espece ne change pas: le template n en porte pas.")
     print("")
 
     -- Two Imprinters, one profile each: choosing a profile is choosing a
@@ -1690,9 +1689,9 @@ end
 --- @param context table
 function hivemind.speciesSweep(context)
     print("")
-    print("=== RECOLTER LE GENE SPECIES DE CHAQUE ESPECE ===")
-    print("Le Sampler tire un chromosome sur 13: compte une treizaine de")
-    print("drones par espece. Les tirages rates enrichissent la bibliotheque.")
+    print("=== CHASSER LE GENE D ESPECE DE CHACUNE ===")
+    print("Le Sampler tire un gene sur 13: compte une treizaine de drones")
+    print("par espece. Les tirages rates enrichissent la bibliotheque.")
     print("")
 
     -- The pack ships a shortcut this program cannot use: a shapeless craft that
@@ -1853,9 +1852,9 @@ end
 function hivemind.nameTemplates(context)
     print("")
     print("=== NOMMER LES TEMPLATES DU COFFRE ===")
-    print("Tous les templates s appellent pareil. Leur seule difference")
-    print("lisible est l empreinte de leur contenu, et elle ne se releve")
-    print("QUE tant que le template est dans le coffre.")
+    print("Tous les templates s appellent pareil: seule l empreinte de leur")
+    print("contenu les distingue, et elle ne se releve QUE tant que le")
+    print("template est dans le coffre.")
     print("")
 
     local chest = config.template_chest
@@ -2018,9 +2017,9 @@ end
 --- @param context table
 function hivemind.replicateBee(context)
     print("")
-    print("=== REPLIQUER UNE ABEILLE ===")
-    print("Le replicator fabrique une abeille a partir d un template COMPLET")
-    print("(13 chromosomes sur 13, gene Species compris) et de DNA liquide.")
+    print("=== FABRIQUER UNE REINE ===")
+    print("Le Replicator fabrique une REINE a partir d un template complet")
+    print("(13 genes sur 13, gene d espece compris) et d ADN. Elle sort Ignoble.")
     print("")
 
     if not machineReady(context, "replicator", "Le Genetic Replicator") then
@@ -2051,7 +2050,7 @@ function hivemind.replicateBee(context)
 
     local tank = context.transport:tank(machine.link)
     if tank then
-        print(string.format("DNA liquide : %d / %d",
+        print(string.format("ADN : %d / %d",
             tank.amount or 0, tank.capacity or 0))
         if (tank.amount or 0) == 0 then
             print("Vide. C est toi qui le fournis.")
@@ -2093,10 +2092,10 @@ end
 --- @param context table
 function hivemind.feedExtractor(context)
     print("")
-    print("=== TRANSFORMER LES DRONES INUTILES EN DNA ===")
-    print("Le DNA liquide alimente le replicator. Chaque abeille envoyee est")
-    print("detruite: seules partent celles dont le gene Species est deja")
-    print("en bibliotheque, et seulement au-dela d une reserve.")
+    print("=== DETRUIRE DES DRONES POUR FAIRE DE L ADN ===")
+    print("Chaque abeille envoyee est DETRUITE pour faire de l ADN, qui")
+    print("alimente le Replicator. Seul part le surplus des especes dont le")
+    print("gene d espece est deja en bibliotheque.")
     print("")
 
     if not machineReady(context, "dna_extractor", "Le DNA Extractor") then
@@ -2329,7 +2328,7 @@ end
 --- @param context table
 function hivemind.harvestProfile(context)
     print("")
-    print("=== RECOLTER TOUT CE QUI MANQUE POUR UN PROFIL ===")
+    print("=== CHASSER TOUT CE QUI MANQUE A UN PROFIL ===")
 
     local profiles = config.profiles or {}
     local names = {}
@@ -2525,7 +2524,7 @@ end
 --- @param context table
 function hivemind.breedingPlan(context)
     print("")
-    print("=== QUOI CROISER ENSUITE ===")
+    print("=== QUELLE ESPECE ATTRAPER ENSUITE ===")
     print("Chaque espece n est necessaire qu une fois: un individu, un")
     print("echantillonnage reussi, et le gene est acquis pour toujours.")
     print("")
@@ -2640,9 +2639,9 @@ end
 --- @param context table
 function hivemind.templateHelp(context)
     print("")
-    print("=== CONSTRUIRE UN TEMPLATE ===")
-    print("Table de craft: un Genetic Template + tes Gene Samples, ensemble.")
-    print("Plusieurs samples d un coup. En AE2, un motif de craft fait pareil.")
+    print("=== VOIR CE QUI MANQUE POUR UN TEMPLATE ===")
+    print("Un template s assemble a la TABLE DE CRAFT: un Genetic Template")
+    print("plus tes samples, plusieurs d un coup. Les samples sont consommes.")
     print("")
 
     local templates = 0
@@ -2717,17 +2716,16 @@ end
 --- @param context table
 function hivemind.geneCampaign(context)
     print("")
-    print("=== CAMPAGNE DE GENES ===")
-    print("Extrait des genes d'une meme espece jusqu'a obtenir celui vise,")
-    print("ou jusqu'a epuisement du budget d'abeilles. Chaque tirage rate")
-    print("enrichit quand meme la bibliotheque.")
+    print("=== CHASSER UN GENE PRECIS ===")
+    print("Extrait en boucle jusqu au gene vise, ou jusqu a court d abeilles.")
+    print("Chaque tirage rate enrichit quand meme la bibliotheque.")
     print("")
 
     local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
     if not beeSpec then print("Annule.") return end
 
     print("")
-    print("Chromosome vise (vide = tout prendre, sans cible) :")
+    print("Gene vise (vide = tout prendre, sans cible) :")
     for slot = 0, 12 do
         local chromosome = genome.CHROMOSOMES[slot]
         if chromosome then
@@ -2737,13 +2735,13 @@ function hivemind.geneCampaign(context)
     end
     print("")
 
-    io.write("Chromosome (nom exact, ou vide): ")
+    io.write("Gene (nom exact, ou vide): ")
     local wanted = io.read()
     wanted = wanted and wanted:gsub("^%s+", ""):gsub("%s+$", "")
     if wanted == "" then wanted = nil end
 
     if wanted and not genome.slotForLabel(wanted) then
-        print("Chromosome inconnu: " .. wanted)
+        print("Gene inconnu: " .. wanted)
         print("Reprends un nom de la liste ci-dessus, tel quel.")
         return
     end
@@ -2759,7 +2757,7 @@ function hivemind.geneCampaign(context)
         if wantedAllele == "" then wantedAllele = nil end
     end
 
-    io.write("Combien d'abeilles au maximum ? [13]: ")
+    io.write("Combien d abeilles au maximum ? [13]: ")
     local answer = io.read()
     local budget = tonumber(answer and answer:gsub("%s+", "")) or 13
 
@@ -2802,7 +2800,7 @@ end
 --- @param context table
 function hivemind.secureLibrary(context)
     print("")
-    print("=== METTRE LA BIBLIOTHEQUE A L'ABRI ===")
+    print("=== COPIER LES GENES UNIQUES ===")
 
     context.library:scan()
     local shortages = context.library:shortages()

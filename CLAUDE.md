@@ -45,6 +45,18 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
 
 - Commentaires et docstrings **en anglais**, messages utilisateur **en français
   sans accents** (la police d'OpenComputers ne les rend pas).
+- **Le titre d'un écran est le libellé de son option, en majuscules.** Choisir
+  « Copier les gènes uniques » et arriver sur « METTRE LA BIBLIOTHÈQUE À L'ABRI »
+  se lit comme s'être trompé d'option. Un test l'impose.
+- **Vocabulaire tranché avec le joueur** : « gène » partout (jamais
+  « chromosome » ni « allèle » dans le menu), « sample » pour l'objet
+  (`gene_sample`), **les noms du jeu pour les machines** (Sampler, Imprinter,
+  Replicator, Mutatron, Genetic Transposer), et **ADN** jamais « DNA ».
+- **Un libellé de menu est un verbe qui dit l'action**, pas le nom du concept.
+  La description dit la **conséquence irréversible** quand il y en a une — elle
+  doit être lue avant le choix, pas dans la confirmation qui suit.
+- **Une seule ligne d'explication en tête d'écran** : ce qui va se passer et ce
+  que ça coûte.
 - Chaque correctif vient avec un test qui **échoue sans lui** — le vérifier en
   restaurant temporairement l'ancien fichier.
 - Les commentaires expliquent *pourquoi*, avec le symptôme réel observé.
