@@ -69,7 +69,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.85.0"
+hivemind.VERSION = "0.86.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -2907,72 +2907,112 @@ local function headline(context)
     -- before an option is chosen that will need them
     local ok, warnings = pcall(hivemind.fluidWarnings, context)
     if ok then
-        for _, warning in ipairs(warnings or {}) do
-            print("  ! " .. warning)
+        for index, warning in ipairs(warnings or {}) do
+            if index <= 2 then print("  ! " .. warning) end
+        end
+
+        if #(warnings or {}) > 2 then
+            print("  ! ... et " .. (#warnings - 2) .. " autre(s) reservoir(s)")
         end
     end
 end
 
+-- Every label is a verb saying what the option DOES, never the name of the
+-- concept behind it: "Mettre la bibliotheque a l abri" named a policy and left
+-- the reader guessing what would happen. And where an action destroys something
+-- irreversibly, the description says so -- that belongs before the choice, not
+-- in the confirmation that follows it.
 local ENTRIES = {
     {group = "Regarder"},
     {key = "1", label = "Etat detaille",
-     hint = "stocks, machines, genes, file", action = "status"},
-    {key = "2", label = "Diagnostic des slots",
-     hint = "ce que chaque machine tient vraiment", action = "slotDiagnostic"},
+     hint = "stocks, machines, genes en bibliotheque, taches en cours",
+     action = "status"},
+    {key = "2", label = "Voir ce que tiennent les machines",
+     hint = "slot par slot, ce qu il y a vraiment dedans, sans se fier a la config",
+     action = "slotDiagnostic"},
     {key = "g", label = "Lire le genome d une abeille",
-     hint = "13 alleles d un coup, sans la detruire", action = "analyseBee"},
+     hint = "ses 13 genes d un coup; elle survit, et le programme retient ce qu il apprend",
+     action = "analyseBee"},
+    {key = "h", label = "Quelle espece attraper ensuite",
+     hint = "classees par nombre de genes manquants qu elles apportent",
+     action = "breedingPlan"},
 
-    {group = "Produire"},
+    {group = "Produire des abeilles"},
     {key = "3", label = "Accumuler des drones",
-     hint = "une espece, en boucle, jusqu a un objectif", action = "accumulateDrones"},
-    {key = "4", label = "Programmer un croisement",
-     hint = "un seul croisement A + B -> C", action = "submitBreeding"},
-    {key = "5", label = "Viser une espece",
-     hint = "chaine complete calculee toute seule", action = "planChain"},
-    {key = "a", label = "Extraire un gene",
-     hint = "une abeille -> un chromosome au hasard", action = "sampleGene"},
-    {key = "b", label = "Dupliquer un gene",
-     hint = "une copie de plus, la source survit", action = "duplicateGene"},
-    {key = "c", label = "Mettre la bibliotheque a l abri",
-     hint = "copie tout ce qui est en un seul exemplaire", action = "secureLibrary"},
-    {key = "d", label = "Campagne de genes",
-     hint = "extrait en boucle jusqu au gene vise", action = "geneCampaign"},
-    {key = "i", label = "Recolter tous les genes Species",
-     hint = "une campagne par espece en stock", action = "speciesSweep"},
-    {key = "t", label = "Recolter ce qui manque",
-     hint = "toutes les campagnes d un profil, d un coup", action = "harvestProfile"},
-    {key = "n", label = "Nommer les templates",
-     hint = "les rend demandables au reseau", action = "nameTemplates"},
-    {key = "e", label = "Construire un template",
-     hint = "ce qui manque pour chaque profil", action = "templateHelp"},
-    {key = "h", label = "Quoi croiser ensuite",
-     hint = "les especes classees par gene apporte", action = "breedingPlan"},
-    {key = "f", label = "Imprimer une abeille",
-     hint = "applique le template pose dans la machine", action = "imprintBee"},
+     hint = "reproduit une espece en boucle jusqu au nombre voulu",
+     action = "accumulateDrones"},
+    {key = "4", label = "Croiser deux especes",
+     hint = "un croisement precis: A + B donne C, une seule fois",
+     action = "submitBreeding"},
+    {key = "5", label = "Obtenir une espece",
+     hint = "calcule la chaine complete de croisements et l enchaine seule",
+     action = "planChain"},
 
-    {key = "r", label = "Repliquer une abeille",
-     hint = "template complet + DNA -> une abeille", action = "replicateBee"},
-    {key = "x", label = "Drones inutiles -> DNA",
-     hint = "detruit le surplus pour alimenter le replicator",
+    {group = "Collecter des genes"},
+    {key = "a", label = "Extraire un gene d une abeille",
+     hint = "un gene au hasard sur 13, et l abeille est DETRUITE",
+     action = "sampleGene"},
+    {key = "d", label = "Chasser un gene precis",
+     hint = "recommence l extraction jusqu a tomber sur le gene vise",
+     action = "geneCampaign"},
+    {key = "i", label = "Chasser le gene d espece de chacune",
+     hint = "une chasse par espece dont tu as assez de drones",
+     action = "speciesSweep"},
+    {key = "t", label = "Chasser tout ce qui manque a un profil",
+     hint = "met en file toutes les chasses necessaires, d un coup",
+     action = "harvestProfile"},
+
+    {group = "Proteger les genes"},
+    {key = "b", label = "Copier un gene",
+     hint = "un exemplaire de plus; l original n est pas consomme",
+     action = "duplicateGene"},
+    {key = "c", label = "Copier les genes uniques",
+     hint = "ceux qui n existent qu en un exemplaire: un accident et ils sont perdus",
+     action = "secureLibrary"},
+
+    {group = "Templates"},
+    {key = "e", label = "Voir ce qui manque pour un template",
+     hint = "les genes a reunir pour chaque profil, et quelle abeille les porte",
+     action = "templateHelp"},
+    {key = "n", label = "Nommer les templates du coffre",
+     hint = "sans nom ils sont indiscernables, et impossibles a redemander au reseau",
+     action = "nameTemplates"},
+
+    {group = "Utiliser les genes"},
+    {key = "f", label = "Imprimer une abeille",
+     hint = "lui applique le template pose dans la machine, sans changer son espece",
+     action = "imprintBee"},
+    {key = "r", label = "Fabriquer une reine",
+     hint = "template complet + ADN: une reine sans parents, en Ignoble Stock",
+     action = "replicateBee"},
+    {key = "x", label = "Detruire des drones pour faire de l ADN",
+     hint = "seulement le surplus des especes deja sauvegardees",
      action = "feedExtractor"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",
-     hint = "avance toutes les taches en attente", action = "runQueue"},
+     hint = "fait avancer toutes les taches en attente",
+     action = "runQueue"},
     {key = "7", label = "Vider la sortie de l apiary",
-     hint = "renvoie les abeilles vers le reseau", action = "harvestApiary"},
+     hint = "renvoie les abeilles produites vers le reseau ME",
+     action = "harvestApiary"},
 
     {group = "Entretenir"},
     {key = "8", label = "Gerer la file",
-     hint = "annuler une tache, purger les finies", action = "manageQueue"},
-    {key = "9", label = "Rafraichir les especes",
-     hint = "relit la liste complete depuis le jeu", action = "refreshSpecies"},
+     hint = "annuler une tache bloquee, purger les terminees",
+     action = "manageQueue"},
+    {key = "9", label = "Rafraichir la liste des especes",
+     hint = "redemande au jeu la liste complete des especes",
+     action = "refreshSpecies"},
 }
 
 --- How many lines the full menu needs, groups, blanks and prompt included
 --- @return number
 local function fullMenuHeight()
-    local lines = 8   -- title, headline, advice, "0 Quitter", prompt
+    -- Title, banner, up to two tank warnings, blank, up to three advice lines,
+    -- blank, "0 Quitter", prompt. Underestimating this puts the top of the menu
+    -- off screen, which is the very thing the fold exists to prevent.
+    local lines = 12
     for _, entry in ipairs(ENTRIES) do
         lines = lines + (entry.group and 2 or 1)
     end
@@ -2986,13 +3026,13 @@ end
 --- @param width number
 --- @param height number
 local function drawOptions(width, height)
-    if height >= fullMenuHeight() then
+    if height >= fullMenuHeight() and width >= 120 then
         for _, entry in ipairs(ENTRIES) do
             if entry.group then
                 print("")
                 print("  " .. entry.group)
             else
-                print(string.format("    %s  %-28s %s",
+                print(string.format("    %s  %-40s %s",
                     entry.key, entry.label, entry.hint))
             end
         end
@@ -3052,8 +3092,17 @@ local function menu(context)
 
         if #advised > 0 then
             print("")
+
+            -- Three at most: the menu below has to fit, and advice four deep is
+            -- not read anyway
             for index, line in ipairs(advised) do
-                print((index == 1 and "  -> " or "     ") .. line)
+                if index <= 3 then
+                    print((index == 1 and "  -> " or "     ") .. line)
+                end
+            end
+
+            if #advised > 3 then
+                print("     ... et " .. (#advised - 3) .. " autre(s), voir 1")
             end
         end
 

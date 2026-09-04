@@ -398,6 +398,25 @@ check("l ecran est mis a sa taille maximale au demarrage",
 
 -- Forty lines of menu on a twenty-five line screen scroll away as they are
 -- drawn, cleared or not
+-- Every label says what happens, and where something is destroyed the listing
+-- says so before the choice rather than in the confirmation after it
+check("les actions destructrices le disent dans le menu",
+      text:find("l abeille est DETRUITE", 1, true) ~= nil
+      and text:find("Detruire des drones", 1, true) ~= nil)
+
+-- The banner can carry several tank warnings and the advice several lines;
+-- unbounded, they push the top of the menu off the screen
+check("les conseils sont bornes", text:find("if index <= 3 then", 1, true) ~= nil)
+check("les avertissements de reservoir aussi",
+      text:find("if index <= 2 then print", 1, true) ~= nil)
+check("et la hauteur necessaire les compte",
+      text:find("local lines = 12", 1, true) ~= nil)
+
+-- Height alone was not enough: on a narrow tall screen the full listing was
+-- chosen and every line wrapped, which is worse than folding
+check("le menu complet exige aussi de la largeur",
+      text:find("width >= 120", 1, true) ~= nil)
+
 check("le menu se replie quand l ecran est trop court",
       text:find("fullMenuHeight", 1, true) ~= nil
       and text:find("local columns = (width >= 76) and 2 or 1", 1, true) ~= nil)
