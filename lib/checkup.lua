@@ -18,6 +18,8 @@
 -- The result is a list of findings, each carrying the gesture that fixes it,
 -- in the same words the queue uses when it stops for one.
 
+local screen = require("lib.screen")
+
 local checkup = {}
 
 checkup.OK = "ok"
@@ -125,8 +127,8 @@ function checkup.machines(options)
                     detail = "aucun inventaire sur la face "
                         .. tostring(link.machine) .. " du transposer "
                         .. tostring(link.transposer),
-                    gesture = "verifie la face de " .. name
-                        .. " avec tools/discover, puis corrige lib/config.lua",
+                    gesture = "trouve sa vraie face avec tools/discover,"
+                        .. " puis corrige lib/config.lua",
                 })
             elseif size == 0 then
                 table.insert(findings, {
@@ -144,13 +146,13 @@ function checkup.machines(options)
                         name = name, status = checkup.PROBLEM,
                         detail = "la config attend un slot " .. highest
                             .. " et la machine n en a que " .. size,
-                        gesture = "relance tools/probe sur " .. name
-                            .. ": la carte des slots ne correspond pas",
+                        gesture = "relance tools/probe: la carte des slots"
+                            .. " ne correspond pas a la machine",
                     })
                 else
                     table.insert(findings, {
                         name = name, status = checkup.OK,
-                        detail = size .. " slot(s), carte coherente",
+                        detail = screen.count(size, "slot") .. ", carte coherente",
                     })
                 end
             end
@@ -199,7 +201,7 @@ function checkup.interfaces(options)
 
         if not wanted then
             table.insert(findings, {
-                name = "Interface ME du banc " .. tostring(bench),
+                name = "Banc " .. tostring(bench),
                 status = checkup.PROBLEM,
                 detail = "aucune interface declaree pour " .. served,
                 gesture = "lance tools/discover et ajoute l adresse dans"
@@ -216,13 +218,13 @@ function checkup.interfaces(options)
 
             if found then
                 table.insert(findings, {
-                    name = "Interface ME du banc " .. tostring(bench),
+                    name = "Banc " .. tostring(bench),
                     status = checkup.OK,
                     detail = "sert " .. served,
                 })
             else
                 table.insert(findings, {
-                    name = "Interface ME du banc " .. tostring(bench),
+                    name = "Banc " .. tostring(bench),
                     status = checkup.PROBLEM,
                     detail = "l interface " .. tostring(wanted)
                         .. " est declaree mais le programme ne la voit pas",
@@ -399,7 +401,8 @@ function checkup.run(options)
         else
             table.insert(network, {
                 name = "Reseau AE2", status = checkup.OK,
-                detail = total .. " objet(s) visibles",
+                detail = screen.count(total, "objet") .. " "
+                    .. screen.plural(total, "visible"),
             })
         end
     end

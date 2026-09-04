@@ -212,7 +212,7 @@ do
 
     check("verdict: pas pret", report.ok, false)
 
-    local finding = findingFor(allFindings(report), "Interface ME du banc 65d3da44")
+    local finding = findingFor(allFindings(report), "Banc 65d3da44")
     check("l interface manquante est vue", finding.status, checkup.PROBLEM)
     checkTruthy("le geste parle de l Adapter",
                 finding.gesture and finding.gesture:find("Adapter"))
@@ -242,7 +242,7 @@ do
 
     check("aucune interface reclamee pour ce banc", report.ok, true)
     check("et rien n est dit du banc a142f36b",
-          findingFor(allFindings(report), "Interface ME du banc a142f36b"), nil)
+          findingFor(allFindings(report), "Banc a142f36b"), nil)
 end
 
 print("")

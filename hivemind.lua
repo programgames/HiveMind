@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "0.95.1"
+hivemind.VERSION = "0.96.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1022,7 +1022,7 @@ function hivemind.planChain(context)
         print("Avec lui, Fertility 4 et Lifespan Shortest: la meme chaine coute")
         print("une fraction du temps et des abeilles.")
         print("")
-        print("Il manque " .. #missing .. " gene(s) :")
+        print("Il manque " .. screen.count(#missing, "gene") .. " :")
 
         local shown = 0
         for _, entry in ipairs(missing) do
@@ -1033,7 +1033,8 @@ function hivemind.planChain(context)
             end
         end
         if #missing > shown then
-            print("  ... et " .. (#missing - shown) .. " autre(s)")
+            print("  ... et " .. (#missing - shown) .. " "
+                .. screen.plural(#missing - shown, "autre"))
         end
 
         print("")
@@ -1167,7 +1168,8 @@ function hivemind.planChain(context)
         end
     end
 
-    print(imprinted .. " impression(s) en file, avant les croisements.")
+    print(screen.count(imprinted, "impression")
+        .. " en file, avant les croisements.")
 end
 
 --- Put an ordered list of crosses in the queue, drones first
@@ -1236,7 +1238,7 @@ function queueChain(context, registry, steps, naming)
         print(accumulations .. " accumulation(s) de drones ajoutee(s) avant les croisements.")
     end
 
-    print(queued .. " croisement(s) en file. Choisis 6 pour les executer.")
+    print(screen.count(queued, "croisement") .. " en file. Choisis 6.")
 
     return queued
 end
@@ -1327,7 +1329,7 @@ function hivemind.runQueue(context, options)
         local pending = #context.queue:pending()
 
         if pending > 0 then
-            print("Execution de " .. pending .. " tache(s)...")
+            print("Execution de " .. screen.count(pending, "tache") .. "...")
 
             local report = context.queue:run(context, {
                 budget = options.budget,
@@ -1346,14 +1348,17 @@ function hivemind.runQueue(context, options)
                 end,
             })
 
-            print(string.format(
-                "%d etape(s), %d terminee(s), %d attente(s), %d geste(s), %d echec(s)",
-                report.steps, report.completed, report.retried,
-                report.waiting or 0, report.failed))
+            print(screen.count(report.steps, "etape") .. ", "
+                .. report.completed .. " " .. screen.plural(report.completed, "terminee")
+                .. ", " .. report.retried .. " " .. screen.plural(report.retried, "attente")
+                .. ", " .. (report.waiting or 0) .. " "
+                .. screen.plural(report.waiting or 0, "geste")
+                .. ", " .. report.failed .. " "
+                .. screen.plural(report.failed, "echec"))
 
             local left = #context.queue:pending()
             if left > 0 then
-                print("Il reste " .. left .. " tache(s) en file.")
+                print("Il reste " .. screen.count(left, "tache") .. " en file.")
             end
 
             if report.exhausted then
@@ -1371,7 +1376,8 @@ function hivemind.runQueue(context, options)
         -- lines of step log they were unreadable, which is how a queue could
         -- sit stopped for an evening on a bee anyone could have moved.
         print("")
-        print("IL FAUT TA MAIN — " .. #waiting .. " tache(s) attendent :")
+        print("IL FAUT TA MAIN — " .. screen.count(#waiting, "tache")
+            .. " " .. screen.plural(#waiting, "attend") .. " :")
         for _, job in ipairs(waiting) do
             print(string.format("  #%-3d %s", job.id, tostring(job.action)))
         end
@@ -1429,6 +1435,10 @@ function hivemind.checkInstall(context)
         print("")
         print(section.title)
 
+        if #section.findings == 0 then
+            print("  (rien a verifier ici)")
+        end
+
         for _, finding in ipairs(section.findings) do
             local mark = "  ok "
             if finding.status == checkup.PROBLEM then
@@ -1437,27 +1447,39 @@ function hivemind.checkInstall(context)
                 mark = "  -- "
             end
 
-            print(string.format("%s%-24s %s", mark, finding.name,
-                tostring(finding.detail)))
+            -- Name in its column, detail wrapped under it. Letting the
+            -- terminal wrap put line breaks mid-word, exactly on the lines
+            -- that say what is broken.
+            local lines = screen.wrap(finding.detail, 48)
+            print(mark .. screen.fit(finding.name, 24) .. " " .. lines[1])
+
+            for index = 2, #lines do
+                print(string.rep(" ", 30) .. lines[index])
+            end
         end
     end
 
     print("")
 
     if report.ok then
-        print("INSTALLATION VALIDEE — " .. report.counts.ok .. " controle(s) passes"
+        print("INSTALLATION VALIDEE — " .. screen.count(report.counts.ok, "controle")
+            .. " " .. screen.plural(report.counts.ok, "passe")
             .. (report.counts.absent > 0
-                and (", " .. report.counts.absent .. " machine(s) pas encore posee(s)")
+                and (", " .. screen.count(report.counts.absent, "machine")
+                     .. " pas encore " .. screen.plural(report.counts.absent, "posee"))
                 or ""))
         print("Tu peux passer a la suite.")
         return report
     end
 
-    print("PAS ENCORE PRET — " .. report.counts.problem .. " chose(s) a regler :")
+    print("PAS ENCORE PRET — " .. screen.count(report.counts.problem, "chose")
+        .. " a regler :")
     print("")
 
     for index, gesture in ipairs(report.gestures) do
-        print("  " .. index .. ". " .. gesture)
+        local lines = screen.wrap(gesture, 72)
+        print("  " .. index .. ". " .. lines[1])
+        for more = 2, #lines do print("     " .. lines[more]) end
     end
 
     print("")
@@ -1545,7 +1567,8 @@ function hivemind.buildTemplate(context)
     end
 
     print("")
-    print(#missing .. " gene(s) manquant(s) :")
+    print(screen.count(#missing, "gene") .. " "
+        .. screen.plural(#missing, "manquant") .. " :")
 
     local haveCarrier, needCarrier = {}, {}
 
@@ -1568,12 +1591,14 @@ function hivemind.buildTemplate(context)
             entry.allele,
             #list > 0 and (table.concat(list, " ou ")
                 .. (held and "  (en stock)" or "  (a obtenir)"))
-                or "aucun porteur note -- lis un genome (option g)"))
+                or "porteur inconnu"))
     end
 
     if #haveCarrier > 0 then
         print("")
-        print(#haveCarrier .. " gene(s) chassable(s) tout de suite. Choisis t, sous 9.")
+        print(screen.count(#haveCarrier, "gene") .. " "
+            .. screen.plural(#haveCarrier, "chassable")
+            .. " tout de suite. Choisis 9 puis t.")
     end
 
     print("")
@@ -1637,7 +1662,7 @@ function hivemind.buildTemplate(context)
     for _, entry in ipairs(plan.targets) do
         print(string.format("  %-22s %s", naming(entry.uid),
             entry.held and "deja en stock"
-                or (entry.reachable and (entry.steps .. " croisement(s)")
+                or (entry.reachable and screen.count(entry.steps, "croisement")
                     or "INATTEIGNABLE")))
     end
 
@@ -1658,7 +1683,7 @@ function hivemind.buildTemplate(context)
     end
 
     print("")
-    print(#plan.steps .. " croisement(s), dans l ordre :")
+    print(screen.count(#plan.steps, "croisement") .. ", dans l ordre :")
     for index, step in ipairs(plan.steps) do
         local line = string.format("  %2d. %s + %s -> %s", index,
             naming(step.princess.uid), naming(step.drone.uid), naming(step.target))
@@ -1813,65 +1838,132 @@ function hivemind.buildBase(context)
         end
     end
 
+    -- One line per pile, not four numbers and no direction. Someone reading
+    -- "30 especes - 1, 3, 12, 14" learns the shape of the problem and nothing
+    -- about what to do next.
     print("")
-    print(#base .. " especes de base — " .. done .. " sauvegardee(s), "
-        .. #canHunt .. " chassable(s), " .. #needDrones .. " sans drone, "
-        .. #toCatch .. " a attraper")
+    print(screen.count(#base, "abeille de base", "abeilles de base") .. ". "
+        .. done .. " " .. screen.plural(done, "sauvegardee") .. ", "
+        .. #canHunt .. " " .. screen.plural(#canHunt, "prete") .. ", "
+        .. #needDrones .. " sans drone, "
+        .. #toCatch .. " " .. screen.plural(#toCatch, "introuvee") .. ".")
+
+    -- Which one to start with, and why. Twelve species that all look alike is
+    -- where a player stalls. The rule is the most useful one that HAS
+    -- something to work with: sending someone at a species they hold three
+    -- princesses of is sending them somewhere a single failed cross hurts.
+    local ENOUGH = 5
+    local best = nil
+    for _, entry in ipairs(needDrones) do
+        if (princesses[entry.name] or 0) >= ENOUGH
+           and (not best or entry.unlocks > best.unlocks) then
+            best = entry
+        end
+    end
+
+    if best then
+        -- Two lines: eighty columns is the floor, and this one ran to
+        -- eighty-eight, which wraps in the middle of a word
+        print("-> Commence par " .. best.name .. ": il sert a "
+            .. screen.count(best.unlocks, "espece") .. ".")
+        print("   Tu as " .. screen.count(princesses[best.name], "princesse")
+            .. ((drones[best.name] or 0) > 0
+                and (" et " .. screen.count(drones[best.name], "drone") .. ".")
+                or ", il ne manque que le drone."))
+    end
+
+    --- One list, one shape, capped so the screen never scrolls its own heading
+    --- off the top
+    --- @param entries table[]
+    --- @param limit number
+    --- @param line function(entry) -> string
+    local function listing(entries, limit, line)
+        local shown = 0
+        for _, entry in ipairs(entries) do
+            if shown >= limit then break end
+            print("  " .. line(entry))
+            shown = shown + 1
+        end
+
+        if #entries > shown then
+            print("  ... et " .. (#entries - shown) .. " "
+                .. screen.plural(#entries - shown, "autre"))
+        end
+    end
+
+    -- "sert a N especes" and not "debloque N especes": read quickly, "debloque"
+    -- promises that catching this bee hands you twenty-seven others.
+    local function serves(entry)
+        return "sert a " .. string.format("%2d", entry.unlocks) .. " "
+            .. screen.plural(entry.unlocks, "espece")
+    end
 
     if #canHunt > 0 then
         print("")
-        print("CHASSABLES MAINTENANT — tu as les drones :")
-        for _, entry in ipairs(canHunt) do
-            print(string.format("  %-22s %3d drone(s), debloque %2d espece(s)",
-                entry.name, drones[entry.name] or 0, entry.unlocks))
-        end
-        print("")
-        print("Choisis i (sous 9) pour mettre ces chasses en file d un coup.")
+        print(#canHunt .. " " .. screen.plural(#canHunt, "PRETE", "PRETES")
+            .. " — sauve leur gene maintenant")
+
+        listing(canHunt, 8, function(entry)
+            return screen.fit(entry.name, 14)
+                .. string.format(" %3d ", drones[entry.name] or 0)
+                .. screen.fit(screen.plural(drones[entry.name] or 0, "drone"), 9)
+                .. " " .. serves(entry)
+        end)
+
+        print("  Choisis 9 puis i pour lancer " .. (#canHunt > 1
+            and ("les " .. #canHunt .. " chasses") or "la chasse") .. ".")
     end
 
     if #needDrones > 0 then
+        -- The heading carries the way out. "rien ne peut demarrer" announced a
+        -- dead end and left the answer four lines below, after the list.
         print("")
-        print("TU LES AS, MAIS SANS DRONE — rien ne peut demarrer :")
-        for _, entry in ipairs(needDrones) do
-            print(string.format("  %-22s %3d princesse(s), %d drone(s), debloque %2d",
-                entry.name, princesses[entry.name] or 0,
-                drones[entry.name] or 0, entry.unlocks))
-        end
-        print("")
-        print("Le Sampler DETRUIT ce qu il lit, et l accumulation exige une")
-        print("princesse ET un drone de la meme espece. Une princesse seule ne")
-        print("lance rien: croise-la avec le drone d une autre espece, les")
-        print("descendants porteront son gene et le Sampler peut le tirer.")
+        print(#needDrones .. " SANS DRONE — croise-les pour en produire")
+
+        listing(needDrones, 8, function(entry)
+            local count = princesses[entry.name] or 0
+            local held = screen.plural(count, "princesse")
+
+            -- The drone count is zero on almost every line; printing it there
+            -- teaches nothing and buries the one species that has one
+            if (drones[entry.name] or 0) > 0 then
+                held = held .. " + " .. screen.count(drones[entry.name], "drone")
+            end
+
+            return screen.fit(entry.name, 14)
+                .. string.format(" %3d ", count)
+                .. screen.fit(held, 22) .. " " .. serves(entry)
+        end)
+
+        print("  Une princesse seule ne lance rien. Croise-la avec un drone")
+        print("  d une autre espece: les descendants porteront son gene, et le")
+        print("  Sampler pourra le tirer.")
     end
 
     if #toCatch > 0 then
         print("")
-        print("A ATTRAPER — les plus utiles d abord :")
+        print(#toCatch .. " " .. screen.plural(#toCatch, "INTROUVEE", "INTROUVEES")
+            .. " — les plus utiles d abord")
 
         local origins = config.base_origins or {}
-        local shown = 0
+        local noted = 0
 
-        for _, entry in ipairs(toCatch) do
-            if shown < 20 then
-                local origin = origins[entry.name]
-                local note = "origine a confirmer"
-                if origin == "ruche" then note = "ruche sauvage"
-                elseif origin == "autre" then note = "quete/craft, pas de ruche" end
+        listing(toCatch, 8, function(entry)
+            local origin = origins[entry.name]
+            local note = ""
+            -- Repeated on every line, "origine a confirmer" was the same word
+            -- fourteen times and taught nothing. It is said once, below.
+            if origin == "ruche" then note = "   ruche sauvage" noted = noted + 1
+            elseif origin == "autre" then note = "   quete ou craft" noted = noted + 1 end
 
-                print(string.format("  %-22s debloque %2d espece(s)   %s",
-                    entry.name, entry.unlocks, note))
-                shown = shown + 1
-            end
+            return screen.fit(entry.name, 14) .. " " .. serves(entry) .. note
+        end)
+
+        if noted < #toCatch then
+            print("  Aucune origine notee pour la plupart: rien dans l API du jeu")
+            print("  ne dit si une ruche les donne. Renseigne config.base_origins")
+            print("  quand tu l auras constate en jeu.")
         end
-
-        if #toCatch > shown then
-            print("  ... et " .. (#toCatch - shown) .. " autre(s), moins utiles")
-        end
-
-        print("")
-        print("« origine a confirmer » veut dire que le programme ne sait pas")
-        print("si une ruche la donne: rien dans l API du jeu ne le dit. Note-le")
-        print("dans config.base_origins quand tu l auras constate en jeu.")
     end
 
     if #toCatch == 0 and #toSave == 0 then
@@ -3586,7 +3678,8 @@ function hivemind.advice(context)
     -- nothing else it could suggest will move while a slot stays blocked.
     local held = context.queue:waiting()
     if #held > 0 then
-        table.insert(lines, #held .. " tache(s) attendent un geste de ta part.")
+        table.insert(lines, screen.count(#held, "tache") .. " "
+            .. screen.plural(#held, "attend") .. " un geste de ta part.")
         table.insert(lines, "  -> " .. tostring(held[1].action))
         if #held > 1 then
             table.insert(lines, "Choisis 6 : la liste complete y est, et la file"
