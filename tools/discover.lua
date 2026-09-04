@@ -163,13 +163,21 @@ local function renderConfig(discovered)
 
     table.insert(lines, "    },")
 
-    if discovered.templateChest then
+    -- Every chest, not just the first one found. Which is the template chest
+    -- is a decision, not a discovery: the old code took whichever it saw first
+    -- and that is now the wrong one as often as not.
+    if #discovered.chests > 0 then
         table.insert(lines, "")
-        table.insert(lines, string.format(
-            "    template_chest = {transposer = %d, side = %d, slots = %d},",
-            discovered.templateChest.transposer,
-            discovered.templateChest.side,
-            discovered.templateChest.size))
+        table.insert(lines, "    chests = {")
+
+        for _, chest in ipairs(discovered.chests) do
+            table.insert(lines, string.format(
+                "        {transposer = %d, side = %d, slots = %d},  -- %s",
+                chest.transposer, chest.side, chest.size or 0,
+                chest.inventory or "?"))
+        end
+
+        table.insert(lines, "    },")
     end
 
     table.insert(lines, "}")
@@ -204,7 +212,7 @@ local function main(args)
 
     say(#transposers .. " transposer(s) sur le reseau.")
 
-    local discovered = {transposers = {}, machines = {}, templateChest = nil}
+    local discovered = {transposers = {}, machines = {}, chests = {}}
     local unknown = {}
 
     for index, transposer in ipairs(transposers) do
@@ -235,21 +243,45 @@ local function main(args)
             if neighbour.machine == "_me_interface" then
                 verdict = "ME Interface (source)"
             elseif neighbour.machine == "_chest" then
-                verdict = "coffre"
-                if not discovered.templateChest then
-                    discovered.templateChest = {
-                        transposer = index, side = neighbour.side, size = neighbour.size,
-                    }
-                    verdict = "coffre -> propose comme coffre a templates"
-                end
+                -- Chests are now plural: the old one by the mutatron, plus one
+                -- per bench that holds templates. Naming them by position means
+                -- a report can say which is which instead of guessing.
+                table.insert(discovered.chests, {
+                    transposer = index, side = neighbour.side,
+                    size = neighbour.size, inventory = neighbour.name,
+                })
+                verdict = "coffre #" .. #discovered.chests
+                    .. " (" .. tostring(neighbour.size) .. " slots)"
             elseif neighbour.machine then
-                verdict = neighbour.machine
-                discovered.machines[neighbour.machine] = {
-                    transposer = index,
-                    machine = neighbour.side,
-                    source = interfaceSide,
-                    inventory = neighbour.name,
-                }
+                -- A second Imprinter is the point of having two profiles, and
+                -- the old code silently overwrote the first with it: same key,
+                -- last one wins, and half the bench vanished from the report.
+                local existing = discovered.machines[neighbour.machine]
+
+                if existing then
+                    local suffix = 2
+                    while discovered.machines[neighbour.machine .. "_" .. suffix] do
+                        suffix = suffix + 1
+                    end
+
+                    local name = neighbour.machine .. "_" .. suffix
+                    verdict = name .. " (deuxieme " .. neighbour.machine .. ")"
+
+                    discovered.machines[name] = {
+                        transposer = index,
+                        machine = neighbour.side,
+                        source = interfaceSide,
+                        inventory = neighbour.name,
+                    }
+                else
+                    verdict = neighbour.machine
+                    discovered.machines[neighbour.machine] = {
+                        transposer = index,
+                        machine = neighbour.side,
+                        source = interfaceSide,
+                        inventory = neighbour.name,
+                    }
+                end
             else
                 verdict = "NON RECONNU"
                 table.insert(unknown, neighbour.name)
@@ -317,7 +349,7 @@ local function main(args)
         for _, name in ipairs(unknown) do say("  " .. name) end
     end
 
-    if not discovered.templateChest then
+    if #discovered.chests == 0 then
         say("")
         say("Aucun coffre vu: il en faut un, dedie aux templates.")
     end

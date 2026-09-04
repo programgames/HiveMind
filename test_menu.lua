@@ -275,6 +275,17 @@ do
               :find("publish.report(body, mailbox)", 1, true) ~= nil)
     -- config.interfaces cannot be guessed, and finding the new address used to
     -- mean a second round trip through another tool
+    -- Two Imprinters is the whole point of having two profiles, and the old
+    -- code keyed machines by name: the second overwrote the first in silence
+    check("un deuxieme exemplaire d une machine ne remplace pas le premier",
+          discoverText:find("deuxieme ", 1, true) ~= nil
+          and discoverText:find("neighbour.machine .. \"_\" .. suffix",
+                                1, true) ~= nil)
+
+    -- Which chest is the template chest is a decision, not a discovery
+    check("discover liste tous les coffres",
+          discoverText:find("discovered.chests", 1, true) ~= nil)
+
     check("discover liste les interfaces adressables",
           discoverText:find("component.list(\"me_interface\")", 1, true) ~= nil)
     check("et dit ou les reporter",
