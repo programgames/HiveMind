@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.10.0"
+hivemind.VERSION = "1.10.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1518,10 +1518,13 @@ function hivemind.runQueue(context, options)
                         print("")
                     end
 
-                    -- A gesture or a failure must never be cut: they are the
-                    -- only lines that ask something of the reader.
-                    if (outcome == jobs.NEEDS_PLAYER or outcome == jobs.FAILED)
-                       and detail then
+                    -- La raison d une ATTENTE se perdait ici: l ecran disait
+                    -- "plus tard", puis "corrige la cause" sans jamais nommer
+                    -- la cause -- alors que l etape venait de la donner. Une
+                    -- reine qui vit encore et un reseau qui ne repond plus se
+                    -- lisaient exactement pareil.
+                    if (outcome == jobs.NEEDS_PLAYER or outcome == jobs.FAILED
+                        or outcome == jobs.RETRY) and detail then
                         for _, line in ipairs(screen.wrap(detail, 66)) do
                             print("     " .. line)
                         end
@@ -1555,7 +1558,27 @@ function hivemind.runQueue(context, options)
                 print("Temps imparti ecoule: la file reprend ou elle s'est arretee.")
                 return
             elseif report.blocked then
-                print("La file est bloquee: corrige la cause puis relance.")
+                -- "Corrige la cause puis relance" envoyait chercher un probleme
+                -- qui n existe pas neuf fois sur dix: une ATTENTE veut dire
+                -- "pas encore", pas "casse". Une reine qui n est pas morte au
+                -- bout de quatre minutes n appelle aucun geste, juste une passe
+                -- de plus. Ce qui manquait, c etait la raison.
+                print("")
+                print("EN ATTENTE — la file s est arretee sur :")
+
+                for _, job in ipairs(context.queue:pending()) do
+                    if job.error then
+                        print(string.format("  #%-4d%s", job.id,
+                            screen.fit(title(job), 24)))
+                        for _, line in ipairs(screen.wrap(job.error, 62)) do
+                            print("       " .. line)
+                        end
+                    end
+                end
+
+                print("")
+                print("Relance cette option: rien n est perdu, chaque tache")
+                print("reprend ou elle en est.")
             end
         end
 

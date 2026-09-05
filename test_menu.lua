@@ -564,7 +564,7 @@ do
 
         check("la liste complete de " .. name .. " tient sur un ecran reel ("
               .. needed .. " lignes sur " .. MAX_ROWS .. ")",
-              needed <= MAX_ROWS, true)
+              needed <= MAX_ROWS)
     end
 
     -- Et un groupe tient sur une ligne: une ligne vide au-dessus de huit
@@ -581,6 +581,25 @@ end
 
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
+-- Une ATTENTE disait "plus tard", puis l ecran disait "corrige la cause" sans
+-- jamais nommer la cause -- alors que l etape venait de la donner. Une reine qui
+-- vit encore apres quatre minutes et un reseau ME qui ne repond plus se lisaient
+-- exactement pareil, et le premier n appelle aucun geste.
+do
+    check("la raison d une attente est affichee",
+          text:find("or outcome == jobs.RETRY) and detail then", 1, true) ~= nil)
+
+    check("la file ne s annonce plus bloquee sans dire pourquoi",
+          text:find("La file est bloquee: corrige la cause", 1, true) == nil)
+
+    check("elle nomme les taches sur lesquelles elle s est arretee",
+          text:find("EN ATTENTE — la file s est arretee sur", 1, true) ~= nil)
+
+    -- Et elle dit quoi faire: une attente se relance, elle ne se repare pas
+    check("et dit que relancer suffit",
+          text:find("Relance cette option: rien n est perdu", 1, true) ~= nil)
+end
+
 -- "(o/N)" code deux informations dans la casse d une lettre: ce que veut dire
 -- "o", et lequel des deux est le defaut. Aucune des deux ne se devine. Corrige
 -- une fois sur l ecran du template, la formule etait restee dans quatorze
@@ -590,11 +609,14 @@ do
     for _ in text:gmatch("%(o/N%)") do lettered = lettered + 1 end
     for _ in text:gmatch("%(O/n") do lettered = lettered + 1 end
 
-    check("aucune question ne demande une lettre sans la traduire", lettered, 0)
+    -- Zero est VRAI en Lua: passer le compte en guise de condition faisait
+    -- passer ce test quel que soit le nombre trouve
+    check("aucune question ne demande une lettre sans la traduire",
+          lettered == 0, lettered .. " restantes")
 
     -- Et la formule retenue est bien celle qui a ete validee
     check("les questions disent ce que valent les lettres",
-          text:find("(o = oui, n = non)", 1, true) ~= nil, true)
+          text:find("(o = oui, n = non)", 1, true) ~= nil)
 end
 
 -- L avertissement de destruction a quitte le menu -- decide avec le joueur:
@@ -620,13 +642,13 @@ do
         local asked = body:find("io.read()", 1, true)
 
         check("l ecran " .. entry.action .. " previent qu il detruit",
-              warned ~= nil, true)
+              warned ~= nil)
 
         -- Une option qui ne demande rien previent quand meme; une option qui
         -- demande doit prevenir d abord
         if asked then
             check("et il previent avant de demander confirmation",
-                  warned ~= nil and warned < asked, true)
+                  warned ~= nil and warned < asked)
         end
     end
 end
