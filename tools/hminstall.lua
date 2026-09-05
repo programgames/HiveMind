@@ -39,6 +39,8 @@ local FILES = {
     "lib/genetics.lua",
     "lib/planner.lua",
     "lib/checkup.lua",
+    "lib/upgrades.lua",
+    "lib/topology.lua",
     "lib/data/mutations.lua",
     "tools/calibrate.lua",
     "tools/discover.lua",

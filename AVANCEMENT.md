@@ -59,6 +59,7 @@ Le moteur pèse moins qu'avant parce qu'il est fini, pas parce qu'il vaut moins.
 - [x] Campagne « obtenir le gène Species de toutes les espèces »
 - [x] Analyse d'écart sur les profils optimaux
 - [x] Les deux profils génétiques tranchés avec le joueur
+- [x] Les deux templates relus en jeu, allèle par allèle, le 2026-09-05
 
 ## Phase 4 — Le parcours joueur (poids 35)
 
@@ -93,6 +94,19 @@ chantiers produisent des tâches qui meurent d'un geste de cinq secondes.
 - [x] 4.6 Les quinze options actuelles déplacées, aucune perdue
 - [x] 4.6 Chaque option principale annonce son prérequis et refuse proprement
 - [x] 4.6 La suggestion en tête d'écran dit la prochaine chose à faire
+- [x] 4.7 Les allèles que portent les abeilles ordinaires nommés pour ce
+      qu'ils sont, au lieu de « porteur inconnu »
+- [x] 4.7 Lecture du génome de tout le stock, en un passage, sans un seul
+      cycle d'apiary
+- [x] 4.7 L'apiary qui se plaint du climat : l'upgrade est cherché dans le
+      réseau ME et posé, sinon le geste exact est demandé
+- [x] 4.7 Le deuxième template annoncé dans l'option 3 : ce qu'il partage,
+      ce qu'il change
+- [x] 4.8 Topologie découverte plutôt que déclarée : chaque face demandée au
+      Transposer
+- [x] 4.8 L'option 1 détecte une configuration qui n'est pas celle de ce monde
+      et propose d'écrire la sienne
+- [ ] 4.8 Un monde neuf mené de l'option 1 au premier croisement, en jeu
 
 ## Fait en jeu
 

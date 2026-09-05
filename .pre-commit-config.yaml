@@ -11,7 +11,7 @@ repos:
       - id: lua-syntax-check
         name: Lua Syntax Check
         entry: lua
-        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua", "test_genome.lua", "test_state.lua", "test_species.lua", "lib/genome.lua", "lib/state.lua", "lib/species.lua", "lib/jobs.lua", "test_jobs.lua", "lib/config.lua", "lib/transport.lua", "lib/machines.lua", "test_transport.lua", "test_machines.lua", "lib/library.lua", "test_library.lua", "lib/breeding.lua", "test_breeding.lua", "hivemind.lua", "lib/planner.lua", "test_planner.lua", "lib/data/mutations.lua", "tools/calibrate.lua", "tools/upload.lua", "tools/autoreport.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
+        args: ['-e', 'local files = {"main.lua", "test_planning.lua", "test_example.lua", "test_genome.lua", "test_state.lua", "test_species.lua", "lib/genome.lua", "lib/state.lua", "lib/species.lua", "lib/jobs.lua", "test_jobs.lua", "lib/config.lua", "lib/transport.lua", "lib/machines.lua", "test_transport.lua", "test_machines.lua", "lib/library.lua", "test_library.lua", "lib/breeding.lua", "test_breeding.lua", "hivemind.lua", "lib/planner.lua", "test_planner.lua", "lib/upgrades.lua", "lib/topology.lua", "test_topology.lua", "lib/checkup.lua", "test_checkup.lua", "lib/multiply.lua", "test_multiply.lua", "lib/screen.lua", "lib/data/mutations.lua", "tools/calibrate.lua", "tools/upload.lua", "tools/autoreport.lua"}; local errors = false; for _, file in ipairs(files) do local f = io.open(file, "r"); if f then local content = f:read("*all"); f:close(); local func, err = load(content, file); if not func then print("❌ Syntax error in " .. file .. ": " .. err); errors = true; else print("✅ " .. file .. " syntax OK"); end; else print("⚠️  Could not read " .. file); end; end; if errors then os.exit(1); end']
         language: system
         files: '\.lua$'
         pass_filenames: false
@@ -80,6 +80,33 @@ repos:
         args: ['test_species.lua']
         language: system
         files: '(lib/species|lib/state|test_species)\.lua$'
+        pass_filenames: false
+
+      # Installation check tests (a single verdict, nothing moved)
+      - id: hivemind-checkup-tests
+        name: HiveMind Installation Check Tests
+        entry: lua
+        args: ['test_checkup.lua']
+        language: system
+        files: '(lib/checkup|lib/config|test_checkup)\.lua$'
+        pass_filenames: false
+
+      # Drone accumulation tests
+      - id: hivemind-multiply-tests
+        name: HiveMind Drone Accumulation Tests
+        entry: lua
+        args: ['test_multiply.lua']
+        language: system
+        files: '(lib/multiply|lib/upgrades|lib/machines|test_multiply)\.lua$'
+        pass_filenames: false
+
+      # Topology tests: what the program sees of a world it has never seen
+      - id: hivemind-topology-tests
+        name: HiveMind Topology Tests
+        entry: lua
+        args: ['test_topology.lua']
+        language: system
+        files: '(lib/topology|lib/config|test_topology)\.lua$'
         pass_filenames: false
 
       # Genome layer tests (NBT parsing, sample labels, profiles)

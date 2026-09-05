@@ -63,6 +63,7 @@ local planner = need("lib.planner")
 local genome = need("lib.genome")
 local screen = need("lib.screen")
 local checkup = need("lib.checkup")
+local topology = need("lib.topology")
 
 local hivemind = {}
 
@@ -1553,10 +1554,244 @@ end
 --- Nothing here MOVES anything: a checkup that empties a slot to see whether it
 --- can is a checkup that breaks a working bench.
 --- @param context table
+--- Ask the world where everything is, and write it down
+---
+--- lib/config.lua described exactly one installation: the one it was measured
+--- in. A player starting a new world got a program aiming items at block faces
+--- that do not exist, and that failure reads as "la machine refuse cet objet" --
+--- the single error that has already cost an evening.
+---
+--- Nothing is guessed here. Every face comes from asking a Transposer what it
+--- touches. What cannot be asked is asked of the player, in game terms and once.
+--- @param context table
+--- @return boolean written
+function hivemind.writeTopology(context)
+    print("")
+    print("=== ECRIRE LA CONFIGURATION DE CETTE INSTALLATION ===")
+    print("Le programme demande a chaque Transposer ce qu il touche.")
+    print("Rien n est deplace.")
+
+    local discovered, err = topology.scan()
+
+    if not discovered then
+        print("")
+        print("Impossible de regarder: " .. tostring(err))
+        return false
+    end
+
+    if #discovered.transposers == 0 then
+        print("")
+        print("Aucun Transposer sur le reseau.")
+        print("")
+        print("Le Transposer est la seule piece capable de deplacer un item.")
+        print("Pose-en un contre chaque banc de machines, et relie-le a")
+        print("l ordinateur (un contact direct avec un bloc OpenComputers suffit).")
+        return false
+    end
+
+    print("")
+    print(screen.count(#discovered.transposers, "Transposer") .. " sur le reseau.")
+
+    local names = {}
+    for name in pairs(discovered.machines) do table.insert(names, name) end
+    table.sort(names)
+
+    print("")
+    print("MACHINES TROUVEES")
+    for _, name in ipairs(names) do
+        local link = discovered.machines[name]
+        print("  " .. screen.fit(name, 20)
+            .. screen.fit(topology.SIDE_NAMES[link.machine] or "?", 10)
+            .. "du transposer " .. link.transposer:sub(1, 8))
+    end
+
+    if #names == 0 then
+        print("  aucune")
+    end
+
+    local absent = topology.missing(discovered)
+    if #absent > 0 then
+        print("")
+        print("PAS ENCORE POSEES")
+        for _, name in ipairs(absent) do print("  " .. name) end
+        print("")
+        print("La configuration s ecrit quand meme: elle decrira ce qui existe.")
+    end
+
+    -- The ME Interface is where every delivery starts. A transposer that does
+    -- not touch one cannot supply the machines around it at all.
+    local orphans = {}
+    for _, address in ipairs(discovered.transposers) do
+        if discovered.interfaceSides[address] == nil then
+            for _, name in ipairs(names) do
+                if discovered.machines[name].transposer == address then
+                    orphans[address] = true
+                end
+            end
+        end
+    end
+
+    for address in pairs(orphans) do
+        print("")
+        print("Le transposer " .. address:sub(1, 8) .. " ne touche aucune")
+        print("interface ME: les machines de ce banc ne pourront rien recevoir.")
+    end
+
+    -- Which addressable interface belongs to which bench cannot be asked of
+    -- anything: a component knows its address, not its position. One interface
+    -- needs no question; several need exactly one, answered with the Analyzer.
+    local interfaces = {}
+    local benches = {}
+
+    for _, address in ipairs(discovered.transposers) do
+        if discovered.interfaceSides[address] ~= nil then
+            table.insert(benches, address)
+        end
+    end
+
+    if #discovered.interfaces == 0 then
+        print("")
+        print("AUCUNE INTERFACE ME ADRESSABLE.")
+        print("Colle un Adapter contre chaque interface ME: sans lui elle n a")
+        print("pas d adresse, et chaque livraison echouera comme si la machine")
+        print("refusait l objet.")
+    elseif #discovered.interfaces == 1 then
+        for _, address in ipairs(benches) do
+            interfaces[address] = discovered.interfaces[1]
+        end
+    else
+        print("")
+        print("Il y a " .. #discovered.interfaces .. " interfaces ME adressables.")
+        print("Une adresse ne dit pas ou elle se trouve: pour chaque banc,")
+        print("vise l interface avec l Analyzer d OpenComputers, il affiche")
+        print("son adresse.")
+
+        for _, address in ipairs(benches) do
+            local here = {}
+            for _, name in ipairs(names) do
+                if discovered.machines[name].transposer == address then
+                    table.insert(here, name)
+                end
+            end
+
+            print("")
+            print("Banc du transposer " .. address:sub(1, 8)
+                .. " (" .. table.concat(here, ", ") .. ")")
+
+            for index, candidate in ipairs(discovered.interfaces) do
+                print("  " .. index .. ". " .. candidate)
+            end
+
+            io.write("Laquelle ? (numero, ou vide pour passer) : ")
+            local answer = io.read()
+            local choice = tonumber(answer or "")
+
+            if choice and discovered.interfaces[choice] then
+                interfaces[address] = discovered.interfaces[choice]
+            else
+                print("  Passe: ce banc ne pourra rien recevoir tant qu il")
+                print("  n a pas son interface.")
+            end
+        end
+    end
+
+    -- The template chest is a decision, not a discovery: several chests can sit
+    -- against a transposer and only one of them is meant to hold templates.
+    local chest = nil
+
+    if #discovered.chests == 1 then
+        chest = discovered.chests[1]
+        print("")
+        print("Coffre a templates: " .. tostring(chest.inventory)
+            .. " (" .. chest.slots .. " slots), "
+            .. (topology.SIDE_NAMES[chest.side] or "?")
+            .. " du transposer " .. chest.transposer:sub(1, 8))
+    elseif #discovered.chests > 1 then
+        print("")
+        print("COFFRE A TEMPLATES")
+        print("Les templates ne rentrent jamais dans le reseau ME: ils")
+        print("partagent tous une etiquette et AE2 ne peut pas les distinguer.")
+        print("Il leur faut un coffre a eux.")
+        print("")
+
+        for index, one in ipairs(discovered.chests) do
+            print("  " .. index .. ". " .. screen.fit(tostring(one.inventory), 28)
+                .. one.slots .. " slots, "
+                .. (topology.SIDE_NAMES[one.side] or "?")
+                .. " du transposer " .. one.transposer:sub(1, 8))
+        end
+
+        io.write("Lequel ? (numero, ou vide pour passer) : ")
+        local answer = io.read()
+        local choice = tonumber(answer or "")
+        chest = discovered.chests[choice or 0]
+    else
+        print("")
+        print("Aucun coffre vu: il en faut un, dedie aux templates.")
+    end
+
+    local source = topology.render(discovered, {interfaces = interfaces, chest = chest})
+
+    print("")
+    print("A ecrire dans " .. config.topology_file)
+    io.write("Ecrire ? (o = oui, n = non) : ")
+
+    local answer = io.read()
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Annule. Rien n a ete ecrit.")
+        return false
+    end
+
+    local ok, write_err = topology.write(config.topology_file, source)
+
+    if not ok then
+        print("Ecriture impossible: " .. tostring(write_err))
+        return false
+    end
+
+    print("")
+    print("Ecrit. RELANCE LE PROGRAMME pour qu il relise la configuration,")
+    print("puis refais l option 1.")
+
+    return true
+end
+
 function hivemind.checkInstall(context)
     print("")
     print("=== VERIFIER L INSTALLATION ===")
     print("Rien n est deplace: le programme regarde, il ne touche a rien.")
+
+    -- Before checking anything, check that the configuration is about THIS
+    -- world. A declared transposer address nothing answers to makes every
+    -- delivery fail as "la machine refuse cet objet", and the twenty-one checks
+    -- below would all report on machines that are not there.
+    local seen = topology.scan()
+
+    if seen and #seen.transposers > 0 then
+        local stale = topology.stale(config, seen)
+
+        if #stale > 0 then
+            print("")
+            print("CETTE CONFIGURATION N EST PAS CELLE DE CE MONDE.")
+            print("La configuration nomme " .. screen.count(#stale, "Transposer")
+                .. " que ce monde n a pas :")
+            for _, address in ipairs(stale) do print("  " .. address) end
+            print("")
+            print("Le programme peut regarder ou sont tes machines et ecrire")
+            print("la configuration lui-meme.")
+            io.write("Le faire maintenant ? (o = oui, n = non) : ")
+
+            local answer = io.read()
+            if answer and answer:lower():sub(1, 1) == "o" then
+                hivemind.writeTopology(context)
+                return
+            end
+
+            print("")
+            print("Tres bien. Les controles qui suivent porteront sur des")
+            print("machines que ce monde n a pas.")
+        end
+    end
 
     local readings = {}
     pcall(function() readings = hivemind.fluidLevels(context) end)
@@ -1631,6 +1866,43 @@ end
 --- species. But the carriers -- Rocky, Wintry, Lime, Cyan -- are not in stock,
 --- and nothing worked out how to get them. This joins the three.
 --- @param context table
+--- What the second template will still need once this one is done
+--- There are two templates in the end: one to breed with and one to produce
+--- with. Option 3 only ever spoke of the first, so the work looked twice as
+--- large as it is -- most of the genes serve both, and the difference is worth
+--- three lines rather than a second screen.
+--- @param library table
+local function productionNote(library)
+    local breeding = (config.profiles or {}).breeding or {}
+    local production = (config.profiles or {}).production or {}
+
+    local shared, differing = 0, {}
+
+    for slot, allele in pairs(production) do
+        if breeding[slot] == allele then
+            shared = shared + 1
+        else
+            table.insert(differing, {slot = slot, allele = allele})
+        end
+    end
+
+    if #differing == 0 then return end
+
+    table.sort(differing, function(a, b) return a.slot < b.slot end)
+
+    print("")
+    print("LE DEUXIEME TEMPLATE, PLUS TARD")
+    print("  Celui de production partage " .. shared .. " genes avec celui-ci.")
+    print("  Il n en change que " .. #differing .. " :")
+
+    for _, entry in ipairs(differing) do
+        local have = library and library:has(entry.slot, entry.allele)
+        print("    " .. screen.fit(genome.labelForSlot(entry.slot), 22)
+            .. screen.fit(entry.allele, 12)
+            .. (have and "deja en bibliotheque" or "a recuperer plus tard"))
+    end
+end
+
 function hivemind.buildTemplate(context)
     print("")
     print("=== FABRIQUER LE TEMPLATE D ELEVAGE ===")
@@ -1659,6 +1931,8 @@ function hivemind.buildTemplate(context)
             print(string.format("  Bee Sample - %s: %s",
                 tostring(genome.labelForSlot(slot)), allele))
         end
+
+        productionNote(context.library)
         return
     end
 
@@ -1772,6 +2046,8 @@ function hivemind.buildTemplate(context)
         print("  " .. noCarrier .. " sans porteur connu: lis les genomes en"
             .. " stock (9 puis l) pour les renseigner.")
     end
+
+    productionNote(context.library)
 
     local toBreed = {}
     for name in pairs(needCarrier) do table.insert(toBreed, name) end
@@ -4350,6 +4626,9 @@ local ADVANCED = {
     {key = "1", label = "Etat detaille",
      hint = "stocks, machines, genes en bibliotheque, taches en cours",
      action = "status"},
+    {key = "o", label = "Ecrire la configuration de cette installation",
+     hint = "demande a chaque Transposer ce qu il touche et ecrit le fichier",
+     action = "writeTopology"},
     {key = "2", label = "Voir ce que tiennent les machines",
      hint = "slot par slot, ce qu il y a vraiment dedans, sans se fier a la config",
      action = "slotDiagnostic"},

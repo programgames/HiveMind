@@ -150,12 +150,43 @@ check("la liste de fichiers n'est pas vide", declared > 0)
 check("tous les fichiers declares sont installes",
       text:find(declared .. "/" .. declared, 1, true) ~= nil)
 
--- Every module hivemind requires must be in the installer's list, or the
--- program dies on a require with an empty message
-local sources = io.open("hivemind.lua"):read("*all")
+-- Every module the program requires must be in the installer's list, or it
+-- dies on a require with an empty message.
+--
+-- Scanning hivemind.lua alone was not enough: lib/upgrades.lua is required by
+-- lib/breeding.lua and by nothing else, so it was written, tested, committed
+-- and left out of the installer, where the failure only shows up in game.
+local seenModule = {}
 local requiredModules = {}
-for name in sources:gmatch('need%("(lib%.[%w_]+)"%)') do
-    table.insert(requiredModules, (name:gsub("%.", "/")) .. ".lua")
+
+local function collectRequires(path)
+    local file = real_open(path)
+    if not file then return end
+
+    local body = file:read("*all")
+    file:close()
+
+    for name in body:gmatch('need%("(lib%.[%w_]+)"%)') do
+        if not seenModule[name] then
+            seenModule[name] = true
+            table.insert(requiredModules, (name:gsub("%.", "/")) .. ".lua")
+        end
+    end
+
+    for name in body:gmatch('require%("(lib%.[%w_]+)"%)') do
+        if not seenModule[name] then
+            seenModule[name] = true
+            table.insert(requiredModules, (name:gsub("%.", "/")) .. ".lua")
+        end
+    end
+end
+
+collectRequires("hivemind.lua")
+
+-- Every module the installer already knows about, so a module that requires a
+-- second one drags it in too
+for path in filesBlock:gmatch('"(lib/[%w_/]+%.lua)"') do
+    collectRequires(path)
 end
 
 local listed = table.concat(requested, " ")

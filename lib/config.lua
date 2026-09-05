@@ -346,9 +346,14 @@ config.library = {
 --                       nothing in the pack actually needs
 --
 -- Slot 0 (Species) is deliberately blank: that is what makes one template work
--- on every species instead of overwriting it. Slot 8 (Cave dwelling) is absent
--- from the guide as well, so an imprinted bee keeps whatever it had -- Rocky
--- bees carry it if it ever matters.
+-- on every species instead of overwriting it -- and it is what the game itself
+-- shows as "Species: None" on a template built this way. Slot 8 (Cave dwelling)
+-- is absent from the guide as well, so an imprinted bee keeps whatever it had --
+-- Rocky bees carry it if it ever matters.
+--
+-- Read back off the two real templates in game on 2026-09-05 and confirmed
+-- allele by allele. The breeding one shows "(12/13)", which is these eleven
+-- plus the blank Species slot: the twelve the program aims for.
 config.profiles = {
     -- Fertility 4 and the shortest life: a queen that dies quickly and leaves
     -- many drones is what a breeding line wants.
@@ -555,6 +560,31 @@ function config.machine(name)
     end
     return link
 end
+
+--- Where option 1 writes what it saw of THIS world
+--- Everything above describes one installation, measured by hand in one world.
+--- A player starting from nothing had a program aiming items at block faces
+--- that do not exist -- which reads as "la machine refuse cet objet" and takes
+--- an evening to understand. Option 1 asks the transposers where everything is
+--- and writes the answer here; this file wins, because it was measured in the
+--- world the program is actually running in.
+config.topology_file = "/home/hivemind-topology.lua"
+
+--- Read the written topology, if there is one, and lay it over the defaults
+--- Silent by design: no file simply means nothing was discovered yet, which is
+--- the normal state of the installation this file was written for.
+--- @return number applied
+function config.applyTopology()
+    local ok_topology, topology = pcall(require, "lib.topology")
+    if not ok_topology then return 0 end
+
+    local written = topology.read(config.topology_file)
+    if not written then return 0 end
+
+    return topology.apply(config, written)
+end
+
+config.topology_applied = config.applyTopology()
 
 --- Machines that are declared and enabled
 --- @return string[] names
