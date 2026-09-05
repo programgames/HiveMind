@@ -639,6 +639,22 @@ end
 
 config.topology_applied = config.applyTopology()
 
+--- The Imprinter meant to hold one profile's template, permanently
+--- Two Imprinters exist so a template is never swapped: each keeps its own.
+--- Which one holds which is declared, not discovered -- a block face cannot
+--- say what is inside a machine.
+--- @param profile string "breeding" or "production"
+--- @return string|nil key
+--- @return table|nil link
+function config.imprinterFor(profile)
+    for name, link in pairs(config.machines or {}) do
+        if link.profile == profile and link.enabled ~= false then
+            return name, link
+        end
+    end
+    return nil
+end
+
 --- Machines that are declared and enabled
 --- @return string[] names
 function config.enabledMachines()

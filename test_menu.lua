@@ -521,8 +521,15 @@ do
     local wrong = {}
     for index, action in ipairs(actions) do
         if not titleless[action] then
-            local expected = "=== " .. labels[index]:upper() .. " ==="
-            if not text:find(expected, 1, true) then
+            local caps = labels[index]:upper()
+
+            -- Ecrit en clair, ou passe en parametre a un ecran partage par
+            -- plusieurs options: les deux templates se servent du meme corps
+            -- et lui donnent leur propre titre
+            local printed = text:find("=== " .. caps .. " ===", 1, true)
+            local passed = text:find('"' .. caps .. '"', 1, true)
+
+            if not printed and not passed then
                 table.insert(wrong, labels[index])
             end
         end
@@ -583,6 +590,68 @@ end
 
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
+-- LA GARDE DE L OPTION 4 se posait sur la mauvaise chose. Elle verifiait que
+-- les onze SAMPLES existent dans le reseau, et laissait passer des lors. Mais un
+-- sample n est pas un template: le template s assemble a la table de craft et se
+-- pose a la main dans l Imprinter, et aucun de ces deux gestes ne laisse de
+-- trace dans AE2. La porte s ouvrait donc sur quelqu un qui avait tout collecte
+-- et n etait jamais alle au craft, et la tache echouait trois etapes plus loin
+-- sur un Imprinter simplement vide.
+do
+    local from = text:find("local function templateReady", 1, true)
+    local stop = text:find("\nlocal function ", (from or 1) + 1, true) or #text
+    local body = from and text:sub(from, stop) or ""
+
+    check("la garde regarde aussi la machine, pas seulement le reseau",
+          body:find("config.imprinterFor", 1, true) ~= nil)
+    check("et distingue les deux causes",
+          body:find('return "template"', 1, true) ~= nil
+          and body:find('return "genes"', 1, true) ~= nil)
+
+    -- Un transposer qui ne repond pas n est pas un Imprinter vide: refuser sur
+    -- une lecture ratee bloquerait une base qui marche
+    check("une lecture ratee ne ferme pas la porte",
+          body:find("if not read then return \"ready\"", 1, true) ~= nil)
+
+    -- Et l ecran dit le geste, pas seulement le refus
+    check("l option 4 dit d aller au craft et de poser le template",
+          text:find("slot template vide", 1, true) ~= nil)
+end
+
+-- DEUX DETOURS OBLIGATOIRES passaient par un menu appele "avance": vider la
+-- sortie de l apiary avant chaque passe, et lire les genomes pour trouver les
+-- porteurs des genes etoiles. Le programme sait faire les deux tout seul.
+do
+    check("la file vide la sortie de l apiary elle-meme",
+          text:find("Sortie de l apiary videe", 1, true) ~= nil)
+    check("et le conseil qui envoyait le faire a la main a disparu",
+          text:find("Choisis 7 sous 9", 1, true) == nil)
+
+    check("l option 3 propose de lire les genomes sur place",
+          text:find("Lire les genomes en stock maintenant ?", 1, true) ~= nil)
+    check("et ne renvoie plus vers 9 puis l",
+          text:find("choisis 9 puis l", 1, true) == nil)
+end
+
+-- LE PARCOURS S ARRETAIT AVANT DE PRODUIRE. Quatre options menaient a un
+-- template d elevage et des abeilles, et rien ne fabriquait ce qui les fait
+-- produire.
+do
+    check("le menu principal mene jusqu au template de production",
+          text:find('action = "buildProduction"', 1, true) ~= nil)
+    check("les deux templates partagent le meme ecran",
+          text:find("local function buildProfileTemplate", 1, true) ~= nil)
+
+    -- Et le Replicator a enfin un chemin: il exige treize genes sur treize,
+    -- gene d espece compris, ce qu aucun profil ne fournit
+    check("un ecran prepare le template complet d une espece",
+          text:find('action = "completeTemplate"', 1, true) ~= nil)
+    check("il ajoute le gene d espece, que les profils laissent vide",
+          text:find("wanted[genome.SPECIES_SLOT] = chosen", 1, true) ~= nil)
+    check("et le treizieme chromosome, que les deux profils omettent",
+          text:find("if wanted[CAVE] == nil then", 1, true) ~= nil)
+end
+
 -- "Sauvegarder les genes en un seul exemplaire" se lit "n en garder qu un",
 -- soit l inverse de ce que fait l option. Elle copie ceux qui n existent qu en
 -- un exemplaire, et elle existe parce que l assemblage d un template a la table
@@ -648,7 +717,15 @@ do
     -- Mais pas indefiniment: dix passes de quatre minutes, ce n est plus une
     -- reine qui prend son temps
     check("elle finit par envoyer regarder l apiary",
-          text:find("Toujours en attente apres dix passages", 1, true) ~= nil)
+          text:find("Toujours en attente apres \" .. rounds .. \" passages", 1, true) ~= nil)
+
+    -- Et une fois qu on a repondu "toujours", plus de question: une chaine de
+    -- croisements, c est des heures, et le programme ne faisait rien pendant
+    -- que le joueur jouait ailleurs
+    check("on peut la laisser tourner sans surveillance",
+          text:find("t = toujours", 1, true) ~= nil)
+    check("mais une main demandee l arrete",
+          text:find("Le programme s arrete la: il a besoin de toi", 1, true) ~= nil)
 end
 
 -- "(o/N)" code deux informations dans la casse d une lettre: ce que veut dire
@@ -1135,8 +1212,11 @@ do
     check("et dit pourquoi au lieu de les taire",
           body:find("PAS ASSEZ DE DRONES", 1, true) ~= nil)
 
-    -- Et la chaine bloquee ne doit jamais atterrir dans la file
-    local from2 = text:find("function hivemind.buildTemplate", 1, true)
+    -- Et la chaine bloquee ne doit jamais atterrir dans la file.
+    -- L ecran sert maintenant les DEUX templates: meme corps, un nom de profil
+    -- en parametre. L ecrire deux fois aurait voulu dire corriger chaque bug
+    -- futur deux fois.
+    local from2 = text:find("local function buildProfileTemplate", 1, true)
     local stop2 = text:find("\nend\n", from2 or 1, true) or #text
     local body2 = from2 and text:sub(from2, stop2) or ""
 

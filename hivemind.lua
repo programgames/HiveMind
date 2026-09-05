@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.13.0"
+hivemind.VERSION = "1.14.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1067,18 +1067,56 @@ local queueChain
 --- @param context table
 --- @return boolean ready
 --- @return table missing Alleles still absent from the library
-local function templateReady(context)
-    local profile = (config.profiles or {}).breeding
-    if not profile then return true, {} end
+--- Can we imprint with this profile right now
+---
+--- This used to answer "are the eleven samples in the network", and let the
+--- player through as soon as they were. But a sample is not a template: a
+--- template is assembled at a crafting table and placed in the Imprinter BY
+--- HAND, and neither of those gestures leaves a trace in AE2. So the door
+--- opened on someone who had collected everything and never gone to the craft,
+--- and the job failed three steps later on an Imprinter that was simply empty.
+---
+--- Two questions, in the order they get answered: have you got the genes, and
+--- is there a template in the machine.
+--- @param context table
+--- @param profileName string|nil defaults to "breeding"
+--- @return string status "ready", "genes" or "template"
+--- @return table missing Alleles still to collect, when status is "genes"
+--- @return string|nil machine Which Imprinter is empty, when status is "template"
+local function templateReady(context, profileName)
+    profileName = profileName or "breeding"
+
+    local profile = (config.profiles or {})[profileName]
+    if not profile then return "ready", {} end
 
     local ok, missing = pcall(function()
         context.library:scan()
         return context.library:missingForProfile(profile)
     end)
 
-    if not ok or type(missing) ~= "table" then return true, {} end
+    if not ok or type(missing) ~= "table" then return "ready", {} end
+    if #missing > 0 then return "genes", missing end
 
-    return #missing == 0, missing
+    -- The genes are in. Now: did anybody actually build the thing?
+    local key = config.imprinterFor(profileName)
+    if not key then return "ready", {} end
+
+    local machine = context.machines and context.machines[key]
+    if not machine then return "ready", {} end
+
+    local held, slots = nil, nil
+    local read = pcall(function()
+        slots = machine:slots()
+        held = slots and slots.template and machine:slot(slots.template) or nil
+    end)
+
+    -- A machine that cannot be read is not a machine that is empty: refusing
+    -- on a failed read would block a working base over a transposer hiccup
+    if not read then return "ready", {} end
+
+    if held == nil then return "template", {}, checkup.nameOf(key) end
+
+    return "ready", {}
 end
 
 --- Plan a whole breeding chain and queue it
@@ -1086,13 +1124,13 @@ end
 function hivemind.planChain(context)
     local registry = context.species
 
-    local ready, missing = templateReady(context)
+    local status, missing, machine = templateReady(context)
 
-    if not ready then
+    if status == "genes" then
         print("")
         print("=== OBTENIR UNE ESPECE ===")
         print("")
-        print("Pas encore: le template d elevage n est pas pret.")
+        print("Pas encore: il manque des genes au template d elevage.")
         print("")
         print("Sans lui chaque lignee tourne au rythme d une abeille ordinaire.")
         print("Avec lui, Fertility 4 et Lifespan Shortest: la meme chaine coute")
@@ -1115,6 +1153,23 @@ function hivemind.planChain(context)
 
         print("")
         print("Choisis 3 : il calcule tout ce qu il reste a faire pour l avoir.")
+        return
+    end
+
+    if status == "template" then
+        print("")
+        print("=== OBTENIR UNE ESPECE ===")
+        print("")
+        print("Les genes sont reunis, mais le template n existe pas encore.")
+        print("")
+        print("Un sample n est pas un template: il faut ASSEMBLER les onze")
+        print("samples avec un Genetic Template a la table de craft, puis poser")
+        print("le template obtenu dans le " .. tostring(machine) .. ".")
+        print("")
+        print("Le " .. tostring(machine) .. " a son slot template vide, et")
+        print("c est ce slot qui applique les genes a chaque abeille.")
+        print("")
+        print("Choisis 3 : il liste les samples exacts a combiner.")
         return
     end
 
@@ -1453,11 +1508,41 @@ function hivemind.runQueue(context, options)
         return
     end
 
+    -- Les abeilles restees dans la sortie de l apiary sont INVISIBLES aux
+    -- taches, qui cherchent dans le reseau ME et les declarent manquantes.
+    -- L ecran conseillait d aller les recuperer par "7 sous 9" -- un detour
+    -- obligatoire par un menu dit avance, pour un geste que le programme sait
+    -- faire seul et qui doit de toute facon preceder chaque passe.
+    local apiary = context.machines and context.machines.breeding_apiary
+    if apiary then
+        local emptied = 0
+        pcall(function()
+            for _, output in ipairs(apiary:outputs()) do
+                emptied = emptied + apiary:unload(output.slot)
+            end
+        end)
+
+        if emptied > 0 then
+            print("Sortie de l apiary videe: " .. screen.count(emptied, "item")
+                .. " " .. screen.plural(emptied, "renvoye") .. " au reseau.")
+        end
+    end
+
     local rounds = 0
     -- Une passe qui ne s arrete que sur des ATTENTES n a rien a faire corriger:
     -- il lui faut du temps, pas une intervention. Renvoyer au menu obligeait a
     -- retraverser deux ecrans pour redemander la meme chose.
     local onlyWaits = false
+
+    -- Et une fois qu on a repondu "toujours", plus de question du tout: une
+    -- chaine de croisements, c est des heures de cycles d apiary, et le
+    -- programme ne faisait rien pendant que le joueur jouait ailleurs.
+    local unattended = options.unattended == true
+
+    -- Le plafond existe pour les deux modes, mais il est plus large sans
+    -- surveillance: dix passes de quatre minutes valent quarante minutes, et
+    -- c est court pour une chaine complete
+    local CEILING = 60
 
     while true do
         rounds = rounds + 1
@@ -1595,24 +1680,41 @@ function hivemind.runQueue(context, options)
         if #waiting == 0 then
             if not (onlyWaits and interactive) then return end
 
-            -- Dix passes de quatre minutes, c est quarante minutes: passe ce
-            -- point, ce n est plus une reine qui prend son temps
-            if rounds >= 10 then
+            local ceiling = unattended and CEILING or 10
+
+            -- Passe ce point, ce n est plus une reine qui prend son temps
+            if rounds >= ceiling then
                 print("")
-                print("Toujours en attente apres dix passages: va regarder")
-                print("l apiary, il lui manque sans doute sa fleur ou sa")
-                print("lumiere.")
+                print("Toujours en attente apres " .. rounds .. " passages:")
+                print("va regarder l apiary, il lui manque sans doute sa fleur")
+                print("ou sa lumiere.")
                 return
             end
 
-            print("")
-            io.write("Attendre encore un passage ?"
-                .. " (o = oui, autre = revenir au menu) : ")
+            if unattended then
+                -- Une ligne par passe, pas une question: c est la difference
+                -- entre un programme qui travaille et un qui attend qu on
+                -- appuie sur une touche
+                print("  passage " .. rounds .. " termine, on continue.")
+            else
+                print("")
+                io.write("Attendre encore un passage ? (o = oui,"
+                    .. " t = toujours, autre = revenir au menu) : ")
 
-            local answer = io.read()
-            if not answer or answer:lower():sub(1, 1) ~= "o" then
-                print("Rien n est perdu: chaque tache reprend ou elle en est.")
-                return
+                local answer = io.read()
+                local first = answer and answer:lower():sub(1, 1) or ""
+
+                if first == "t" then
+                    unattended = true
+                    print("")
+                    print("Le programme continue seul jusqu a ce qu il ait")
+                    print("besoin de ta main, ou jusqu a " .. CEILING
+                        .. " passages.")
+                    print("Laisse l ordinateur allume et va faire autre chose.")
+                elseif first ~= "o" then
+                    print("Rien n est perdu: chaque tache reprend ou elle en est.")
+                    return
+                end
             end
 
             onlyWaits = false
@@ -1635,6 +1737,14 @@ function hivemind.runQueue(context, options)
             end
 
             if not interactive then return end
+
+            -- Une main demandee arrete le mode sans surveillance: continuer
+            -- serait tourner en rond sur un geste que personne n a fait
+            if unattended then
+                unattended = false
+                print("")
+                print("Le programme s arrete la: il a besoin de toi.")
+            end
 
             print("")
             io.write("C est fait ? (o = reprendre, autre = laisser en attente): ")
@@ -2074,13 +2184,20 @@ local function productionNote(library)
     end
 end
 
-function hivemind.buildTemplate(context)
+--- Everything one template still needs, in one plan
+--- The same screen serves both templates: they want eleven genes each, eight of
+--- them the same, and the work of getting a carrier is identical. Writing it
+--- twice would have meant fixing every future bug twice.
+--- @param context table
+--- @param profileName string "breeding" or "production"
+--- @param title string The screen's own title, which must be its option's label
+local function buildProfileTemplate(context, profileName, title)
     print("")
-    print("=== FABRIQUER LE TEMPLATE D ELEVAGE ===")
+    print("=== " .. title .. " ===")
 
-    local profile = (config.profiles or {}).breeding
+    local profile = (config.profiles or {})[profileName]
     if not profile then
-        print("Aucun profil 'breeding' dans lib/config.lua.")
+        print("Aucun profil '" .. profileName .. "' dans lib/config.lua.")
         return
     end
 
@@ -2091,11 +2208,18 @@ function hivemind.buildTemplate(context)
         print("")
         print("Les 11 genes sont en bibliotheque.")
         print("")
-        print("IL RESTE UN GESTE, ET LE MOD L IMPOSE:")
-        print("assemble le template A LA TABLE DE CRAFT. Un template se remplit")
-        print("en y combinant les samples; aucune machine n accepte cette")
-        print("operation. Les samples sont consommes, alors garde une copie de")
-        print("ceux que tu n as qu une fois.")
+        print("IL RESTE DEUX GESTES, ET LE MOD LES IMPOSE:")
+        print("")
+        print("1. Assemble le template A LA TABLE DE CRAFT. Un template se")
+        print("   remplit en y combinant les samples; aucune machine n accepte")
+        print("   cette operation. Les samples sont consommes, alors garde une")
+        print("   copie de ceux que tu n as qu une fois.")
+
+        local imprinter = config.imprinterFor(profileName)
+        print("")
+        print("2. Pose-le dans le " .. checkup.nameOf(imprinter or "imprinter")
+            .. ", slot template. Il y reste:")
+        print("   il n est pas consomme et sert toutes les abeilles suivantes.")
         print("")
         print("A reunir :")
         for slot, allele in pairs(profile) do
@@ -2146,7 +2270,7 @@ function hivemind.buildTemplate(context)
             end
         end
 
-        productionNote(context.library)
+        if profileName == "breeding" then productionNote(context.library) end
         return
     end
 
@@ -2247,20 +2371,27 @@ function hivemind.buildTemplate(context)
             .. screen.fit(entry.allele, 10) .. " " .. source)
     end
 
-    if common > 0 then
+    if common + noCarrier > 0 then
         print("")
-        print("  " .. common .. " de ces genes sont sur des abeilles ordinaires.")
-        print("  Rapporte des drones de base et choisis 9 puis l : lire un")
-        print("  genome ne coute aucun cycle d apiary, et le porteur sort tout")
-        print("  seul de la liste.")
+        print("  " .. (common + noCarrier) .. " de ces genes n ont pas de"
+            .. " porteur connu.")
+        print("  Lire un genome ne coute AUCUN cycle d apiary: l abeille est")
+        print("  posee, lue, reprise. Les porteurs sortent tout seuls.")
+        io.write("  Lire les genomes en stock maintenant ? (o = oui, n = non) : ")
+
+        local answer = io.read()
+        if answer and answer:lower():sub(1, 1) == "o" then
+            -- Enchaine sur place plutot que de renvoyer vers "9 puis l": une
+            -- etape obligatoire du parcours principal n a rien a faire
+            -- derriere un menu appele "avance"
+            hivemind.readAllGenomes(context)
+            print("")
+            print("Reprends l option 3 pour voir ce que ca a change.")
+            return
+        end
     end
 
-    if noCarrier > 0 then
-        print("  " .. noCarrier .. " sans porteur connu: lis les genomes en"
-            .. " stock (9 puis l) pour les renseigner.")
-    end
-
-    productionNote(context.library)
+    if profileName == "breeding" then productionNote(context.library) end
 
     local toBreed = {}
     for name in pairs(needCarrier) do table.insert(toBreed, name) end
@@ -2531,6 +2662,155 @@ function hivemind.buildTemplate(context)
     end
 
     print("Choisis 6 pour tout faire tourner.")
+end
+
+--- The breeding template: the one that makes every later chain cheap
+--- @param context table
+function hivemind.buildTemplate(context)
+    buildProfileTemplate(context, "breeding",
+                         "FABRIQUER LE TEMPLATE D ELEVAGE")
+end
+
+--- The production template: the one the whole thing was for
+--- Nothing guided a player to it. The menu stopped at "obtenir une abeille",
+--- so someone who followed it to the end owned a breeding line and produced
+--- nothing -- which is the opposite of the point.
+--- @param context table
+function hivemind.buildProduction(context)
+    buildProfileTemplate(context, "production",
+                         "FABRIQUER LE TEMPLATE DE PRODUCTION")
+end
+
+--- The thirteen-chromosome template one species needs, for the Replicator
+---
+--- The last hole in the journey. The Replicator makes a bee out of nothing --
+--- no parents, no apiary cycle -- but only from a COMPLETE template: thirteen
+--- chromosomes out of thirteen, the Species gene included, because that gene is
+--- what decides which bee comes out. It is not the same object as a profile
+--- template (eleven genes, Species deliberately blank) and no guided path ever
+--- built one, so "Fabriquer une reine" was an option nothing led to.
+---
+--- What it needs on top of a production profile: the Species gene of that one
+--- species, and Cave dwelling -- the thirteenth chromosome, which both profiles
+--- leave out because it changes nothing in an apiary. A complete template has
+--- no blanks, so it has to be named.
+--- @param context table
+function hivemind.completeTemplate(context)
+    print("")
+    print("=== PREPARER UN TEMPLATE COMPLET POUR UNE ESPECE ===")
+    print("Le Replicator fabrique une reine sans parents ni cycle d apiary,")
+    print("mais il lui faut un template SANS AUCUNE CASE VIDE: les 13 genes,")
+    print("dont celui de l espece, qui decide laquelle sort.")
+
+    context.library:scan()
+
+    -- Which species we hold the Species gene of: without it nothing else
+    -- matters, and it is the one gene no profile provides
+    local held = context.library:speciesGenes()
+
+    local names = {}
+    for allele in pairs(held) do table.insert(names, allele) end
+    table.sort(names)
+
+    if #names == 0 then
+        print("")
+        print("Aucun gene d espece en bibliotheque.")
+        print("")
+        print("C est lui qui manque en premier: sans lui le Replicator ne sait")
+        print("pas quelle abeille fabriquer. Choisis 9 puis i pour lancer une")
+        print("chasse par espece dont tu as des drones.")
+        return
+    end
+
+    print("")
+    print(screen.count(#names, "espece") .. " dont tu as le gene :")
+
+    local chosen = pick(names, function(name) return name end,
+                        "Laquelle veux-tu pouvoir fabriquer ?")
+    if not chosen then print("Annule.") return end
+
+    -- The production profile is the base: an immortal, barely fertile queen is
+    -- what a production line wants, and it is the profile this template serves
+    local profile = (config.profiles or {}).production or {}
+
+    local wanted = {}
+    for slot, allele in pairs(profile) do wanted[slot] = allele end
+
+    wanted[genome.SPECIES_SLOT] = chosen
+
+    -- Cave dwelling: the thirteenth. Both profiles leave it out on purpose --
+    -- it changes nothing inside an apiary -- but a COMPLETE template has no
+    -- blanks, so it has to be filled with something.
+    local CAVE = 8
+    if wanted[CAVE] == nil then wanted[CAVE] = "True" end
+
+    local slots = {}
+    for slot in pairs(wanted) do table.insert(slots, slot) end
+    table.sort(slots)
+
+    print("")
+    print("LES 13 GENES DE CE TEMPLATE")
+
+    local missing = {}
+
+    for _, slot in ipairs(slots) do
+        local allele = wanted[slot]
+        local have = context.library:has(slot, allele)
+
+        print("  " .. screen.fit(genome.labelForSlot(slot), 22)
+            .. screen.fit(allele, 14)
+            .. (have and "en bibliotheque" or "MANQUANT"))
+
+        if not have then
+            table.insert(missing, {slot = slot, allele = allele,
+                                   chromosome = genome.labelForSlot(slot)})
+        end
+    end
+
+    if #missing == 0 then
+        print("")
+        print("Tout est la. Assemble ces treize samples avec un Genetic")
+        print("Template a la table de craft, puis nomme-le (9 puis n) sans quoi")
+        print("le reseau ne saura jamais le rendre: tous les templates portent")
+        print("la meme etiquette.")
+        print("")
+        print("Ensuite: 9 puis r pour fabriquer la reine.")
+        return
+    end
+
+    print("")
+    print(screen.count(#missing, "gene") .. " " .. screen.plural(#missing, "manque")
+        .. ". Les porteurs :")
+
+    local hunts = 0
+
+    for _, entry in ipairs(missing) do
+        local carriers = config.carriersFor(entry.slot, entry.allele)
+        local seen, list = {}, {}
+
+        for _, one in ipairs(carriers) do
+            if not seen[one] then seen[one] = true table.insert(list, one) end
+        end
+        for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
+            if not seen[one] then seen[one] = true table.insert(list, one) end
+        end
+
+        local source = "porteur inconnu"
+        if #list > 0 then
+            source = "porte par " .. table.concat(list, " ou ")
+        elseif config.isCommonAllele(entry.slot, entry.allele) then
+            source = "sur les abeilles ordinaires"
+        end
+
+        print("  " .. screen.fit(entry.chromosome, 22)
+            .. screen.fit(entry.allele, 14) .. source)
+
+        if #list > 0 then hunts = hunts + 1 end
+    end
+
+    print("")
+    print("Choisis 5 : le template de production couvre onze de ces genes,")
+    print("et c est la meme chasse pour les deux.")
 end
 
 --- What has to be caught by hand, and what can be saved right now
@@ -4743,16 +5023,6 @@ function hivemind.advice(context)
 
     -- Cheap reads only: a transposer glance and the queue already in memory.
     -- The menu redraws after every action and must not cost a network sweep.
-    local apiary = context.machines and context.machines.breeding_apiary
-    if apiary then
-        local waiting = apiary:outputs()
-        if #waiting > 0 then
-            table.insert(lines, "La sortie de l'apiary contient " .. #waiting
-                .. " pile(s). Choisis 7 sous 9 : tant qu'elles y sont, les")
-            table.insert(lines, "taches ne les voient pas et les reclament comme manquantes.")
-        end
-    end
-
     local pending = context.queue:pending()
     local suggested = {}
 
@@ -4916,6 +5186,9 @@ local ADVANCED = {
     {key = "n", label = "Nommer les templates du coffre",
      hint = "apres avoir assemble un template a la table de craft",
      action = "nameTemplates"},
+    {key = "p", label = "Preparer un template complet pour une espece",
+     hint = "quand tu veux qu une espece se fabrique sans parents, au Replicator",
+     action = "completeTemplate"},
 
     {group = "Utiliser les genes"},
     {key = "f", label = "Imprimer une abeille",
@@ -4968,6 +5241,9 @@ local MAIN = {
     {key = "4", label = "Obtenir une abeille",
      hint = "une fois le template assemble: dis laquelle, le programme fait le reste",
      action = "planChain"},
+    {key = "5", label = "Fabriquer le template de production",
+     hint = "quand tu as les abeilles que tu voulais: c est lui qui les fait produire",
+     action = "buildProduction"},
 
     {group = "Faire tourner"},
     -- Key 6 and not 5: thirteen screens end with "Choisis 6 pour la faire

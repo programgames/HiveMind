@@ -52,7 +52,8 @@ Le moteur pèse moins qu'avant parce qu'il est fini, pas parce qu'il vaut moins.
 - [x] Bibliothèque réellement remplie, N copies par allèle
 - [x] Sort des templates tranché : posés à la main, jamais dans le réseau
 - [ ] Template « perfection » de 12 gènes construit (écriture gène par gène faite)
-- [ ] Template complet par espèce, pour le Replicator
+- [x] Template complet par espèce, pour le Replicator : écran de préparation,
+      gène d'espèce et Cave dwelling compris (les deux que les profils omettent)
 
 ## Phase 3 — Campagnes (poids 10)
 
@@ -108,7 +109,12 @@ chantiers produisent des tâches qui meurent d'un geste de cinq secondes.
       et propose d'écrire la sienne
 - [x] 4.7 L'option 1 regarde dans les deux machines que le joueur remplit :
       un ventre vide se voit avant que la cuve ne soit sèche
+- [x] 4.9 La garde de l'option 4 vérifie le template POSÉ, pas les samples
+- [x] 4.9 Les deux détours obligatoires par le menu avancé supprimés
+- [x] 4.9 Le parcours principal va jusqu'au template de production
+- [x] 4.9 La file tourne sans surveillance jusqu'à ce qu'une main soit requise
 - [ ] 4.8 Un monde neuf mené de l'option 1 au premier croisement, en jeu
+- [ ] 4.9 Le parcours complet rejoué en jeu, de l'option 1 à la production
 
 ## Fait en jeu
 
