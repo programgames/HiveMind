@@ -493,6 +493,40 @@ do
           single and (single.count + single.needed), 2)
 end
 
+print("")
+print("-- un sample orthographie autrement compte quand meme --")
+
+do
+    -- LE bug: le bon sample dans le reseau, et l ecran qui dit que le gene
+    -- manque toujours. Sans un message, sans une erreur -- juste une ligne qui
+    -- ne disparait jamais. Le template de production ne se serait jamais
+    -- declare complet.
+    local shelf = newLibrary()
+
+    network[#network + 1] = {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Lifespan: immortal", size = 1}
+    shelf:scan()
+
+    check("le gene est trouve malgre la minuscule",
+          shelf:has(2, "Immortal"), true)
+    check("et il est compte", shelf:count(2, "Immortal"), 1)
+
+    -- specFor sert a aller CHERCHER le sample dans le reseau: sans la meme
+    -- tolerance, la recherche reussit et la livraison echoue
+    local spec = shelf:specFor(2, "Immortal")
+    check("et on sait le demander au reseau",
+          spec and spec.label, "Bee Sample - Lifespan: immortal")
+
+    -- Le profil de production demande "Immortal": Lifespan ne doit plus
+    -- figurer parmi les manquants
+    local missing = shelf:missingForProfile({[2] = "Immortal"})
+    check("le profil ne le reclame plus", #missing, 0)
+
+    -- Et la tolerance ne deborde pas
+    check("un allele qu on n a pas reste manquant",
+          #shelf:missingForProfile({[2] = "Shortest"}), 1)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

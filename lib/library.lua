@@ -239,7 +239,9 @@ function Library:count(slot, allele)
     local chromosome = genes[slot]
     if not chromosome then return 0 end
 
-    local entry = chromosome[allele]
+    -- Folded lookup: the game writes "immortal" where the guide writes
+    -- "Immortal", and an exact table lookup makes those two unrelated keys
+    local entry = genome.lookupAllele(chromosome, allele)
     return entry and entry.count or 0
 end
 
@@ -258,7 +260,7 @@ end
 function Library:specFor(slot, allele)
     local genes = self:allGenes()
     local chromosome = genes[slot]
-    local entry = chromosome and chromosome[allele]
+    local entry = genome.lookupAllele(chromosome, allele)
 
     if not entry then return nil end
 

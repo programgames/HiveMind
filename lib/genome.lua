@@ -52,6 +52,56 @@ for slot, chromosome in pairs(genome.CHROMOSOMES) do
     slot_by_key[chromosome.key] = slot
 end
 
+--- One allele name, folded so two spellings of the same value compare equal
+---
+--- Allele names are the KEY to the whole program: they travel from the profile
+--- to the library, from the library to the carrier table, and from there to the
+--- planner. And the game does not spell them consistently -- a quest screenshot
+--- shows "Bee Sample - Lifespan: immortal" in lower case one line under
+--- "Lifespan: Longest" in upper. A Lua table lookup treats those as two
+--- unrelated keys, so the right sample sat in the network while the screen went
+--- on saying the gene was missing, with no error and nothing to notice.
+---
+--- Case and spacing only. NEVER a substring test: this project has already paid
+--- for that one, where "floweringSlowest" answered a request for "Slow" -- the
+--- opposite value. Fold, then compare strictly.
+--- @param text any
+--- @return string
+function genome.normaliseAllele(text)
+    return tostring(text or ""):lower():gsub("%s+", " ")
+        :gsub("^ ", ""):gsub(" $", "")
+end
+
+--- Are these two allele names the same value
+--- @param a any
+--- @param b any
+--- @return boolean
+function genome.sameAllele(a, b)
+    if a == nil or b == nil then return false end
+    return genome.normaliseAllele(a) == genome.normaliseAllele(b)
+end
+
+--- Find a key in a table of alleles, whatever its spelling
+--- Exact first, because that is the common case and costs nothing; the scan
+--- only runs when the spellings differ, and a chromosome holds a handful of
+--- alleles at most.
+--- @param byAllele table|nil Keyed by allele name
+--- @param allele any
+--- @return any value
+function genome.lookupAllele(byAllele, allele)
+    if type(byAllele) ~= "table" or allele == nil then return nil end
+
+    local exact = byAllele[allele]
+    if exact ~= nil then return exact end
+
+    local wanted = genome.normaliseAllele(allele)
+    for key, value in pairs(byAllele) do
+        if genome.normaliseAllele(key) == wanted then return value end
+    end
+
+    return nil
+end
+
 --- Slot index for a chromosome display label, as printed on a sample
 --- @param label string e.g. "Humidity tolerance"
 --- @return number|nil slot

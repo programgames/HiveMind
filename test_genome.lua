@@ -182,6 +182,35 @@ check("13 lignes decrites", #lines, 13)
 checkTruthy("la premiere ligne nomme l'espece", lines[1]:find("Species", 1, true))
 
 print("")
+print("")
+print("-- deux orthographes du meme allele --")
+
+do
+    -- Releve en jeu le 2026-09-05, sur une capture de quete: l objet demande
+    -- s appelle "Bee Sample - Lifespan: immortal", en minuscule, une ligne
+    -- sous "Lifespan: Longest" en majuscule. Le guide, lui, ecrit "Immortal".
+    check("la casse ne separe plus deux fois la meme valeur",
+          genome.sameAllele("immortal", "Immortal"), true)
+    check("les espaces en trop non plus",
+          genome.sameAllele("Both 3", " both  3 "), true)
+
+    -- Et surtout: on plie la casse, on ne relache rien d autre. Ce projet a
+    -- deja paye le test de sous-chaine, ou "floweringSlowest" repondait pour
+    -- "Slow" -- la valeur opposee.
+    check("mais Slowest ne repond toujours pas pour Slow",
+          genome.sameAllele("Slowest", "Slow"), false)
+    check("ni Both 5 pour Both 3",
+          genome.sameAllele("Both 5", "Both 3"), false)
+    check("rien ne repond pour nil", genome.sameAllele(nil, "Slow"), false)
+
+    -- La recherche dans une table suit la meme regle
+    local carriers = {["Immortal"] = {"Temporal"}, ["Longest"] = {"Blizzy"}}
+    local found = genome.lookupAllele(carriers, "immortal")
+    check("une table se lit malgre l orthographe", found and found[1], "Temporal")
+    check("et une valeur absente reste absente",
+          genome.lookupAllele(carriers, "Shortest"), nil)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

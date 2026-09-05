@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.12.0"
+hivemind.VERSION = "1.13.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -2115,7 +2115,7 @@ function hivemind.buildTemplate(context)
             -- allele, jamais par etiquette: la reconstruire supposerait que le
             -- jeu l ecrive exactement comme nous, et cette hypothese s est
             -- deja revelee fausse une fois.
-            if profile[shortage.slot] == shortage.allele then
+            if genome.sameAllele(profile[shortage.slot], shortage.allele) then
                 table.insert(fragile, shortage)
             end
         end
@@ -2159,9 +2159,8 @@ function hivemind.buildTemplate(context)
         -- Two sources, both needed: the table transcribed from the pack's own
         -- quests, and whatever reading real genomes has taught us
         local seen, list = {}, {}
-        local byAllele = (config.gene_carriers or {})[entry.slot]
 
-        for _, one in ipairs((byAllele and byAllele[entry.allele]) or {}) do
+        for _, one in ipairs(config.carriersFor(entry.slot, entry.allele)) do
             if not seen[one] then seen[one] = true table.insert(list, one) end
         end
         for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
@@ -4207,8 +4206,7 @@ function hivemind.harvestProfile(context)
         -- Two sources, and both are needed: the table transcribed from the
         -- pack's quests, and whatever reading real genomes has taught us
         local found, carriers = {}, {}
-        local byAllele = (config.gene_carriers or {})[entry.slot]
-        for _, one in ipairs((byAllele and byAllele[entry.allele]) or {}) do
+        for _, one in ipairs(config.carriersFor(entry.slot, entry.allele)) do
             if not found[one] then found[one] = true table.insert(carriers, one) end
         end
         for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
@@ -4377,8 +4375,7 @@ function hivemind.breedingPlan(context)
                 -- actually read. The second needs no list from anyone.
                 local found = {}
 
-                local byAllele = carriers[slot]
-                for _, one in ipairs((byAllele and byAllele[allele]) or {}) do
+                for _, one in ipairs(config.carriersFor(slot, allele)) do
                     found[one] = true
                 end
 

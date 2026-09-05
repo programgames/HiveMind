@@ -479,8 +479,10 @@ config.gene_carriers = {
     -- Flower provider. These two accept whole ore dictionaries, so a bee room
     -- needs no flower bed at all.
     [9] = {
-        ["Rocks"]    = {"Rocky"},
-        ["Wood log"] = {"Gorgon"},
+        -- Orthographies telles que les quetes du pack les montrent, capture a
+        -- l appui: "Flowers: Wood Logs", pluriel et majuscule
+        ["Rocks"]     = {"Rocky"},
+        ["Wood Logs"] = {"Gorgon"},
     },
     [10] = {["Maximum"] = {"Jaded"}},
     [11] = {["Largest"] = {"Vindictive"}},
@@ -526,13 +528,36 @@ config.common_alleles = {
     [12] = {["None"] = true},        -- Effect
 }
 
---- Is this allele one that ordinary bees carry
+--- Which species are known to carry this exact allele
+--- Spelling is folded: the game writes "immortal" where the guide writes
+--- "Immortal", and an exact lookup makes those two unrelated keys.
+--- @param slot number Chromosome slot
+--- @param allele string As a sample label spells it
+--- @return string[] species
+function config.carriersFor(slot, allele)
+    local ok, genome = pcall(require, "lib.genome")
+    local byAllele = (config.gene_carriers or {})[slot]
+
+    if not ok then
+        return (byAllele and byAllele[allele]) or {}
+    end
+
+    return genome.lookupAllele(byAllele, allele) or {}
+end
+
+--- Is this allele one the guide marks as swappable
 --- @param slot number Chromosome slot
 --- @param allele string As a sample label spells it
 --- @return boolean
 function config.isCommonAllele(slot, allele)
+    local ok, genome = pcall(require, "lib.genome")
     local byAllele = (config.common_alleles or {})[slot]
-    return (byAllele and byAllele[allele]) == true
+
+    if not ok then
+        return (byAllele and byAllele[allele]) == true
+    end
+
+    return genome.lookupAllele(byAllele, allele) == true
 end
 
 config.genetics = {
