@@ -96,8 +96,19 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   `floweringSlowest` répond pour `Slow`, soit la valeur opposée. Et tous les
   chromosomes ne suivent pas cette règle (Fertility affiche `2`, son UID dit
   autre chose) — ne jamais conclure sans le dire.
-- **L'apiary ne rend pas son slot drone.** Une abeille posée pour lecture y
-  reste jusqu'à un retrait manuel ou le prochain cycle.
+- **L'apiary ne rend pas toujours son slot drone.** Une abeille posée pour
+  lecture peut y rester jusqu'à un retrait manuel ou le prochain cycle.
+
+  ⚠️ **Cette mesure était ambiguë** : elle a été prise avec une seule
+  destination, la ME Interface. Une interface dont les neuf slots sont des quais
+  de chargement refuse un objet ordinaire quand un quai porte encore une
+  configuration — et ce refus se lisait exactement comme « la machine retient
+  son slot ». Les deux n'ont pas le même correctif.
+
+  `transport:evict(link, slot, count, avoid)` essaie donc le réseau, **puis
+  toutes les autres faces du même transposer**. `avoid` exclut les faces
+  occupées par une autre machine : vider un drone dans l'entrée du Mutatron
+  serait pire que de le laisser en place.
 - **Étiquette d'un Gene Sample** : `Bee Sample - <Chromosome>: <Allèle>`.
   Séparateur ` - `, pas `: `.
 - **La bibliothèque, ce sont les gene samples, pas les templates.** Un sample

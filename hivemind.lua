@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.14.0"
+hivemind.VERSION = "1.15.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -3642,7 +3642,17 @@ function hivemind.readAllGenomes(context)
         return
     end
 
-    local read, failed, found = 0, 0, {}
+    -- Les faces du meme transposer occupees par une AUTRE machine: vider un
+    -- drone dans l entree du Mutatron serait pire que de le laisser ou il est
+    local avoid = {}
+    for name, link in pairs(config.machines or {}) do
+        if link.transposer == apiary.link.transposer
+           and link.machine ~= nil and link.machine ~= apiary.link.machine then
+            avoid[link.machine] = true
+        end
+    end
+
+    local read, failed, found, stuck = 0, 0, {}, 0
 
     for index, entry in ipairs(todo) do
         io.write(string.format("  %3d/%d %s", index, #todo,
@@ -3650,18 +3660,39 @@ function hivemind.readAllGenomes(context)
 
         local occupant = apiary:slot(slots.drone)
 
-        -- The apiary does not always give its drone slot back. Leaving the
+        -- The apiary does not always give its drone slot back, and leaving the
         -- previous bee there would make every later species read as that one.
+        --
+        -- Two things used to go wrong here. Only ONE destination was tried --
+        -- the ME Interface -- so an interface that was merely busy read as a
+        -- machine holding on. And on failure the whole sweep stopped, which is
+        -- why reading eleven species meant relaunching the option eleven times.
         if occupant then
-            apiary:unload(slots.drone)
+            apiary:evict(slots.drone, 1, avoid)
             occupant = apiary:slot(slots.drone)
         end
 
         if occupant then
-            print("l apiary garde " .. tostring(occupant.label))
-            print("")
-            print("Retire cette abeille du slot drone a la main, puis relance.")
-            break
+            print("l apiary garde " .. screen.fit(tostring(occupant.label), 20))
+            io.write("     -> retire-la du slot drone, puis Entree"
+                .. " (ou 'stop') : ")
+
+            local answer = io.read()
+            if answer and answer:lower():find("stop", 1, true) then
+                print("")
+                print("Arrete ici. Ce qui a ete lu est garde.")
+                break
+            end
+
+            occupant = apiary:slot(slots.drone)
+
+            if occupant then
+                -- Toujours la: on saute cette espece plutot que de tout
+                -- arreter. Le balayage garde ce qu il a lu et continue.
+                stuck = stuck + 1
+                print("     toujours la: " .. entry.name .. " est sautee.")
+                goto continue
+            end
         end
 
         local ok = apiary:load({name = entry.item, label = entry.label},
@@ -3704,18 +3735,27 @@ function hivemind.readAllGenomes(context)
                 end
             end
 
-            apiary:unload(slots.drone)
+            apiary:evict(slots.drone, 1, avoid)
         end
 
         -- Yielding matters more than speed here: a long run of component calls
         -- with no break is what the watchdog kills, and it kills the server.
         -- Wrapped because desktop Lua has no os.sleep and the tests run there.
         pcall(function() require("os").sleep(0.05) end)
+
+        ::continue::
     end
 
     print("")
     print(screen.count(read, "genome") .. " " .. screen.plural(read, "lu")
-        .. (failed > 0 and (", " .. failed .. " illisible(s)") or "") .. ".")
+        .. (failed > 0 and (", " .. failed .. " illisible(s)") or "")
+        .. (stuck > 0 and (", " .. stuck .. " sautee(s)") or "") .. ".")
+
+    if stuck > 0 then
+        print("Les sautees sont celles que l apiary n a pas rendues. Relance")
+        print("cette option quand son slot drone sera libre: ce qui est lu")
+        print("reste acquis, rien n est a refaire.")
+    end
 
     local order = {}
     for key in pairs(found) do table.insert(order, key) end

@@ -658,6 +658,60 @@ function Transport:retrieve(link, slot, count)
     return movedCount(answer, requested)
 end
 
+--- Get an item OUT of a slot, by any door that opens
+---
+--- retrieve() knows one destination: the ME Interface. That is right for
+--- everything the program normally does -- a harvested bee belongs in the
+--- network, not in a chest. But it makes one failure unreadable: when the
+--- interface refuses (its nine slots are loading docks, and a dock still
+--- carrying a configuration turns an ordinary item away), the caller concludes
+--- that the MACHINE is holding on, which is a completely different problem with
+--- a completely different fix.
+---
+--- So this one tries the network first, then every other inventory the same
+--- transposer touches. The attempt is the measurement: if any door opens, the
+--- slot was never stuck.
+---
+--- Machine faces are excluded by the caller. Emptying a drone into the
+--- Mutatron's input would be worse than leaving it where it was.
+--- @param link table Machine link
+--- @param slot number Slot in the machine
+--- @param count number|nil
+--- @param avoid table|nil Set of sides never to use, keyed by side number
+--- @return number moved
+--- @return string|nil where "reseau", or the face it went to
+function Transport:evict(link, slot, count, avoid)
+    avoid = avoid or {}
+
+    local moved = self:retrieve(link, slot, count)
+    if moved > 0 then return moved, "reseau" end
+
+    local transposer = self:transposerFor(link.transposer)
+    if not transposer then return 0 end
+
+    local requested = count or 64
+
+    for side = 0, 5 do
+        if side ~= link.machine and side ~= link.source and not avoid[side] then
+            local named, name = invoke(transposer, "getInventoryName", side)
+
+            if named and name then
+                local ok, answer = invoke(transposer, "transferItem",
+                    link.machine, side, requested, slot)
+
+                if ok then
+                    local count_moved = movedCount(answer, requested)
+                    if count_moved > 0 then
+                        return count_moved, "face " .. side
+                    end
+                end
+            end
+        end
+    end
+
+    return 0
+end
+
 --- Move an item straight from one machine to another
 --- Used for the queen leaving the Mutatron for the apiary: sending her through
 --- the ME network would lose track of which queen is ours, because AE2 exposes

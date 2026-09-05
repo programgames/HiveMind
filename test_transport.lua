@@ -171,8 +171,22 @@ local transposer = {
 
         local stack = world.machine[fromSlot]
         if not stack then return world.numericTransfer and 0 or false end
+
+        -- Une destination peut refuser: c est exactement le cas que evict()
+        -- existe pour distinguer d une machine qui retient son slot
+        if (world.refuses or {})[toSide] then
+            return world.numericTransfer and 0 or false
+        end
+
         world.machine[fromSlot] = nil
+        world.landed = toSide
         return answer()
+    end),
+
+    -- Les faces qui portent un inventaire. Sans cette reponse, evict() ne
+    -- saurait pas ou essayer.
+    getInventoryName = callable(function(side)
+        return (world.inventories or {})[side]
     end),
 
     -- Reports prior occupancy of the database slot, never success
@@ -651,6 +665,56 @@ do
 
     world.database = {}
     world.databasePages = nil
+end
+
+print("")
+print("-- sortir un objet d un slot par la porte qui s ouvre --")
+
+do
+    -- retrieve() ne connait qu une destination: la ME Interface. C est juste
+    -- pour tout ce que le programme fait d ordinaire, mais ca rend un echec
+    -- illisible -- une interface simplement occupee se lit comme une machine
+    -- qui retient son slot, et les deux n ont pas le meme correctif.
+    local link = {transposer = 1, machine = SIDE_MACHINE, source = SIDE_SOURCE}
+
+    reset()
+    world.machine[1] = {label = "Forest Drone", size = 1}
+    world.inventories = {[SIDE_SOURCE] = "me.interface", [4] = "minecraft:chest"}
+
+    local moved, where = newTransport():evict(link, 1, 1)
+    check("la destination normale suffit d habitude", moved > 0, true)
+    check("et c est bien le reseau", where, "reseau")
+
+    -- L interface refuse: un quai encore configure renvoie un objet ordinaire
+    reset()
+    world.machine[1] = {label = "Forest Drone", size = 1}
+    world.inventories = {[SIDE_SOURCE] = "me.interface", [4] = "minecraft:chest"}
+    world.refuses = {[SIDE_SOURCE] = true}
+
+    moved, where = newTransport():evict(link, 1, 1)
+    check("une autre face prend le relais", moved > 0, true)
+    check("et on sait laquelle", where, "face 4")
+    check("le slot est bien vide", world.machine[1], nil)
+
+    -- Une face occupee par une AUTRE machine ne doit jamais servir: vider un
+    -- drone dans l entree du Mutatron serait pire que de le laisser en place
+    reset()
+    world.machine[1] = {label = "Forest Drone", size = 1}
+    world.inventories = {[SIDE_SOURCE] = "me.interface", [4] = "gendustry:mutatron"}
+    world.refuses = {[SIDE_SOURCE] = true}
+
+    moved = newTransport():evict(link, 1, 1, {[4] = true})
+    check("une face interdite n est pas essayee", moved, 0)
+    check("et l objet reste ou il etait",
+          world.machine[1] and world.machine[1].label, "Forest Drone")
+
+    -- Et quand rien n accepte, evict le dit au lieu de pretendre
+    reset()
+    world.machine[1] = {label = "Forest Drone", size = 1}
+    world.inventories = {[SIDE_SOURCE] = "me.interface"}
+    world.refuses = {[SIDE_SOURCE] = true}
+
+    check("aucune porte ouverte se dit", newTransport():evict(link, 1, 1), 0)
 end
 
 print("=== Resultats ===")

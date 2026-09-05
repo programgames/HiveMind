@@ -198,6 +198,21 @@ function Machine:unload(slot, count)
     return self.transport:retrieve(self.link, self:resolveSlot(slot), count)
 end
 
+--- Get whatever is in a slot out of it, by any door that opens
+--- @param slot number Driver slot index
+--- @param count number|nil
+--- @param avoid table|nil Sides never to use, keyed by side number
+--- @return number moved
+--- @return string|nil where
+function Machine:evict(slot, count, avoid)
+    if not self.transport or not self.link then return 0 end
+    if type(self.transport.evict) ~= "function" then
+        return self:unload(slot, count)
+    end
+
+    return self.transport:evict(self.link, self:resolveSlot(slot), count, avoid)
+end
+
 --- Wait for a slot to hold something
 --- The genetics machines have no driver to ask, so the only signal that the
 --- work is done is the output slot filling. Polling yields between reads, which
