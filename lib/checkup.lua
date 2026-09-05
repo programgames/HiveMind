@@ -230,8 +230,8 @@ function checkup.interfaces(options)
                 name = named,
                 status = checkup.PROBLEM,
                 detail = "aucune interface ME declaree, il ne peut rien recevoir",
-                gesture = "choisis 9 puis o: le programme regarde ou sont tes"
-                    .. " machines et ecrit la configuration",
+                gesture = "choisis 9 puis o: le programme retrouve ou sont tes"
+                    .. " machines et reecrit sa configuration",
             })
         else
             local found = nil

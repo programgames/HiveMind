@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.7.1"
+hivemind.VERSION = "1.7.2"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -821,7 +821,11 @@ end
 --- read off the screen.
 --- @param context table
 function hivemind.slotDiagnostic(context)
-    print("=== VOIR CE QUE TIENNENT LES MACHINES ===")
+    print("=== VERIFIER QUE LE PROGRAMME VOIT LES BONS SLOTS ===")
+    print("A quoi ca sert: pose un objet a la main dans une machine, ouvre cet")
+    print("ecran, et regarde le role que le programme donne a ce slot. S il se")
+    print("trompe, chaque livraison vers cette machine ira au mauvais endroit.")
+    print("")
     print("Decalage actuellement applique : " .. tostring(config.slot_offset))
     print("")
 
@@ -1619,9 +1623,12 @@ end
 --- @return boolean written
 function hivemind.writeTopology(context)
     print("")
-    print("=== ECRIRE LA CONFIGURATION DE CETTE INSTALLATION ===")
-    print("Le programme demande a chaque Transposer ce qu il touche.")
-    print("Rien n est deplace.")
+    print("=== RETROUVER OU SONT LES MACHINES ===")
+    print("A faire une fois sur un monde neuf, et a refaire chaque fois que tu")
+    print("deplaces une machine ou un Transposer. Le reste du temps, jamais.")
+    print("")
+    print("Le programme demande a chaque Transposer ce qu il touche, et ecrit")
+    print("la configuration a partir de ce qu il voit. Rien n est deplace.")
 
     local discovered, err = topology.scan()
 
@@ -4670,11 +4677,11 @@ local ADVANCED = {
     {key = "1", label = "Etat detaille",
      hint = "stocks, machines, genes en bibliotheque, taches en cours",
      action = "status"},
-    {key = "o", label = "Ecrire la configuration de cette installation",
-     hint = "demande a chaque Transposer ce qu il touche et ecrit le fichier",
+    {key = "o", label = "Retrouver ou sont les machines",
+     hint = "monde neuf, ou bloc deplace: le programme regarde et reecrit sa config",
      action = "writeTopology"},
-    {key = "2", label = "Voir ce que tiennent les machines",
-     hint = "slot par slot, ce qu il y a vraiment dedans, sans se fier a la config",
+    {key = "2", label = "Verifier que le programme voit les bons slots",
+     hint = "pose un objet a la main: si le programme lui donne le mauvais role, ca se voit ici",
      action = "slotDiagnostic"},
     {key = "g", label = "Lire le genome d une abeille",
      hint = "ses 13 genes d un coup; elle survit, et le programme retient ce qu il apprend",
