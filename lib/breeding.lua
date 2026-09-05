@@ -17,6 +17,7 @@
 -- instead of burning attempts.
 
 local jobs = require("lib.jobs")
+local upgrades = require("lib.upgrades")
 local genome = require("lib.genome")
 
 local breeding = {}
@@ -392,35 +393,13 @@ breeding.STEPS = {
             local apiary, err = machineOf(context, "breeding_apiary")
             if not apiary then return jobs.FAILED, err end
 
+            -- A climate the apiary cannot provide used to be read out loud
+            -- and then waited on for ever. Now the missing upgrade is fetched
+            -- from the ME network and slotted in; when that cannot be done the
+            -- job asks for a hand instead of waiting on nothing.
             local blocking = apiary:environmentErrors()
             if #blocking > 0 then
-                -- The complaint alone sends you guessing. The biome and the
-                -- installed upgrades are what decides it, and an upgrade fitted
-                -- for the previous bee is the usual culprit.
-                local detail = {"l'apiary ne convient pas a cette abeille: "
-                    .. table.concat(blocking, ", ")}
-
-                local environment = apiary.getEnvironment and apiary:getEnvironment() or nil
-                if type(environment) == "table" then
-                    table.insert(detail, "biome " .. tostring(environment.temperature)
-                        .. "/" .. tostring(environment.humidity))
-                end
-
-                local upgrades = apiary.upgradeNames and apiary:upgradeNames() or {}
-                if #upgrades > 0 then
-                    table.insert(detail, "upgrades: " .. table.concat(upgrades, ", "))
-                end
-
-                -- The apiary only ever says "no flower", never which one. The
-                -- genome of the bee sitting in it does say.
-                if apiary.flowerRequirement then
-                    local _, flower = apiary:flowerRequirement()
-                    if flower then
-                        table.insert(detail, "fleur requise: " .. flower)
-                    end
-                end
-
-                return jobs.RETRY, table.concat(detail, " | ")
+                return upgrades.resolve(apiary, context, job, blocking)
             end
 
             -- One call replaces the Mechanical User, the beebee gun and the

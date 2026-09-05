@@ -468,6 +468,40 @@ config.gene_carriers = {
     [11] = {["Largest"] = {"Vindictive"}},
 }
 
+--- Alleles nobody has to go hunting for: ordinary bees already carry them.
+---
+--- Asked which species carries Flowers "Flowers", Flowering "Slow", Territory
+--- "Average" and Effect "None", the answer was that no particular bee does --
+--- these are what a plain wild bee looks like, and any drone in the chest is a
+--- candidate. Naming one species for them would send someone breeding for a bee
+--- they already own twenty of.
+---
+--- What follows from that is the cheapest move in the whole program: reading a
+--- genome costs NO apiary cycle (the bee is parked, read and taken back), so the
+--- way to find these is to read what is already in stock rather than to breed
+--- anything. That is what the genome sweep does.
+---
+--- Speed "Fast" sits here for a different reason: the Robotic bee was named for
+--- the Speed chromosome, but Robotic is the PRODUCTION allele. Nothing was named
+--- for "Fast", so it is hunted the same way -- on drones already held -- instead
+--- of being attributed to a species by guesswork.
+config.common_alleles = {
+    [1]  = {["Fast"] = true},        -- Speed
+    [9]  = {["Flowers"] = true},     -- Flowers
+    [10] = {["Slow"] = true},        -- Flowering
+    [11] = {["Average"] = true},     -- Territory
+    [12] = {["None"] = true},        -- Effect
+}
+
+--- Is this allele one that ordinary bees carry
+--- @param slot number Chromosome slot
+--- @param allele string As a sample label spells it
+--- @return boolean
+function config.isCommonAllele(slot, allele)
+    local byAllele = (config.common_alleles or {})[slot]
+    return (byAllele and byAllele[allele]) == true
+end
+
 config.genetics = {
     sample_timeout_seconds = 120,
     -- What the installation check calls "enough". Below these the queue does

@@ -360,6 +360,20 @@ local function buildStack()
     return queue, context
 end
 
+--- Fresh breeding parameters
+--- A submitted job keeps its params table BY REFERENCE, and the steps write
+--- their own bookkeeping into it (how many dry passes, which upgrade was
+--- already tried). Sharing one table between two cases carried the first
+--- case's history into the second, which is exactly what it was there to test.
+--- @return table
+local function freshParams()
+    return breeding.params({
+        target = "forestry.speciesCommon",
+        princess = {name = "forestry:bee_princess_ge", label = "Forest Princess"},
+        drone = {name = "forestry:bee_drone_ge", label = "Meadows Drone"},
+    })
+end
+
 local PARAMS = breeding.params({
     target = "forestry.speciesCommon",
     princess = {name = "forestry:bee_princess_ge", label = "Forest Princess"},
@@ -463,22 +477,72 @@ check("cycle acheve apres remplissage", queue:get(1).status, jobs.COMPLETE)
 check("une seule production", world.produceCalls, 1)
 
 print("")
-print("-- apiary inadapte a l'abeille --")
+print("-- apiary inadapte a l'abeille, sans upgrade dans le reseau --")
 
+-- The apiary complains in one word and nothing in the world was going to
+-- change on its own: the job waited for ever on "too_hot". It now tries to
+-- fetch the upgrade that answers the complaint, and when the network holds
+-- none it says which upgrade to add by hand.
 os.remove(QUEUE)
 reset({errors = {"forestry:too_hot"}})
 queue, context = buildStack()
-queue:submit("breed", PARAMS)
+queue:submit("breed", freshParams())
 
-local hostile = queue:run(context, {maxSteps = 40})
-check("la file attend", hostile.blocked, true)
-check("pas d'erreur definitive", queue:get(1).status, jobs.PENDING)
-checkTruthy("l'environnement est cite",
-            queue:get(1).error and queue:get(1).error:find("too_hot"))
+queue:run(context, {maxSteps = 40})
+check("la tache demande la main", queue:get(1).status, jobs.WAITING)
+
+local hostileWhy = queue:get(1).action or queue:get(1).error or ""
+checkTruthy("elle dit qu il fait trop chaud", hostileWhy:find("trop chaud"))
+checkTruthy("et que le reseau ME n a pas l upgrade",
+            hostileWhy:find("aucun dans le reseau ME"))
+checkTruthy("le code brut ne suffit pas a un joueur",
+            not hostileWhy:find("too_hot"))
+
+world.errors = {}
+queue:resumeAll()
+queue:run(context, {maxSteps = 40})
+check("cycle acheve une fois l'apiary corrige", queue:get(1).status, jobs.COMPLETE)
+
+print("")
+print("-- apiary inadapte, mais l upgrade est en stock --")
+
+-- The attempt IS the measurement: nothing says in advance whether an upgrade
+-- slot accepts an automated insertion, so the program tries and reads the slot
+-- back rather than asking the player first.
+os.remove(QUEUE)
+reset({errors = {"forestry:too_hot"}})
+table.insert(world.network, {name = "gendustry:apiary_upgrade",
+                             label = "Cooling Upgrade", size = 4})
+queue, context = buildStack()
+queue:submit("breed", freshParams())
+
+queue:run(context, {maxSteps = 40})
+
+local fitted = world.apiary[oc(2)]
+checkTruthy("l upgrade est pose dans l apiary", fitted ~= nil)
+check("et c est le bon", fitted and fitted.label, "Cooling Upgrade")
+check("la tache attend le prochain passage, pas la main",
+      queue:get(1).status, jobs.PENDING)
 
 world.errors = {}
 queue:run(context, {maxSteps = 40})
-check("cycle acheve une fois l'apiary corrige", queue:get(1).status, jobs.COMPLETE)
+check("le cycle s acheve ensuite", queue:get(1).status, jobs.COMPLETE)
+
+print("")
+print("-- un upgrade pose qui ne suffit pas devient un geste --")
+
+-- Posing the upgrade and finding the same complaint still there settles it:
+-- the automatic answer has been spent, and waiting longer buys nothing.
+os.remove(QUEUE)
+reset({errors = {"forestry:too_hot"}})
+table.insert(world.network, {name = "gendustry:apiary_upgrade",
+                             label = "Cooling Upgrade", size = 4})
+queue, context = buildStack()
+queue:submit("breed", PARAMS)
+
+queue:run(context, {maxSteps = 40})
+queue:run(context, {maxSteps = 40})
+check("la deuxieme fois, il faut une main", queue:get(1).status, jobs.WAITING)
 
 print("")
 print("-- mutation impossible avec ces parents --")
@@ -618,17 +682,6 @@ do
         end
 
         return queue, context
-    end
-
-    -- PARAMS is one table shared by every block in this file, and submit()
-    -- stores it by reference: the flag this step writes would arrive already
-    -- set, and the step would skip itself before doing anything.
-    local function freshParams()
-        return breeding.params({
-            target = "forestry.speciesCommon",
-            princess = {name = "forestry:bee_princess_ge", label = "Forest Princess"},
-            drone = {name = "forestry:bee_drone_ge", label = "Meadows Drone"},
-        })
     end
 
     -- The species is new: the hunt goes out on its own

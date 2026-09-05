@@ -70,7 +70,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.4.0"
+hivemind.VERSION = "1.5.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1722,7 +1722,7 @@ function hivemind.buildTemplate(context)
         .. screen.plural(#missing, "manquant") .. " sur " .. total .. " :")
 
     local haveCarrier, needCarrier = {}, {}
-    local noCarrier = 0
+    local noCarrier, common = 0, 0
 
     for _, entry in ipairs(missing) do
         local list = carriers[entry.slot .. "/" .. entry.allele] or {}
@@ -1742,20 +1742,35 @@ function hivemind.buildTemplate(context)
         -- "<-" is programmer notation; the sentence says the same thing and
         -- needs no key to read
         local source = "porteur inconnu"
+
         if #list > 0 then
             source = "porte par " .. table.concat(list, " ou ")
                 .. (held and " (en stock)" or " (a recuperer)")
+        elseif config.isCommonAllele(entry.slot, entry.allele) then
+            -- No species is famous for these: they are what an ordinary wild
+            -- bee looks like. Saying "porteur inconnu" sent people breeding for
+            -- a bee they already own twenty of.
+            source = "sur les abeilles ordinaires"
+            common = common + 1
+        else
+            noCarrier = noCarrier + 1
         end
-
-        if #list == 0 then noCarrier = noCarrier + 1 end
 
         print("  " .. screen.fit(entry.chromosome, 22)
             .. screen.fit(entry.allele, 10) .. " " .. source)
     end
 
+    if common > 0 then
+        print("")
+        print("  " .. common .. " de ces genes sont sur des abeilles ordinaires.")
+        print("  Rapporte des drones de base et choisis 9 puis l : lire un")
+        print("  genome ne coute aucun cycle d apiary, et le porteur sort tout")
+        print("  seul de la liste.")
+    end
+
     if noCarrier > 0 then
-        print("  " .. noCarrier .. " sans porteur connu: lis un genome"
-            .. " (9 puis g) pour les renseigner.")
+        print("  " .. noCarrier .. " sans porteur connu: lis les genomes en"
+            .. " stock (9 puis l) pour les renseigner.")
     end
 
     local toBreed = {}
@@ -2761,6 +2776,199 @@ function hivemind.analyseBee(context)
         print("L abeille reste dans l apiary: il ne rend pas ce slot.")
         print("La prochaine lecture pourra la relire sans en depenser une autre.")
     end
+end
+
+--- Read the genome of every species held as a drone, one after another
+--- The cheapest operation in the whole program, and the one that was only
+--- reachable one bee at a time. Reading a genome parks a drone in the apiary,
+--- copies its thirteen chromosomes and takes it straight back: no cycle, no
+--- mutagen, no bee spent. What it buys is the answer to "who carries this
+--- allele", which decides every campaign that follows.
+---
+--- It exists because four of the breeding template's alleles -- Flowers,
+--- Flowering Slow, Territory Average, Effect None -- belong to no famous bee.
+--- They are what an ordinary wild bee looks like, so the way to find them is to
+--- look at the ordinary bees already in the chest.
+---
+--- Sliced and yielding: three hundred species read in one go is exactly the
+--- shape of call that froze the server during the parent sweep.
+--- @param context table
+function hivemind.readAllGenomes(context)
+    print("")
+    print("=== LIRE LE GENOME DE TOUTES LES ABEILLES EN STOCK ===")
+    print("Aucune abeille n est detruite et aucun cycle d apiary n est")
+    print("consomme: chaque drone est pose, lu, puis repris.")
+
+    local apiary = context.machines and context.machines.breeding_apiary
+    if not apiary then
+        print("")
+        print("Apiary absent de la configuration.")
+        return
+    end
+
+    local slots = apiary:slots()
+
+    -- A princess in the queen slot plus a drone starts a cycle, and every bee
+    -- read would be consumed instead
+    if apiary:slot(slots.queen) then
+        print("")
+        print("Une abeille occupe le slot reine de l apiary.")
+        print("Vide-le d abord (option 7, ou a la main) sinon un cycle demarre.")
+        return
+    end
+
+    context.library:scan()
+    local known = context.library:knownGenomes()
+
+    -- One entry per species, not per stack: the network splits a species over
+    -- several stacks and reading it twice teaches nothing new
+    local species, seen = {}, {}
+
+    for _, item in ipairs(context.transport:findAll({name = "forestry:bee_drone_ge"}) or {}) do
+        local label = tostring(item.label or "")
+        local name = label:gsub("%s+Drone$", "")
+
+        if name ~= "" and not seen[name] then
+            seen[name] = true
+            table.insert(species, {name = name, label = label,
+                                   item = item.name, read = known[name] ~= nil})
+        end
+    end
+
+    table.sort(species, function(a, b) return a.name < b.name end)
+
+    local todo = {}
+    for _, entry in ipairs(species) do
+        if not entry.read then table.insert(todo, entry) end
+    end
+
+    print("")
+    print(screen.count(#species, "espece") .. " en stock, "
+        .. #todo .. " dont le genome n a jamais ete lu.")
+
+    if #todo == 0 then
+        print("")
+        print("Rien a lire: tous les genomes sont deja en bibliotheque.")
+        return
+    end
+
+    -- Which alleles this is actually looking for, so the result can say
+    -- whether the trip was worth it
+    local hunted = {}
+    for profileName, profile in pairs(config.profiles or {}) do
+        for slot, allele in pairs(profile) do
+            if not context.library:has(slot, allele) then
+                hunted[slot .. "/" .. allele] = {slot = slot, allele = allele,
+                                                 profile = profileName}
+            end
+        end
+    end
+
+    print("Compte environ deux secondes par abeille.")
+    io.write("Lancer la lecture ? (o = oui, n = non) : ")
+
+    local answer = io.read()
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Annule.")
+        return
+    end
+
+    local read, failed, found = 0, 0, {}
+
+    for index, entry in ipairs(todo) do
+        io.write(string.format("  %3d/%d %s", index, #todo,
+            screen.fit(entry.name, 24)))
+
+        local occupant = apiary:slot(slots.drone)
+
+        -- The apiary does not always give its drone slot back. Leaving the
+        -- previous bee there would make every later species read as that one.
+        if occupant then
+            apiary:unload(slots.drone)
+            occupant = apiary:slot(slots.drone)
+        end
+
+        if occupant then
+            print("l apiary garde " .. tostring(occupant.label))
+            print("")
+            print("Retire cette abeille du slot drone a la main, puis relance.")
+            break
+        end
+
+        local ok = apiary:load({name = entry.item, label = entry.label},
+                               slots.drone, 1)
+
+        if not ok then
+            failed = failed + 1
+            print("indisponible")
+        else
+            local bee = apiary:bees().drone
+            local parsed = bee and bee.genome
+
+            if not parsed then
+                failed = failed + 1
+                print("genome illisible")
+            else
+                local recorded = context.library:recordGenome(entry.name, parsed)
+                read = read + 1
+
+                -- What this species answers among the alleles still missing
+                local answers = {}
+                for _, want in pairs(hunted) do
+                    for _, one in ipairs(context.library:carriersOf(want.slot, want.allele)) do
+                        if one == entry.name then
+                            table.insert(answers, want)
+                            break
+                        end
+                    end
+                end
+
+                for _, want in ipairs(answers) do
+                    found[want.slot .. "/" .. want.allele] = entry.name
+                end
+
+                if #answers > 0 then
+                    print(recorded .. " genes, dont "
+                        .. screen.count(#answers, "recherche"))
+                else
+                    print(recorded .. " genes")
+                end
+            end
+
+            apiary:unload(slots.drone)
+        end
+
+        -- Yielding matters more than speed here: a long run of component calls
+        -- with no break is what the watchdog kills, and it kills the server.
+        -- Wrapped because desktop Lua has no os.sleep and the tests run there.
+        pcall(function() require("os").sleep(0.05) end)
+    end
+
+    print("")
+    print(screen.count(read, "genome") .. " " .. screen.plural(read, "lu")
+        .. (failed > 0 and (", " .. failed .. " illisible(s)") or "") .. ".")
+
+    local order = {}
+    for key in pairs(found) do table.insert(order, key) end
+    table.sort(order)
+
+    if #order == 0 then
+        print("")
+        print("Aucune de ces abeilles ne porte un gene qui te manque.")
+        print("Rapporte d autres especes et relance: ca ne coute rien.")
+        return
+    end
+
+    print("")
+    print("PORTEURS TROUVES — ces genes sont desormais recuperables")
+    for _, key in ipairs(order) do
+        local want = hunted[key]
+        print("  " .. screen.fit(genome.labelForSlot(want.slot), 22)
+            .. screen.fit(want.allele, 12) .. "sur " .. found[key])
+    end
+
+    print("")
+    print("Choisis 3 pour mettre les extractions en file.")
 end
 
 --- Queue a Species hunt for every species the network holds and the library lacks
@@ -4148,6 +4356,9 @@ local ADVANCED = {
     {key = "g", label = "Lire le genome d une abeille",
      hint = "ses 13 genes d un coup; elle survit, et le programme retient ce qu il apprend",
      action = "analyseBee"},
+    {key = "l", label = "Lire le genome de toutes les abeilles en stock",
+     hint = "aucun cycle d apiary: c est ainsi qu on trouve qui porte quoi",
+     action = "readAllGenomes"},
     {key = "k", label = "Fabriquer le template d elevage",
      hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
      action = "buildTemplate"},
