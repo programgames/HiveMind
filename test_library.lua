@@ -428,12 +428,23 @@ do
     checkTruthy("et dit lesquels ne sont pas demandables",
                 text:find("PAS DEMANDABLE", 1, true) ~= nil)
 
+    -- Nommer un etat sans dire quoi en faire laisse le joueur devant un mot en
+    -- capitales et rien d autre
+    checkTruthy("et ce que ca veut dire pour lui",
+                text:find("ressortis du reseau ME", 1, true) ~= nil)
+    checkTruthy("et par ou le corriger",
+                text:find("9 puis n", 1, true) ~= nil)
+
     shelf:keepPhotograph(entry)
     text = table.concat(shelf:describe(), "\n")
 
-    checkTruthy("une fois la fiche prise, il le dit aussi",
-                text:find("fiche ", 1, true) ~= nil
+    -- Le numero de page de la Database etait un detail de mecanique. Ce que le
+    -- joueur a besoin de savoir est s il peut ravoir ce template ou non.
+    checkTruthy("une fois photographie, il devient demandable",
+                text:find("demandable au reseau ME", 1, true) ~= nil
                 and text:find("PAS DEMANDABLE", 1, true) == nil)
+    checkTruthy("et l avertissement disparait avec",
+                text:find("ressortis du reseau ME", 1, true) == nil)
 end
 
 print("=== Resultats ===")

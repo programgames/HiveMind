@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.7.0"
+hivemind.VERSION = "1.7.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -306,6 +306,30 @@ end
 
 --- Print what the world looks like right now
 --- @param context table
+--- What a machine answers, said in French
+--- The drivers speak in codes -- "ready", "no_resource" -- and those codes are
+--- the machine talking to the program. On a screen a player reads, they are
+--- three words of English in the middle of a French sentence.
+--- @param status string
+--- @param detail string|nil What the machine added, when it added something
+--- @return string
+local function machineState(status, detail)
+    local said = {
+        ready = "prete",
+        busy = "au travail",
+        no_energy = "pas assez d energie",
+        no_resource = "il lui manque de quoi travailler",
+        error = "bloquee",
+        offline = "eteinte",
+    }
+
+    -- A detail is the machine's own complaint and always beats a generic word,
+    -- except for "ready", where the driver simply echoes the code back
+    if detail and detail ~= status then return detail end
+
+    return said[status] or tostring(status)
+end
+
 function hivemind.status(context)
     print("=== ETAT DETAILLE ===")
 
@@ -313,7 +337,7 @@ function hivemind.status(context)
 
     if online then
         local items = context.transport:networkItemCount()
-        print("Reseau ME    : en ligne, " .. items .. " type(s) d'item visible(s)")
+        print("Reseau ME    : connecte")
 
         if items == 0 then
             -- A powered network showing nothing usually means the interface is
@@ -330,7 +354,7 @@ function hivemind.status(context)
         local amount, capacity = mutatron:tank()
         local status, detail = mutatron:isReady()
         print(string.format("Mutatron     : %s, mutagene %d/%d",
-            detail or status, amount, capacity))
+            machineState(status, detail), amount, capacity))
     else
         print("Mutatron     : absent")
     end
@@ -338,17 +362,34 @@ function hivemind.status(context)
     local apiary = context.machines.breeding_apiary
     if apiary then
         local status, detail = apiary:isReady()
-        print("Apiary       : " .. (detail or status))
+        print("Apiary       : " .. machineState(status, detail))
 
         if apiary:isAutomated() then
             -- waitForPrincess is documented to fail with this upgrade present
             print("  ATTENTION: upgrade Automation detectee, retire-la de cet apiary")
         end
 
+        local roles = {queen = "reine", drone = "drone", princess = "princesse"}
+
+        -- namingFrom() est declaree bien plus bas dans ce fichier: a cet
+        -- endroit elle vaut encore nil, et l appeler tuait l ecran d etat
+        local ok_names, allSpecies = pcall(function()
+            return (context.species:list())
+        end)
+        if not ok_names then allSpecies = {} end
+
         local bees = apiary:bees()
         for role, bee in pairs(bees) do
-            local uid = bee.genome and genome.species(bee.genome) or "?"
-            print(string.format("  %s: %s (%s)", role, bee.label or "?", uid))
+            -- L uid brut ("forestry.speciesForest") etait la pour deboguer, et
+            -- valait "(?)" des que le genome n etait pas lisible: un point
+            -- d interrogation entre parentheses ne dit rien a personne.
+            local uid = bee.genome and genome.species(bee.genome) or nil
+            local entry = uid and allSpecies[uid] or nil
+            local named = entry and entry.name or nil
+
+            print(string.format("  %s: %s%s", roles[role] or role,
+                bee.label or "?",
+                (named and named ~= bee.label) and (" (" .. named .. ")") or ""))
         end
 
         local _, flower = apiary:flowerRequirement()
@@ -367,7 +408,18 @@ function hivemind.status(context)
     local known, source = context.species:list()
     local count = 0
     for _ in pairs(known) do count = count + 1 end
-    print(string.format("Especes      : %d connues (%s)", count, source))
+
+    -- "live", "cache", "fallback": trois mots qui disent d ou vient la liste
+    -- pour qui a ecrit le programme, et rien pour qui l utilise
+    local origin = {
+        live = "demandees au jeu",
+        cache = "en memoire, redemande-les avec 9",
+        fallback = "liste de secours, incomplete",
+        vide = "aucune",
+    }
+
+    print(string.format("Especes      : %d connues (%s)", count,
+        origin[source] or tostring(source)))
 
     for _, line in ipairs(context.library:describe()) do
         print("  " .. line)

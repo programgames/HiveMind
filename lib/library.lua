@@ -595,19 +595,27 @@ function Library:describe()
     table.insert(lines, string.format("Genes : %d alleles sur %d chromosomes",
         alleles, chromosomes))
 
+    -- "Especes archivees" ne disait pas ce qui etait archive, ni ou. Ce sont
+    -- les genes d espece sauves: la collection vers laquelle tout le programme
+    -- travaille, puisqu un seul de ces genes suffit a reimprimer l espece.
     local species_count = 0
     for _ in pairs(self:speciesGenes()) do species_count = species_count + 1 end
-    table.insert(lines, string.format("Especes archivees : %d", species_count))
+    table.insert(lines, string.format("Genes d espece sauves : %d", species_count))
 
     local shortages = self:shortages()
     if #shortages > 0 then
-        table.insert(lines, string.format(
-            "A securiser : %d gene(s) en moins de %d exemplaires",
-            #shortages, self.minimumCopies))
+        table.insert(lines, string.format("A securiser : %d %s en moins de %d %s",
+            #shortages, #shortages > 1 and "genes" or "gene",
+            self.minimumCopies,
+            self.minimumCopies > 1 and "exemplaires" or "exemplaire"))
         table.insert(lines,
             "  un gene en un seul exemplaire disparait avec lui, et le")
         table.insert(lines,
-            "  retrouver coute une treizaine d abeilles. Option c pour copier.")
+            "  retrouver coute une treizaine d abeilles.")
+        -- "Option c" ne dit pas ou la trouver: elle est sous 9, comme les
+        -- vingt autres, et le reste du programme ecrit toujours les deux
+        table.insert(lines,
+            "  Choisis 9 puis c pour les copier.")
     end
 
     -- A count answers "how many" and never "which one", and which one is the
@@ -623,9 +631,11 @@ function Library:describe()
 
             table.insert(lines, string.format("  %-22s %-24s %s",
                 tostring(entry.name or entry.species or "sans nom"),
-                -- Without a Database entry it cannot be asked of the network,
-                -- which makes it a template we can see and not use
-                entry.page and ("demandable (fiche " .. entry.page .. ")")
+                -- Sans entree dans la Database il ne peut pas etre redemande
+                -- au reseau: un template qu on voit et qu on ne peut pas
+                -- utiliser. Le numero de page etait un detail de mecanique --
+                -- ce qui compte est de pouvoir le ravoir ou non.
+                entry.page and "demandable au reseau ME"
                     or "PAS DEMANDABLE",
                 -- Where it was when it was named. It goes stale as soon as the
                 -- template is put into the network, and that is fine: identity
@@ -636,6 +646,21 @@ function Library:describe()
 
     if #templates > shown then
         table.insert(lines, "  ... et " .. (#templates - shown) .. " autre(s)")
+    end
+
+    -- "PAS DEMANDABLE" nomme un etat sans dire quoi en faire. Tous les
+    -- templates partagent une etiquette, donc AE2 ne sait pas les distinguer:
+    -- sans sa photographie dans la Database, celui-la ne ressortira jamais du
+    -- reseau et doit rester dans le coffre.
+    local unreachable = 0
+    for _, entry in ipairs(templates) do
+        if not entry.page then unreachable = unreachable + 1 end
+    end
+
+    if unreachable > 0 then
+        table.insert(lines, "  " .. unreachable .. " ne peuvent pas etre"
+            .. " ressortis du reseau ME: laisse-les au coffre, ou")
+        table.insert(lines, "  choisis 9 puis n pour les photographier.")
     end
 
     return lines
