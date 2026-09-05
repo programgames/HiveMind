@@ -323,8 +323,12 @@ config.library = {
     -- Never consume the last copy of a gene. Below this count the program
     -- duplicates through the Genetic Transposer before using one.
     minimum_copies = 2,
-    -- Copies above this are not worth the labware
-    target_copies = 3,
+    -- Combien on en veut au total. Deux, pas trois: l ecran annoncait une
+    -- cible de trois et ne mettait qu UNE copie en file par gene -- il disait
+    -- "il en faut 2" puis faisait passer de 1 a 2. Un gene a un exemplaire est
+    -- en danger, a deux il ne l est plus, et chaque copie coute un labware et
+    -- un sample vierge.
+    target_copies = 2,
 }
 
 -- The genetics machines give no progress reading, so a wait is a poll on their

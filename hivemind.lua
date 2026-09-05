@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.10.1"
+hivemind.VERSION = "1.11.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -2058,13 +2058,56 @@ function hivemind.buildTemplate(context)
         print("IL RESTE UN GESTE, ET LE MOD L IMPOSE:")
         print("assemble le template A LA TABLE DE CRAFT. Un template se remplit")
         print("en y combinant les samples; aucune machine n accepte cette")
-        print("operation. Les samples sont consommes, alors duplique-les avant")
-        print("(option b, sous 9) si tu tiens a les garder.")
+        print("operation. Les samples sont consommes, alors garde une copie de")
+        print("ceux que tu n as qu une fois.")
         print("")
         print("A reunir :")
         for slot, allele in pairs(profile) do
             print(string.format("  Bee Sample - %s: %s",
                 tostring(genome.labelForSlot(slot)), allele))
+        end
+
+        -- Renvoyer vers l ecran des copies etait la moitie du travail: le
+        -- joueur va a la table de craft, l assemblage consomme les samples, et
+        -- ceux qu il n avait qu en un exemplaire sont perdus a l instant ou ils
+        -- servent. Ce qui manque est fait ici, avant qu il y aille.
+        local fragile = {}
+
+        for _, shortage in ipairs(context.library:shortages()) do
+            -- Seulement les genes de CE template: copier toute la bibliotheque
+            -- n est pas ce qu on est venu faire. Compare par chromosome et par
+            -- allele, jamais par etiquette: la reconstruire supposerait que le
+            -- jeu l ecrive exactement comme nous, et cette hypothese s est
+            -- deja revelee fausse une fois.
+            if profile[shortage.slot] == shortage.allele then
+                table.insert(fragile, shortage)
+            end
+        end
+
+        if #fragile > 0 then
+            print("")
+            print(screen.count(#fragile, "d entre eux n existe", "d entre eux n existent")
+                .. " qu en un exemplaire, et la table")
+            print("de craft les consomme.")
+            io.write("Les copier d abord ? (o = oui, n = non) : ")
+
+            local answer = io.read()
+            if answer and answer:lower():sub(1, 1) == "o" then
+                local created = 0
+
+                for _, shortage in ipairs(fragile) do
+                    for _ = 1, math.max(1, shortage.needed) do
+                        local params = genetics.duplicateParams(
+                            {sample = {label = shortage.label}})
+                        if params and context.queue:submit("duplicate", params) then
+                            created = created + 1
+                        end
+                    end
+                end
+
+                print(screen.count(created, "copie") .. " en file.")
+                print("Choisis 6 pour les faire tourner, PUIS va au craft.")
+            end
         end
 
         productionNote(context.library)
@@ -4540,17 +4583,23 @@ end
 --- @param context table
 function hivemind.secureLibrary(context)
     print("")
-    print("=== SAUVEGARDER LES GENES EN UN SEUL EXEMPLAIRE ===")
+    print("=== COPIER TOUS LES GENES UNIQUES ===")
+
+    print("Un template s assemble a la table de craft, et l assemblage")
+    print("CONSOMME les samples. Un gene que tu n as qu une fois disparait")
+    print("donc le jour ou tu t en sers.")
+    print("")
 
     context.library:scan()
     local shortages = context.library:shortages()
 
     if #shortages == 0 then
-        print("Chaque gene connu est deja en assez d'exemplaires.")
+        print("Aucun gene n existe en un seul exemplaire.")
         return
     end
 
-    print(#shortages .. " gene(s) sous le seuil de securite :")
+    print(screen.count(#shortages, "gene") .. " "
+        .. screen.plural(#shortages, "n existe") .. " qu en un exemplaire :")
     print("")
 
     -- Already queued work must not be queued again: running the same command
@@ -4568,8 +4617,12 @@ function hivemind.secureLibrary(context)
         if queued[shortage.label] then
             print(string.format("  %-44s deja en file", shortage.label))
         else
-            print(string.format("  %-44s %d copie(s), il en faut %d",
-                shortage.label, shortage.count, shortage.needed))
+            -- "1 copie(s), il en faut 2" pendant qu une seule copie partait
+            -- en file: l ecran annoncait une cible que le programme n a jamais
+            -- visee. Il dit maintenant ce qui va se passer.
+            print(string.format("  %-44s %d -> %d",
+                shortage.label, shortage.count,
+                shortage.count + shortage.needed))
             table.insert(plan, shortage)
         end
     end
@@ -4592,11 +4645,16 @@ function hivemind.secureLibrary(context)
 
     -- Each copy eats one of each. Saying so before the confirmation beats
     -- discovering it halfway through a queue that then stalls.
+    local copies = 0
+    for _, shortage in ipairs(plan) do
+        copies = copies + math.max(1, shortage.needed)
+    end
+
     print("")
-    print("  " .. #plan .. " copie(s) a faire")
+    print("  " .. screen.count(copies, "copie") .. " a faire")
     print("  samples vierges : " .. blanks .. "   labware : " .. labware)
 
-    if blanks < #plan or labware < #plan then
+    if blanks < copies or labware < copies then
         print("  ATTENTION: pas de quoi tout faire, la file s'arretera en route.")
     end
 
@@ -4608,16 +4666,21 @@ function hivemind.secureLibrary(context)
         return
     end
 
+    -- Autant de copies que la cible en reclame, et non une seule quel que
+    -- soit l ecart: avec une cible a deux les deux comptes coincident, mais
+    -- coder "une" laissait le bug pret a revenir a la premiere cible relevee.
     local created = 0
     for _, shortage in ipairs(plan) do
-        local params = genetics.duplicateParams({sample = {label = shortage.label}})
-        if params then
-            local id = context.queue:submit("duplicate", params)
-            if id then created = created + 1 end
+        for _ = 1, math.max(1, shortage.needed) do
+            local params = genetics.duplicateParams({sample = {label = shortage.label}})
+            if params and context.queue:submit("duplicate", params) then
+                created = created + 1
+            end
         end
     end
 
-    print(created .. " tache(s) creee(s). Choisis 6 pour les faire tourner.")
+    print(screen.count(created, "copie") .. " en file."
+        .. " Choisis 6 pour les faire tourner.")
 end
 
 --- What the operator should probably do next
@@ -4809,8 +4872,8 @@ local ADVANCED = {
     {key = "b", label = "Copier un gene",
      hint = "avant de depenser un gene que tu veux garder",
      action = "duplicateGene"},
-    {key = "c", label = "Sauvegarder les genes en un seul exemplaire",
-     hint = "de temps en temps, pour ne rien perdre que tu n aies qu une fois",
+    {key = "c", label = "Copier tous les genes uniques",
+     hint = "avant d assembler un template: la table de craft consomme les samples",
      action = "secureLibrary"},
 
     {group = "Templates"},

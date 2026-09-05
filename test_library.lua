@@ -447,6 +447,52 @@ do
                 text:find("ressortis du reseau ME", 1, true) == nil)
 end
 
+print("")
+print("-- ce qu il faut copier, et combien de fois --")
+
+do
+    -- L ecran annoncait "1 copie(s), il en faut 2" et ne mettait qu UNE copie
+    -- en file: la cible declaree (3) et le travail reellement fait (1) ne se
+    -- sont jamais rencontres. La cible est passee a deux, et `needed` dit
+    -- desormais exactement combien de copies partent.
+    -- Les valeurs REELLEMENT livrees, lues dans lib/config: le reste du
+    -- fichier travaille avec une cible a trois pour montrer que le calcul
+    -- s adapte, mais ce bloc verifie ce que le joueur obtient vraiment
+    local settings = require("lib.config").library
+    local shelf = library.new({
+        transport = fakeTransport,
+        templateLink = TEMPLATE_LINK,
+        path = PATH,
+        config = {library = settings},
+    })
+
+    network[#network + 1] = {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Species: Diligent", size = 1}
+    network[#network + 1] = {name = "gendustry:gene_sample",
+                             label = "Bee Sample - Speed: Fast", size = 4}
+
+    shelf:scan()
+    local shortages = shelf:shortages()
+
+    local single = nil
+    for _, entry in ipairs(shortages) do
+        if entry.label == "Bee Sample - Species: Diligent" then single = entry end
+    end
+
+    checkTruthy("un gene a un exemplaire est signale", single ~= nil)
+    check("il en manque exactement une copie", single and single.needed, 1)
+
+    local abundant = false
+    for _, entry in ipairs(shortages) do
+        if entry.label == "Bee Sample - Speed: Fast" then abundant = true end
+    end
+    checkTruthy("un gene en quatre exemplaires n est pas signale", not abundant)
+
+    -- Et le compte annonce a l ecran est celui qui sera fait
+    check("la cible annoncee est celle qui sera atteinte",
+          single and (single.count + single.needed), 2)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

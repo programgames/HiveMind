@@ -581,6 +581,32 @@ end
 
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
+-- "Sauvegarder les genes en un seul exemplaire" se lit "n en garder qu un",
+-- soit l inverse de ce que fait l option. Elle copie ceux qui n existent qu en
+-- un exemplaire, et elle existe parce que l assemblage d un template a la table
+-- de craft CONSOMME les samples.
+do
+    check("le libelle dit ce qui est copie",
+          text:find("Copier tous les genes uniques", 1, true) ~= nil)
+    check("et l ancienne formule a disparu",
+          text:find("Sauvegarder les genes en un seul exemplaire", 1, true) == nil)
+
+    -- L ecran dit POURQUOI, sans quoi "gene unique" reste une curiosite
+    check("l ecran dit que la table de craft consomme les samples",
+          text:find("CONSOMME les samples", 1, true) ~= nil)
+
+    -- Et l option 3 propose les copies au lieu de renvoyer ailleurs
+    check("l option 3 propose de copier avant d envoyer au craft",
+          text:find("Les copier d abord ?", 1, true) ~= nil)
+    check("elle ne renvoie plus vers l option qui n en copie qu un",
+          text:find("duplique-les avant", 1, true) == nil)
+
+    -- Autant de copies que la cible en reclame, et non une seule quel que soit
+    -- l ecart: c est le bug d origine, code en dur
+    check("le nombre de copies suit la cible",
+          text:find("for _ = 1, math.max(1, shortage.needed) do", 1, true) ~= nil)
+end
+
 -- Une ATTENTE disait "plus tard", puis l ecran disait "corrige la cause" sans
 -- jamais nommer la cause -- alors que l etape venait de la donner. Une reine qui
 -- vit encore apres quatre minutes et un reseau ME qui ne repond plus se lisaient
