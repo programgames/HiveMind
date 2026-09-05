@@ -239,10 +239,24 @@ les machines nomment un transposer par son index.
 d'origine ; `imprinter_2` = production, face 1). C'est ce qui supprime tout
 échange de template : chacun garde le sien à demeure.
 
-⚠️ **`discover` nomme les Imprinters dans l'ordre des faces (0 à 5)**, donc
-celui du dessus s'appelle `imprinter` dans son rapport et celui d'origine
-`imprinter_2` — l'inverse de la config. Les faces sont la vérité, pas les noms
-qu'il génère.
+⚠️ **La découverte nomme les Imprinters dans l'ordre des faces (0 à 5)**, donc
+celui du dessus s'appelle `imprinter` et celui d'origine `imprinter_2` —
+l'inverse de la config. Les faces sont la vérité, pas les noms générés.
+
+Tant que `discover` ne faisait qu'imprimer un rapport, l'avertissement suffisait.
+Depuis que **l'option 1 écrit la configuration**, il ne suffit plus : appliquer
+l'ordre des faces déplaçait le profil d'élevage sur la machine tenant le template
+de production, et chaque abeille serait sortie avec les mauvais gènes sans un
+mot. `writeTopology` **demande donc au joueur** lequel tient quel template dès
+qu'il trouve deux machines du même genre — c'est une décision, pas une découverte,
+au même titre que l'attribution des interfaces ME.
+
+⚠️ **Les inventaires ne rendent pas tous leur nom de registre.** Relevé en jeu le
+2026-09-05 : sur les dix machines, neuf n'ont été reconnues que par leur **nom
+court** (`sampler`, `imprinter`, `apiary`…). Le Genetic Transposer, seul à ne pas
+avoir de repli court dans les signatures, n'a été reconnu par **rien** — et la
+configuration écrite ne le contenait pas, alors que la machine répond et
+travaille. Toute signature doit avoir sa variante courte.
 
 **Un banc sans interface ME n'est pas une anomalie** quand rien n'y est jamais
 livré. Le Liquifier et le Mutagen Producer n'ont que leurs cuves lues, et un

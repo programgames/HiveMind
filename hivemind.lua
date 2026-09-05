@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.9.1"
+hivemind.VERSION = "1.10.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1678,15 +1678,15 @@ function hivemind.writeTopology(context)
     end
 
     -- The ME Interface is where every delivery starts. A transposer that does
-    -- not touch one cannot supply the machines around it at all.
+    -- not touch one cannot supply the machines around it at all -- except the
+    -- two the player fills by hand, which are never supplied by anything and
+    -- whose bench therefore needs no interface. Warning there was a permanent
+    -- false alarm, exactly the one the installation check already had to lose.
     local orphans = {}
     for _, address in ipairs(discovered.transposers) do
-        if discovered.interfaceSides[address] == nil then
-            for _, name in ipairs(names) do
-                if discovered.machines[name].transposer == address then
-                    orphans[address] = true
-                end
-            end
+        if discovered.interfaceSides[address] == nil
+           and topology.needsInterface(discovered, address) then
+            orphans[address] = true
         end
     end
 
@@ -1752,6 +1752,70 @@ function hivemind.writeTopology(context)
                 print("  n a pas son interface.")
             end
         end
+    end
+
+    -- Two machines of the same kind cannot be told apart by a block face, and
+    -- on this base the difference is which TEMPLATE each one holds. Discovery
+    -- walks the sides in order, so the first face seen took the base name --
+    -- which silently moved the breeding profile onto the machine holding the
+    -- production template, and every bee would have come out imprinted with
+    -- the wrong genes. Nothing in the world can answer this; the player can.
+    local swaps = {}
+
+    for kind, keys in pairs(topology.duplicates(discovered)) do
+        -- Only worth asking where the configuration says the two differ
+        local profiles = {}
+        for name, link in pairs(config.machines or {}) do
+            if name:gsub("_%d+$", "") == kind and link.profile then
+                table.insert(profiles, {key = name, profile = link.profile})
+            end
+        end
+
+        table.sort(profiles, function(a, b) return a.key < b.key end)
+
+        if #profiles >= 2 and #keys >= #profiles then
+            print("")
+            print("DEUX " .. kind:upper() .. " : LEQUEL TIENT QUOI ?")
+            print("Ils sont identiques vus du programme. Ce qui les distingue,")
+            print("c est le template pose dans chacun.")
+            print("")
+
+            for index, name in ipairs(keys) do
+                local link = discovered.machines[name]
+                print("  " .. index .. ". celui "
+                    .. (topology.SIDE_NAMES[link.machine] or "?")
+                    .. " du transposer " .. link.transposer:sub(1, 8))
+            end
+
+            for _, entry in ipairs(profiles) do
+                print("")
+                io.write("Lequel tient le template '" .. entry.profile
+                    .. "' ? (numero) : ")
+
+                local answer = io.read()
+                local choice = tonumber(answer or "")
+                local picked = keys[choice or 0]
+
+                if picked then
+                    swaps[entry.key] = discovered.machines[picked]
+                else
+                    print("  Passe: la configuration gardera l ordre trouve,")
+                    print("  qui a une chance sur deux d etre le bon.")
+                end
+            end
+        end
+    end
+
+    -- Applique les reponses: chaque cle de configuration recoit la face que le
+    -- joueur lui a designee, et non celle que l ordre des faces lui a donnee
+    for key, link in pairs(swaps) do
+        discovered.machines[key] = {
+            transposer = link.transposer,
+            machine = link.machine,
+            source = link.source,
+            inventory = link.inventory,
+            slots = link.slots,
+        }
     end
 
     -- The template chest is a decision, not a discovery: several chests can sit

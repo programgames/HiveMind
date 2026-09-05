@@ -48,15 +48,28 @@ local WORLD = {
         [1] = "ironchest:iron_chest",
     },
     ["bbbb2222-0000-0000-0000-000000000000"] = {
-        [0] = "gendustry:genetic_sampler",
-        [2] = "gendustry:genetic_transposer",
+        -- Les noms tels que le jeu les rend vraiment: aucun ne contient le
+        -- prefixe "genetic_", et c est ce qui a fait manquer le Transposer
+        [0] = "Genetic Sampler",
+        [1] = "Genetic Imprinter",
+        [2] = "Transposer",
         [3] = "appliedenergistics2:interface",
-        [5] = "gendustry:genetic_imprinter",
+        [5] = "Genetic Imprinter",
+    },
+
+    -- Un banc dont on ne lit que la cuve: il ne recoit jamais rien, donc il n a
+    -- pas besoin d interface ME et le dire est une fausse alerte permanente
+    ["eeee5555-0000-0000-0000-000000000000"] = {
+        [2] = "gendustry:mutagen_producer",
     },
 }
 
 local SIZES = {
     ["gendustry:mutatron_advanced"] = 10,
+    ["Genetic Sampler"] = 4,
+    ["Genetic Imprinter"] = 4,
+    ["Transposer"] = 4,
+    ["gendustry:mutagen_producer"] = 1,
     ["forestry:industrial_apiary"] = 15,
     ["appliedenergistics2:interface"] = 9,
     ["ironchest:iron_chest"] = 108,
@@ -94,7 +107,7 @@ print("-- ce que le programme voit du monde --")
 local injected = fakeComponents(WORLD)
 local seen = assert(topology.scan(injected))
 
-check("les deux transposers sont vus", #seen.transposers, 2)
+check("les trois transposers sont vus", #seen.transposers, 3)
 check("le mutatron est trouve", seen.machines.mutatron ~= nil, true)
 check("et il est devant son transposer", seen.machines.mutatron.machine, 2)
 check("sa source est l interface ME du meme banc",
@@ -103,6 +116,13 @@ check("l apiary aussi", seen.machines.breeding_apiary.machine, 3)
 check("le sampler est sur l autre banc",
       seen.machines.sampler.transposer,
       "bbbb2222-0000-0000-0000-000000000000")
+
+-- Il s appelle "Transposer" tout court, sans prefixe. Sans repli sur ce nom
+-- court il n etait reconnu par RIEN, et la configuration ecrite en jeu ne le
+-- contenait pas -- alors que la machine repond et travaille.
+checkTruthy("le Genetic Transposer est reconnu par son nom court",
+            seen.machines.genetic_transposer ~= nil)
+check("et sur la bonne face", seen.machines.genetic_transposer.machine, 2)
 check("avec la source de SON banc", seen.machines.sampler.source, 3)
 
 -- An ME Interface is where deliveries come from, not a machine to fill
@@ -113,6 +133,45 @@ check("le coffre est repere", #seen.chests, 1)
 check("avec sa taille", seen.chests[1].slots, 108)
 
 print("")
+print("-- deux machines identiques, et un choix que rien ne peut deviner --")
+
+do
+    -- Deux Imprinters, un template chacun. La decouverte parcourt les faces
+    -- dans l ordre, donc celle du dessus prend le nom de base -- ce qui, sur la
+    -- vraie base, mettait le profil d elevage sur la machine qui tient le
+    -- template de production. Chaque abeille serait sortie avec les mauvais
+    -- genes, sans un mot.
+    local doubled = topology.duplicates(seen)
+
+    checkTruthy("les deux imprinters sont vus comme une paire",
+                doubled.imprinter ~= nil and #doubled.imprinter == 2)
+    check("et rien d autre n est double", doubled.sampler, nil)
+
+    -- Les deux faces sont bien distinctes: c est la seule chose que le monde
+    -- sache en dire, et c est pour ca que la question va au joueur
+    local first = seen.machines[doubled.imprinter[1]]
+    local second = seen.machines[doubled.imprinter[2]]
+    checkTruthy("sur deux faces differentes", first.machine ~= second.machine)
+end
+
+print("")
+print("-- un banc qu on ne fait que lire n a pas besoin d interface --")
+
+do
+    local reading = "eeee5555-0000-0000-0000-000000000000"
+
+    check("le banc du Mutagen Producer ne reclame rien",
+          topology.needsInterface(seen, reading), false)
+    check("celui du Mutatron, si",
+          topology.needsInterface(seen, "aaaa1111-0000-0000-0000-000000000000"),
+          true)
+
+    -- Un transposer qui ne touche aucune machine ne reclame rien non plus
+    check("un transposer sans machine ne reclame rien",
+          topology.needsInterface(seen, "zzzz0000"), false)
+end
+
+print("")
 print("-- ce qui manque encore --")
 
 local absent = topology.missing(seen)
@@ -120,8 +179,12 @@ local named = {}
 for _, name in ipairs(absent) do named[name] = true end
 
 checkTruthy("le replicator est annonce manquant", named.replicator)
-checkTruthy("le producteur de mutagene aussi", named.mutagen_producer)
+checkTruthy("le Protein Liquifier aussi", named.protein_liquifier)
 checkTruthy("mais pas le mutatron, qui est la", not named.mutatron)
+checkTruthy("ni le producteur de mutagene, pose sur son propre banc",
+            not named.mutagen_producer)
+checkTruthy("ni le Genetic Transposer, desormais reconnu",
+            not named.genetic_transposer)
 
 print("")
 print("-- une configuration qui n est pas celle de ce monde --")
@@ -162,7 +225,7 @@ local chunk = load(source, "topologie")
 checkTruthy("le fichier ecrit est du Lua valide", chunk ~= nil)
 
 local written = chunk()
-check("il rend les deux transposers", #written.transposers, 2)
+check("il rend les trois transposers", #written.transposers, 3)
 check("il nomme l interface du banc",
       written.interfaces["aaaa1111-0000-0000-0000-000000000000"], "cccc3333")
 check("et le coffre a templates", written.template_chest.slots, 108)

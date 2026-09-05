@@ -36,6 +36,11 @@ topology.SIGNATURES = {
     {pattern = "genetic_sampler",     machine = "sampler"},
     {pattern = "sampler",             machine = "sampler"},
     {pattern = "genetic_transposer",  machine = "genetic_transposer"},
+    -- Sans ce repli, le Genetic Transposer n etait reconnu par RIEN. Les
+    -- inventaires ne rendent pas tous leur nom de registre: "Genetic Sampler"
+    -- ne contient pas "genetic_sampler", et les huit autres machines ne sont
+    -- passees que par leur nom court. Celui-la etait le seul a ne pas en avoir.
+    {pattern = "transposer",          machine = "genetic_transposer"},
     {pattern = "genetic_imprinter",   machine = "imprinter"},
     {pattern = "imprinter",           machine = "imprinter"},
     {pattern = "genetic_replicator",  machine = "replicator"},
@@ -48,6 +53,69 @@ topology.SIGNATURES = {
     {pattern = "interface",           machine = "_me_interface"},
     {pattern = "chest",               machine = "_chest"},
 }
+
+--- Machines the program only ever READS
+--- The Protein Liquifier and the Mutagen Producer are filled by hand: nothing
+--- is ever delivered to them, and their transposers touch no ME Interface on
+--- purpose. Warning about that is a permanent false alarm -- the installation
+--- check already learned this lesson once.
+--- @type table<string, boolean>
+topology.READ_ONLY = {
+    protein_liquifier = true,
+    mutagen_producer = true,
+}
+
+--- Does this bench ever need an ME Interface
+--- @param discovered table
+--- @param address string Transposer address
+--- @return boolean
+function topology.needsInterface(discovered, address)
+    local any = false
+
+    for _, link in pairs(discovered.machines or {}) do
+        if link.transposer == address then any = true end
+    end
+
+    if not any then return false end
+
+    for name, link in pairs(discovered.machines or {}) do
+        -- Un "_2" est la meme machine que sa base
+        local kind = name:gsub("_%d+$", "")
+        if link.transposer == address and not topology.READ_ONLY[kind] then
+            return true
+        end
+    end
+
+    return false
+end
+
+--- Machines found more than once, by kind
+--- Two Imprinters is the point of having two profiles, and which one holds
+--- which template is a DECISION, not something a block face can answer. The
+--- discovery walks the sides in order, so the first face seen took the base
+--- name -- and on this base that put the breeding profile on the machine
+--- holding the production template, silently.
+--- @param discovered table
+--- @return table<string, string[]> kind -> keys, in the order found
+function topology.duplicates(discovered)
+    local byKind = {}
+
+    for name in pairs(discovered.machines or {}) do
+        local kind = name:gsub("_%d+$", "")
+        byKind[kind] = byKind[kind] or {}
+        table.insert(byKind[kind], name)
+    end
+
+    local found = {}
+    for kind, keys in pairs(byKind) do
+        if #keys > 1 then
+            table.sort(keys)
+            found[kind] = keys
+        end
+    end
+
+    return found
+end
 
 --- The machines the program needs before it can do anything useful
 --- @type string[]
