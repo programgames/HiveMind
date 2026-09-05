@@ -581,13 +581,55 @@ end
 
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
--- Le libelle dit l action, la description dit ce qu elle coute. "Convertir
--- des drones en ADN" se lit mieux que "Detruire des drones", mais les drones
--- sont bel et bien detruits et l avertissement doit rester visible AVANT le
--- choix -- pas dans la confirmation qui suit.
-check("les actions destructrices le disent dans le menu",
-      text:find("l abeille est DETRUITE", 1, true) ~= nil
-      and text:find("les drones y sont DETRUITS", 1, true) ~= nil)
+-- "(o/N)" code deux informations dans la casse d une lettre: ce que veut dire
+-- "o", et lequel des deux est le defaut. Aucune des deux ne se devine. Corrige
+-- une fois sur l ecran du template, la formule etait restee dans quatorze
+-- autres questions.
+do
+    local lettered = 0
+    for _ in text:gmatch("%(o/N%)") do lettered = lettered + 1 end
+    for _ in text:gmatch("%(O/n") do lettered = lettered + 1 end
+
+    check("aucune question ne demande une lettre sans la traduire", lettered, 0)
+
+    -- Et la formule retenue est bien celle qui a ete validee
+    check("les questions disent ce que valent les lettres",
+          text:find("(o = oui, n = non)", 1, true) ~= nil, true)
+end
+
+-- L avertissement de destruction a quitte le menu -- decide avec le joueur:
+-- une description repond a "dans quel cas je choisis ca", et rien d autre.
+-- Il n a pas disparu pour autant. Il est sur l ecran de chaque option qui
+-- detruit, et il y arrive AVANT la question qui demande de confirmer: lu
+-- apres, il ne sert plus a rien.
+do
+    local destructive = {
+        {action = "sampleGene", warning = "DETRUIT l abeille"},
+        {action = "geneCampaign", warning = "detruit chaque abeille"},
+        {action = "feedExtractor", warning = "DETRUITE"},
+    }
+
+    for _, entry in ipairs(destructive) do
+        local from = text:find("function hivemind." .. entry.action .. "%(")
+        local stop = text:find("\nfunction hivemind%.", (from or 1) + 1) or #text
+        local body = from and text:sub(from, stop) or ""
+
+        local warned = body:find(entry.warning, 1, true)
+        -- La premiere question posee, quelle que soit sa formulation: c est
+        -- elle qui doit arriver APRES l avertissement
+        local asked = body:find("io.read()", 1, true)
+
+        check("l ecran " .. entry.action .. " previent qu il detruit",
+              warned ~= nil, true)
+
+        -- Une option qui ne demande rien previent quand meme; une option qui
+        -- demande doit prevenir d abord
+        if asked then
+            check("et il previent avant de demander confirmation",
+                  warned ~= nil and warned < asked, true)
+        end
+    end
+end
 
 -- The banner can carry several tank warnings and the advice several lines;
 -- unbounded, they push the top of the menu off the screen

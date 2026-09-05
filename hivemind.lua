@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.8.0"
+hivemind.VERSION = "1.9.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -660,7 +660,7 @@ local function chooseFromParents(context, princessLabel, droneLabel)
         print("Le programme peut lister ce que ces deux parents produisent,")
         print("mais doit d'abord interroger le jeu sur les 329 especes.")
         print("C'est long une fois, puis conserve sur disque.")
-        io.write("Construire cet index maintenant ? (o/N): ")
+        io.write("Construire cet index maintenant ? (o = oui, n = non) : ")
 
         local answer = io.read()
         if not answer or answer:lower():sub(1, 1) ~= "o" then return nil, false end
@@ -797,7 +797,7 @@ function hivemind.submitBreeding(context)
 
     print("")
     print("  " .. princessSpec.label .. "  +  " .. droneSpec.label .. "  ->  " .. target)
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o" or answer:lower():sub(1, 1) == "y") then
@@ -1200,7 +1200,7 @@ function hivemind.planChain(context)
     -- are predicted from the species name. A wrong guess surfaces as a clear
     -- "introuvable dans le reseau" on that step rather than a silent failure.
     print("")
-    io.write("Mettre ces " .. #plan.steps .. " croisement(s) en file ? (o/N): ")
+    io.write("Mettre ces " .. #plan.steps .. " croisement(s) en file ? (o = oui, n = non) : ")
 
     local answer = io.read()
     if not answer or answer:lower():sub(1, 1) ~= "o" then
@@ -1222,7 +1222,7 @@ function hivemind.planChain(context)
     print("")
     print("Le template d elevage s applique aux parents du premier croisement,")
     print("et ses genes descendent toute la chaine ensuite.")
-    io.write("Imprimer " .. princess .. " et " .. drone .. " ? (o/N): ")
+    io.write("Imprimer " .. princess .. " et " .. drone .. " ? (o = oui, n = non) : ")
 
     answer = io.read()
     if not answer or answer:lower():sub(1, 1) ~= "o" then
@@ -2394,7 +2394,7 @@ function hivemind.buildBase(context)
         print("Le programme doit d abord demander au jeu les parents de chaque")
         print("espece. C est long une fois, puis conserve sur disque.")
         print("Un appel de composant gele le SERVEUR: ca se fait par tranches.")
-        io.write("Continuer le balayage maintenant ? (o/N): ")
+        io.write("Continuer le balayage maintenant ? (o = oui, n = non) : ")
 
         local answer = io.read()
         if not answer or answer:lower():sub(1, 1) ~= "o" then
@@ -2685,7 +2685,7 @@ function hivemind.accumulateDrones(context)
     print("")
     print("  " .. species .. " : " .. held .. " -> " .. target .. " drones")
     print("  au plus " .. params.maxCycles .. " cycles d'apiary")
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
@@ -2735,7 +2735,7 @@ function hivemind.sampleGene(context)
         return
     end
 
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
                        or answer:lower():sub(1, 1) == "y") then
@@ -2896,7 +2896,7 @@ function hivemind.imprintBee(context)
 
     print("")
     print("  " .. beeSpec.label .. " recevra les genes du template")
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
@@ -2962,7 +2962,7 @@ function hivemind.analyseBee(context)
         -- The apiary keeps its drone, so a previous read leaves one behind.
         -- Reading it costs nothing; replacing it costs a bee and usually fails.
         print("Le slot drone contient " .. tostring(occupant.label) .. ".")
-        io.write("La lire elle ? (O/n, n = en poser une autre): ")
+        io.write("La lire elle ? (Entree ou o = la lire, n = en poser une autre) : ")
 
         local answer = io.read()
         local reuse = not answer or answer == ""
@@ -3405,7 +3405,7 @@ function hivemind.speciesSweep(context)
         print("  ATTENTION: pas assez de labware, la file s arretera en route.")
     end
 
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
                        or answer:lower():sub(1, 1) == "y") then
@@ -3676,7 +3676,7 @@ function hivemind.replicateBee(context)
     print("")
     print("  Il en sort une REINE, en Ignoble Stock -- verifie en jeu, une")
     print("  Common Queen etait dans la machine au sondage.")
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
@@ -3796,7 +3796,7 @@ function hivemind.feedExtractor(context)
     print("")
     print("  " .. count .. " x " .. chosen.species
         .. " Drone seront DETRUITES pour faire du DNA.")
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
@@ -4140,7 +4140,7 @@ function hivemind.harvestProfile(context)
         print("  ATTENTION: pas assez de labware, la file s arretera en route.")
     end
 
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
     answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
                        or answer:lower():sub(1, 1) == "y") then
@@ -4367,8 +4367,11 @@ end
 function hivemind.geneCampaign(context)
     print("")
     print("=== EXTRAIRE UN GENE PRECIS ===")
-    print("Extrait en boucle jusqu au gene vise, ou jusqu a court d abeilles.")
-    print("Chaque tirage rate enrichit quand meme la bibliotheque.")
+    -- Le prix de l ecran, avant de choisir quoi que ce soit: l apprendre apres
+    -- avoir choisi son abeille et son chromosome, c est l apprendre trop tard
+    print("Le Sampler detruit chaque abeille qu il tire. Il recommence")
+    print("jusqu au gene vise, ou jusqu a court d abeilles, et chaque tirage")
+    print("rate enrichit quand meme la bibliotheque.")
     print("")
 
     local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
@@ -4425,7 +4428,7 @@ function hivemind.geneCampaign(context)
         .. (wanted and (" -> vise " .. wanted) or " -> tout prendre")
         .. (wantedAllele and (" = " .. wantedAllele) or ""))
     print("  Le Sampler detruit chaque abeille.")
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
 
     answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
@@ -4510,7 +4513,7 @@ function hivemind.secureLibrary(context)
         print("  ATTENTION: pas de quoi tout faire, la file s'arretera en route.")
     end
 
-    io.write("Confirmer ? (o/N): ")
+    io.write("Confirmer ? (o = oui, n = non) : ")
     local answer = io.read()
     if not answer or not (answer:lower():sub(1, 1) == "o"
                        or answer:lower():sub(1, 1) == "y") then
@@ -4671,100 +4674,91 @@ end
 -- in the confirmation that follows it.
 local ADVANCED = {
     {group = "Regarder"},
-    {key = "v", label = "Verifier l installation",
-     hint = "machines, faces, slots, interfaces, cuves, consommables: un verdict",
-     action = "checkInstall"},
     {key = "1", label = "Etat detaille",
-     hint = "stocks, machines, genes en bibliotheque, taches en cours",
+     hint = "quand tu te demandes ou en est le systeme",
      action = "status"},
     {key = "o", label = "Retrouver ou sont les machines",
-     hint = "monde neuf, ou bloc deplace: le programme regarde et reecrit sa config",
+     hint = "monde neuf, ou apres avoir deplace une machine ou un Transposer",
      action = "writeTopology"},
     {key = "2", label = "Verifier que le programme voit les bons slots",
-     hint = "pose un objet a la main: si le programme lui donne le mauvais role, ca se voit ici",
+     hint = "quand une machine refuse ce qu on lui envoie sans raison visible",
      action = "slotDiagnostic"},
     {key = "g", label = "Lire le genome d une abeille",
-     hint = "ses 13 genes d un coup; elle survit, et le programme retient ce qu il apprend",
+     hint = "quand tu veux savoir ce que porte UNE abeille en particulier",
      action = "analyseBee"},
     {key = "l", label = "Lire le genome de toutes les abeilles en stock",
-     hint = "aucun cycle d apiary: c est ainsi qu on trouve qui porte quoi",
+     hint = "apres avoir rapporte des abeilles du monde",
      action = "readAllGenomes"},
-    {key = "k", label = "Fabriquer le template d elevage",
-     hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
-     action = "buildTemplate"},
-    {key = "w", label = "Valider la liste des abeilles de base",
-     hint = "celles qu aucun croisement ne peut produire: ce qui te manque encore",
-     action = "buildBase"},
     {key = "h", label = "Classer les especes par genes qu elles apportent",
-     hint = "classees par nombre de genes manquants qu elles apportent",
+     hint = "quand tu ne sais pas par quelle espece commencer",
      action = "breedingPlan"},
 
     {group = "Produire des abeilles"},
     {key = "3", label = "Accumuler des drones",
-     hint = "reproduit une espece en boucle jusqu au nombre voulu",
+     hint = "quand une espece n a plus assez de drones pour ce que tu veux en faire",
      action = "accumulateDrones"},
     {key = "4", label = "Croiser deux especes",
-     hint = "un croisement precis: A + B donne C, une seule fois",
+     hint = "quand tu sais deja quel croisement tu veux faire",
      action = "submitBreeding"},
     {key = "5", label = "Obtenir une espece, sans verifier le template",
-     hint = "calcule la chaine complete de croisements et l enchaine seule",
+     hint = "quand tu veux une espece precise tout de suite, template pret ou non",
      action = "planChain"},
 
     {group = "Collecter des genes"},
     {key = "a", label = "Extraire un gene d une abeille",
-     hint = "un gene au hasard sur 13, et l abeille est DETRUITE",
+     hint = "quand tu veux tenter un tirage sur une espece dont il te reste des drones",
      action = "sampleGene"},
     {key = "d", label = "Extraire un gene precis",
-     hint = "recommence l extraction jusqu a tomber sur le gene vise",
+     hint = "quand il te manque un gene precis et que tu sais quelle espece le porte",
      action = "geneCampaign"},
     {key = "i", label = "Sauver le gene d espece de chaque abeille",
-     hint = "une chasse par espece dont tu as assez de drones",
+     hint = "quand tu veux pouvoir refabriquer n importe quelle espece plus tard",
      action = "speciesSweep"},
     {key = "t", label = "Extraire les genes manquants d un template",
-     hint = "met en file toutes les chasses necessaires, d un coup",
+     hint = "quand il ne manque plus que des genes a un template",
      action = "harvestProfile"},
 
     {group = "Proteger les genes"},
     {key = "b", label = "Copier un gene",
-     hint = "un exemplaire de plus; l original n est pas consomme",
+     hint = "avant de depenser un gene que tu veux garder",
      action = "duplicateGene"},
     {key = "c", label = "Sauvegarder les genes en un seul exemplaire",
-     hint = "ceux qui n existent qu en un exemplaire: un accident et ils sont perdus",
+     hint = "de temps en temps, pour ne rien perdre que tu n aies qu une fois",
      action = "secureLibrary"},
 
     {group = "Templates"},
     {key = "e", label = "Etat des deux templates, gene par gene",
-     hint = "les genes a reunir pour chaque profil, et quelle abeille les porte",
+     hint = "quand tu veux voir ce qui manque encore aux deux templates",
      action = "templateHelp"},
     {key = "n", label = "Nommer les templates du coffre",
-     hint = "sans nom ils sont indiscernables, et impossibles a redemander au reseau",
+     hint = "apres avoir assemble un template a la table de craft",
      action = "nameTemplates"},
 
     {group = "Utiliser les genes"},
     {key = "f", label = "Imprimer une abeille",
-     hint = "lui applique le template pose dans la machine, sans changer son espece",
+     hint = "quand tu veux appliquer un template a une abeille que tu as deja",
      action = "imprintBee"},
     {key = "r", label = "Fabriquer une reine",
-     hint = "template complet + ADN: une reine sans parents, en Ignoble Stock",
+     hint = "quand tu veux une espece dont il ne te reste plus aucune abeille",
      action = "replicateBee"},
     {key = "x", label = "Convertir des drones en ADN pour le Replicator",
-     hint = "les drones y sont DETRUITS: seulement le surplus des especes sauvees",
+     hint = "quand le Replicator n a plus assez d ADN pour travailler",
      action = "feedExtractor"},
 
     {group = "Faire tourner"},
     {key = "6", label = "Executer la file",
-     hint = "fait avancer toutes les taches en attente",
+     hint = "apres avoir mis quelque chose en file",
      action = "runQueue"},
     {key = "7", label = "Vider la sortie de l apiary",
-     hint = "renvoie les abeilles produites vers le reseau ME",
+     hint = "quand l apiary est plein et ne demarre plus",
      action = "harvestApiary"},
 
     {group = "Entretenir"},
     {key = "8", label = "Gerer la file",
-     hint = "annuler une tache bloquee, purger les terminees",
+     hint = "quand une tache est bloquee, ou pour tout annuler",
      action = "manageQueue"},
     {key = "9", label = "Rafraichir la liste des especes",
-     hint = "redemande au jeu la liste complete des especes",
+     hint = "quand une espece que tu vois en jeu est inconnue du programme",
      action = "refreshSpecies"},
 }
 
