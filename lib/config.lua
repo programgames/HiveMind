@@ -358,6 +358,15 @@ config.library = {
 -- Read back off the two real templates in game on 2026-09-05 and confirmed
 -- allele by allele. The breeding one shows "(12/13)", which is these eleven
 -- plus the blank Species slot: the twelve the program aims for.
+--
+-- The gist itself was fetched and compared on 2026-09-05, value by value: the
+-- twenty-four match with no exception. Two independent readings of the same
+-- source agreeing is the strongest check available here, and it means there is
+-- no second list to choose from -- there is one list.
+--
+-- Five of the breeding values carry an asterisk in the guide, four of the
+-- production ones. See config.common_alleles below for what that means and for
+-- what was decided about it.
 config.profiles = {
     -- Fertility 4 and the shortest life: a queen that dies quickly and leaves
     -- many drones is what a breeding line wants.
@@ -477,23 +486,38 @@ config.gene_carriers = {
     [11] = {["Largest"] = {"Vindictive"}},
 }
 
---- Alleles nobody has to go hunting for: ordinary bees already carry them.
+--- The alleles the guide marks with a star, and what the star means.
 ---
---- Asked which species carries Flowers "Flowers", Flowering "Slow", Territory
---- "Average" and Effect "None", the answer was that no particular bee does --
---- these are what a plain wild bee looks like, and any drone in the chest is a
---- candidate. Naming one species for them would send someone breeding for a bee
---- they already own twenty of.
+--- Pyro's guide prints five of the breeding template's values with an asterisk
+--- and says, in one line at the bottom:
 ---
---- What follows from that is the cheapest move in the whole program: reading a
---- genome costs NO apiary cycle (the bee is parked, read and taken back), so the
---- way to find these is to read what is already in stock rather than to breed
+---     "Any starred trait can be swapped at no impact."
+---
+--- So no species is named for them -- not because ordinary bees happen to carry
+--- them, which is what this comment said before and was a guess, but because
+--- nobody bothered to name a carrier for a value that does not matter. The
+--- reasons are in the profile comment above: territory does nothing inside an
+--- apiary, flowering speed does not change the yield, and an effect of None is
+--- what a bee without a specialty already has.
+---
+--- Decided with the player on 2026-09-05: the program keeps aiming at the exact
+--- value anyway. A template built to the guide is the guide's template, and
+--- accepting "whatever is in stock" would make two players' templates differ
+--- while both call themselves finished.
+---
+--- What this table is for, then, is one sentence on screen. "Porteur inconnu"
+--- sent someone breeding for a bee nobody is famous for; "sur les abeilles
+--- ordinaires" says the truth, which is that the value turns up on its own.
+---
+--- And the cheapest move in the whole program follows from it: reading a genome
+--- costs NO apiary cycle (the bee is parked, read and taken back), so these are
+--- found by reading what is already in the chest rather than by breeding
 --- anything. That is what the genome sweep does.
 ---
---- Speed "Fast" sits here for a different reason: the Robotic bee was named for
---- the Speed chromosome, but Robotic is the PRODUCTION allele. Nothing was named
---- for "Fast", so it is hunted the same way -- on drones already held -- instead
---- of being attributed to a species by guesswork.
+--- Speed "Fast" belongs here for the same reason and it took a while to see:
+--- it is starred in the BREEDING template and not in the production one, where
+--- Robotic is named. That is why no bee was ever attributed to "Fast" -- it does
+--- not need one.
 config.common_alleles = {
     [1]  = {["Fast"] = true},        -- Speed
     [9]  = {["Flowers"] = true},     -- Flowers

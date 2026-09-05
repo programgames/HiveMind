@@ -489,8 +489,30 @@ lent = moins de mises à jour de blocs), Territory **Average** (le territoire ne
 fait rien dans un apiary), tolérances **Both 3** (Both 5 existe mais coûte
 beaucoup pour une amplitude dont rien n'a besoin ici).
 
-**Les deux profils sont ceux du Discord de MeatballCraft**, confirmes trait
-pour trait par le joueur, et epingles par un test. Ils ne sont pas a
+**Les deux profils viennent du guide de Pyro pour ce pack**
+(https://gist.github.com/mathisto/5cd71747d14432896007a01450ae48ff), confirmes
+trait pour trait par le joueur sur ses vrais templates, et epingles par un test.
+
+Le gist a ete recupere et compare valeur par valeur le 2026-09-05 : les
+vingt-quatre correspondent, sans exception. **Il n'y a donc pas deux listes
+entre lesquelles choisir, il y en a une.**
+
+⚠️ **Les asterisques du guide veulent dire « echangeable sans consequence »** —
+sa derniere ligne le dit : *« Any starred trait can be swapped at no impact. »*
+Cinq valeurs de l'elevage sont etoilees (Flowering Slow, Speed **Fast**, Flowers,
+Territory Average, Effect None), quatre de la production (les memes sans Speed,
+qui y vaut Robotic et n'est pas etoile).
+
+C'est pourquoi **aucune espece n'est nommee pour ces cinq-la** — pas parce que
+les abeilles ordinaires les portent, mais parce que personne n'a pris la peine
+de nommer un porteur pour une valeur qui ne compte pas. `config.common_alleles`
+les liste pour cette raison, et pour que l'ecran cesse de dire « porteur
+inconnu ».
+
+**Tranche avec le joueur le 2026-09-05 : le programme vise quand meme la valeur
+exacte.** Un template construit selon le guide est le template du guide, et
+accepter « ce qu'on a » ferait diverger deux templates qui se declarent tous
+deux termines. Ils ne sont pas a
 « ameliorer » : chaque amelioration evidente a une raison de ne pas se faire.
 Vitesse **Fast** en elevage (une lignee qui meurt vite n'a pas besoin de
 Robotic, qui coute une abeille de plus a attraper), Floraison **Slow**,
