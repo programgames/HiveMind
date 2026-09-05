@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.16.0"
+hivemind.VERSION = "1.17.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -2717,8 +2717,8 @@ function hivemind.completeTemplate(context)
         print("Aucun gene d espece en bibliotheque.")
         print("")
         print("C est lui qui manque en premier: sans lui le Replicator ne sait")
-        print("pas quelle abeille fabriquer. Choisis 9 puis i pour lancer une")
-        print("chasse par espece dont tu as des drones.")
+        print("pas quelle abeille fabriquer. Choisis 9 puis a: tout ton surplus")
+        print("de drones passe au Sampler, et le gene d espece en sort.")
         return
     end
 
@@ -3056,7 +3056,7 @@ function hivemind.buildBase(context)
     -- nothing to do.
     if #toSave > 0 then
         print("")
-        print("A FAIRE MAINTENANT: 9 puis i, pour sauver le gene de celles")
+        print("A FAIRE MAINTENANT: 9 puis a, pour sauver le gene de celles")
         print("du haut qui ont assez de drones.")
     end
 
@@ -3140,61 +3140,6 @@ function hivemind.accumulateDrones(context)
     end
 
     local id, submit_err = context.queue:submit("multiply", params)
-    if not id then
-        print("Impossible de creer la tache: " .. tostring(submit_err))
-        return
-    end
-
-    print("Tache #" .. id .. " creee. Lance l'option 6 pour la faire tourner.")
-end
-
---- Queue one gene extraction
---- The Sampler destroys the bee and draws one chromosome out of thirteen, so
---- this is a lottery ticket, not an order. Saying so before the confirmation
---- is the difference between a tool and a trap.
---- @param context table
-function hivemind.sampleGene(context)
-    print("")
-    print("=== EXTRAIRE UN GENE D UNE ABEILLE ===")
-    print("Le Sampler DETRUIT l abeille et tire un gene au hasard sur 13.")
-    print("Viser un gene precis coute donc une treizaine d abeilles.")
-    print("")
-
-    local beeSpec = chooseBee(context, "forestry:bee_drone_ge", "drone")
-    if not beeSpec then print("Annule.") return end
-
-    local blanks = 0
-    for _, item in ipairs(context.transport:findAll(
-            {name = "gendustry:gene_sample_blank"}) or {}) do
-        blanks = blanks + (tonumber(item.size) or 0)
-    end
-
-    print("")
-    print("  " .. beeSpec.label .. " -> un gene au hasard")
-    print("  samples vierges en stock : " .. blanks)
-
-    if blanks == 0 then
-        print("")
-        print("Sans Blank Gene Sample, le Sampler ne peut rien produire.")
-        print("Mets-en en autocraft AE2: il en faut des centaines.")
-        return
-    end
-
-    io.write("Confirmer ? (o = oui, n = non) : ")
-    local answer = io.read()
-    if not answer or not (answer:lower():sub(1, 1) == "o"
-                       or answer:lower():sub(1, 1) == "y") then
-        print("Annule.")
-        return
-    end
-
-    local params, err = genetics.sampleParams({bee = beeSpec})
-    if not params then
-        print("Parametres invalides: " .. tostring(err))
-        return
-    end
-
-    local id, submit_err = context.queue:submit("sample", params)
     if not id then
         print("Impossible de creer la tache: " .. tostring(submit_err))
         return
@@ -3780,140 +3725,162 @@ function hivemind.readAllGenomes(context)
     print("Choisis 3 pour mettre les extractions en file.")
 end
 
---- Queue a Species hunt for every species the network holds and the library lacks
---- A Species gene is what lets the Replicator make a bee from nothing and what
---- a per-species template is built on. Collecting them one menu choice at a
---- time is fine for two species and hopeless for twenty.
+--- Send every spendable drone to the Sampler, and nothing else
 ---
---- One species costs about thirteen drones on average -- the Sampler draws one
---- chromosome in thirteen -- so the total is stated before anything is queued.
+--- This replaces three options that each took a different route to the same
+--- place: one bee at a time, one species at a time, one profile at a time. The
+--- player's rule is simpler than all three, and safer:
+---
+---     to keep a species you need EITHER a princess and a drone, OR its
+---     Species gene. Everything above that floor is spendable.
+---
+--- So the question stops being "which species should I sample" and becomes
+--- "what do I have too much of". The answer is computed, not chosen.
 --- @param context table
-function hivemind.speciesSweep(context)
+function hivemind.harvestSurplus(context)
     print("")
-    print("=== SAUVER LE GENE D ESPECE DE CHAQUE ABEILLE ===")
-    print("Le Sampler tire un gene sur 13: compte une treizaine de drones")
-    print("par espece. Les tirages rates enrichissent la bibliotheque.")
+    print("=== EXTRAIRE LES GENES DE TOUT LE SURPLUS ===")
+    print("Le Sampler DETRUIT chaque abeille qu il tire, et rend UN gene sur")
+    print("13, au hasard. Ne partent que les drones en trop: une princesse et")
+    print("deux drones restent toujours par espece.")
     print("")
+    print("RACCOURCI pour le seul gene d espece: le")
+    print("Perfected Imbuement Fabrial (table de craft) le rend a coup sur,")
+    print("en UN drone au lieu d une treizaine. Cette file reste utile pour")
+    print("les douze autres chromosomes.")
 
-    -- The pack ships a shortcut this program cannot use: a shapeless craft that
-    -- returns the Species sample of any drone, every time. Thirteen drones
-    -- against one is worth saying out loud before spending the thirteen.
-    print("RACCOURCI: le Perfected Imbuement Fabrial (table de craft) rend")
-    print("le gene Species d un drone a coup sur, en un seul drone.")
-    print("Cette file reste utile pour les 12 autres chromosomes.")
-    print("")
+    local entries = genetics.surplusDrones({
+        transport = context.transport,
+        queue = context.queue,
+    })
 
-    context.library:scan()
-    local held = context.library:speciesGenes()
-
-    -- Only species we actually hold drones of: a campaign needs bees to spend
-    local stock = {}
-    for _, item in ipairs(context.transport:findAll(
-            {name = "forestry:bee_drone_ge"}) or {}) do
-        local label = tostring(item.label or "")
-        local species = label:gsub("%s+Drone$", "")
-
-        if species ~= "" and species ~= label then
-            stock[species] = (stock[species] or 0) + (tonumber(item.size) or 0)
-        end
-    end
-
-    -- Anything already queued must not be queued twice: running this command
-    -- again would spend a second batch of drones for genes already coming
-    local queued = {}
-    for _, job in ipairs(context.queue:list()) do
-        if job.kind == "campaign" and job.status ~= "complete"
-           and job.status ~= "cancelled" and job.params and job.params.bee then
-            queued[job.params.bee.label] = true
-        end
-    end
-
-    local plan, covered, short = {}, {}, {}
-    local names = {}
-    for species in pairs(stock) do table.insert(names, species) end
-    table.sort(names)
-
-    for _, species in ipairs(names) do
-        local count = stock[species]
-
-        if held[species] then
-            table.insert(covered, species)
-        elseif queued[species .. " Drone"] then
-            table.insert(covered, species .. " (deja en file)")
-        elseif count < 2 then
-            -- One drone is a coin flip at best, and losing the last of a
-            -- species to a failed draw is worse than not trying
-            table.insert(short, string.format("%s (%d drone)", species, count))
-        else
-            table.insert(plan, {species = species, stock = count})
-        end
-    end
-
-    if #covered > 0 then
-        print("Deja acquis ou en file : " .. table.concat(covered, ", "))
+    if #entries == 0 then
         print("")
-    end
-
-    if #short > 0 then
-        print("Trop peu de drones pour tenter : " .. table.concat(short, ", "))
-        print("Accumule-les d abord (option 3).")
-        print("")
-    end
-
-    if #plan == 0 then
-        print("Rien a lancer.")
+        print("Aucun drone dans le reseau.")
         return
     end
 
-    local budget = 13
-    print("A lancer :")
-    for _, entry in ipairs(plan) do
-        local spend = math.min(budget, entry.stock)
-        print(string.format("  %-16s %d drone(s) en stock, budget %d",
-            entry.species, entry.stock, spend))
+    context.library:scan()
+
+    local plan, protected, nothingNew = {}, {}, {}
+
+    for _, entry in ipairs(entries) do
+        if entry.protected then
+            table.insert(protected, entry)
+        elseif entry.spendable > 0 then
+            -- Un genome deja lu dit exactement ce que cette abeille apporte.
+            -- Si la bibliotheque a tout, la detruire n apprendrait rien -- et
+            -- c est la seule facon de le savoir SANS la detruire.
+            if context.library:teaches(entry.species) then
+                table.insert(plan, entry)
+            else
+                table.insert(nothingNew, entry)
+            end
+        end
     end
 
-    local labware = 0
+    print("")
+
+    if #plan == 0 then
+        print("Rien a tirer: aucun drone en trop qui apporterait un gene")
+        print("nouveau.")
+    else
+        print("A TIRER")
+        for _, entry in ipairs(plan) do
+            print("  " .. screen.fit(entry.species, 16)
+                .. screen.fit(entry.drones .. " drones", 12)
+                .. screen.fit(screen.count(entry.genomes, "genome"), 12)
+                .. "-> " .. entry.spendable .. " a tirer"
+                .. (entry.reserved > 0
+                    and ("  (" .. entry.reserved .. " reserve par la file)")
+                    or ""))
+        end
+    end
+
+    if #nothingNew > 0 then
+        print("")
+        print("DEJA CONNUES — leur genome est lu, tout y est deja")
+        for _, entry in ipairs(nothingNew) do
+            print("  " .. screen.fit(entry.species, 16)
+                .. entry.spendable .. " drones epargnes")
+        end
+    end
+
+    if #protected > 0 then
+        print("")
+        print("PROTEGEES")
+        for _, entry in ipairs(protected) do
+            print("  " .. screen.fit(entry.species, 16)
+                .. screen.fit(entry.drones .. " drones", 12)
+                .. entry.protected)
+        end
+
+        local orphans = 0
+        for _, entry in ipairs(protected) do
+            if entry.protected == "aucune princesse" then orphans = orphans + 1 end
+        end
+
+        if orphans > 0 then
+            print("")
+            print("  Sans princesse, un drone ne peut plus regenerer son")
+            print("  espece: ces drones sont tout ce qu il en reste. Les")
+            print("  depenser serait parier sur un tirage a une chance sur 13.")
+        end
+    end
+
+    if #plan == 0 then return end
+
+    local draws = 0
+    for _, entry in ipairs(plan) do draws = draws + entry.spendable end
+
+    -- Chaque tirage mange un sample vierge ET un labware. Le dire avant, plutot
+    -- que de laisser la file s arreter au milieu.
+    local blanks, labware = 0, 0
+    for _, item in ipairs(context.transport:findAll(
+            {name = "gendustry:gene_sample_blank"}) or {}) do
+        blanks = blanks + (tonumber(item.size) or 0)
+    end
     for _, item in ipairs(context.transport:findAll(
             {name = "gendustry:labware"}) or {}) do
         labware = labware + (tonumber(item.size) or 0)
     end
 
-    local worst = 0
-    for _, entry in ipairs(plan) do worst = worst + math.min(budget, entry.stock) end
-
     print("")
-    print("  " .. #plan .. " campagne(s), au pire " .. worst .. " abeille(s)")
-    print("  labware en stock : " .. labware)
+    print("  " .. screen.count(draws, "tirage") .. ", autant d abeilles"
+        .. " DETRUITES")
+    print("  samples vierges : " .. blanks .. "   labware : " .. labware)
 
-    if labware < worst then
-        print("  ATTENTION: pas assez de labware, la file s arretera en route.")
+    if blanks < draws or labware < draws then
+        print("  ATTENTION: pas de quoi tout faire, la file s arretera en"
+            .. " route.")
     end
 
     io.write("Confirmer ? (o = oui, n = non) : ")
+
     local answer = io.read()
-    if not answer or not (answer:lower():sub(1, 1) == "o"
-                       or answer:lower():sub(1, 1) == "y") then
-        print("Annule.")
+    if not answer or answer:lower():sub(1, 1) ~= "o" then
+        print("Annule. Aucune abeille n a ete touchee.")
         return
     end
 
-    local created = 0
-    for _, entry in ipairs(plan) do
-        local params = genetics.campaignParams({
-            bee = {label = entry.species .. " Drone"},
-            chromosome = "Species",
-            allele = entry.species,
-            bees = math.min(budget, entry.stock),
-        })
+    local queued = 0
 
-        if params then
-            local id = context.queue:submit("campaign", params)
-            if id then created = created + 1 end
+    for _, entry in ipairs(plan) do
+        for _ = 1, entry.spendable do
+            local params = genetics.sampleParams({
+                bee = {name = "forestry:bee_drone_ge",
+                       label = entry.species .. " Drone"},
+            })
+
+            if params and context.queue:submit("sample", params) then
+                queued = queued + 1
+            end
         end
     end
 
-    print(created .. " campagne(s) en file. Choisis 6 pour les faire tourner.")
+    print("")
+    print(screen.count(queued, "tirage") .. " en file. Choisis 6 pour les"
+        .. " faire tourner.")
 end
 
 --- Explain what to do about a machine that is not wired up yet
@@ -4435,219 +4402,6 @@ function hivemind.fluidWarnings(context)
     end
 
     return warnings
-end
-
---- Queue everything a profile still needs, in one choice
---- Filling a template by hand means running eleven separate campaigns and
---- typing the carrier species of each missing allele from memory. The program
---- already knows what is missing and who carries it; this joins the two.
---- @param context table
-function hivemind.harvestProfile(context)
-    print("")
-    print("=== EXTRAIRE LES GENES MANQUANTS D UN TEMPLATE ===")
-
-    local profiles = config.profiles or {}
-    local names = {}
-    for name in pairs(profiles) do table.insert(names, name) end
-    table.sort(names)
-
-    if #names == 0 then
-        print("Aucun profil declare dans lib/config.lua.")
-        return
-    end
-
-    for index, name in ipairs(names) do
-        print("  " .. index .. " = " .. name)
-    end
-    print("  " .. (#names + 1) .. " = les deux")
-
-    io.write("Profil: ")
-    local answer = io.read()
-    local pick = tonumber(answer and answer:gsub("%s+", ""))
-
-    local wanted = {}
-    if pick == #names + 1 then
-        wanted = names
-    elseif pick and names[pick] then
-        wanted = {names[pick]}
-    else
-        print("Annule.")
-        return
-    end
-
-    context.library:scan()
-
-    -- One allele can be wanted by both profiles; queueing it twice would spend
-    -- a second batch of bees on a gene already coming
-    local targets, order = {}, {}
-    for _, name in ipairs(wanted) do
-        for _, entry in ipairs(context.library:missingForProfile(profiles[name])) do
-            local key = entry.slot .. "/" .. entry.allele
-            if not targets[key] then
-                targets[key] = entry
-                table.insert(order, key)
-            end
-        end
-    end
-
-    if #order == 0 then
-        print("")
-        print("Rien ne manque: les profils choisis sont complets.")
-        print("Choisis e pour la liste des samples a assembler.")
-        return
-    end
-
-    -- Drones in stock, by species. A carrier nobody owns is a hunting note,
-    -- not a job: queueing it would fail on the first step.
-    local stock = {}
-    for _, item in ipairs(context.transport:findAll(
-            {name = "forestry:bee_drone_ge"}) or {}) do
-        local label = tostring(item.label or "")
-        local species = label:gsub("%s+Drone$", "")
-        if species ~= "" and species ~= label then
-            stock[species] = (stock[species] or 0) + (tonumber(item.size) or 0)
-        end
-    end
-
-    local queued = {}
-    for _, job in ipairs(context.queue:list()) do
-        if job.kind == "campaign" and job.status ~= "complete"
-           and job.status ~= "cancelled" and job.params then
-            queued[tostring(job.params.chromosome) .. "/"
-                .. tostring(job.params.allele)] = true
-        end
-    end
-
-    local plan, toHunt, alreadyGoing = {}, {}, {}
-
-    for _, key in ipairs(order) do
-        local entry = targets[key]
-
-        -- Two sources, and both are needed: the table transcribed from the
-        -- pack's quests, and whatever reading real genomes has taught us
-        local found, carriers = {}, {}
-        for _, one in ipairs(config.carriersFor(entry.slot, entry.allele)) do
-            if not found[one] then found[one] = true table.insert(carriers, one) end
-        end
-        for _, one in ipairs(context.library:carriersOf(entry.slot, entry.allele)) do
-            if not found[one] then found[one] = true table.insert(carriers, one) end
-        end
-
-        local chromosome = entry.chromosome or entry.slot
-
-        if queued[tostring(chromosome) .. "/" .. tostring(entry.allele)] then
-            table.insert(alreadyGoing, chromosome .. " = " .. entry.allele)
-        else
-            -- Prefer the carrier we hold most of: a campaign spends bees, and
-            -- running out mid-way parks the job for nothing.
-            --
-            -- And never the last one or two. The Sampler destroys what it
-            -- reads and draws one chromosome out of thirteen, so a hunt on a
-            -- single drone is a 1-in-13 lottery whose losing ticket is the
-            -- last individual of that species. speciesSweep has refused this
-            -- from the start; this function was written later and did not.
-            local RISKY = 2
-            local best, bestStock
-            for _, one in ipairs(carriers) do
-                if (stock[one] or 0) >= RISKY and (stock[one] or 0) > (bestStock or 0) then
-                    best, bestStock = one, stock[one]
-                end
-            end
-
-            if best then
-                table.insert(plan, {
-                    species = best, stock = bestStock,
-                    chromosome = chromosome, allele = entry.allele,
-                    slot = entry.slot,
-                })
-            else
-                -- Why this carrier is out: none at all, or too few to risk
-                local why = "porteur inconnu"
-                if #carriers > 0 then
-                    local counts = {}
-                    for _, one in ipairs(carriers) do
-                        table.insert(counts, one .. " ("
-                            .. screen.count(stock[one] or 0, "drone") .. ")")
-                    end
-                    why = table.concat(counts, " ou ")
-                end
-
-                table.insert(toHunt, string.format("%s = %s  <- %s",
-                    chromosome, entry.allele, why))
-            end
-        end
-    end
-
-    if #alreadyGoing > 0 then
-        print("")
-        print("Deja en file : " .. table.concat(alreadyGoing, ", "))
-    end
-
-    if #toHunt > 0 then
-        print("")
-        print("PAS ASSEZ DE DRONES — accumule-les d abord (option 3) :")
-        for _, line in ipairs(toHunt) do print("  " .. line) end
-        print("  Le Sampler detruit ce qu il lit et tire un chromosome sur 13:")
-        print("  chasser sur un seul drone, c est le perdre douze fois sur")
-        print("  treize. Il en faut au moins deux.")
-    end
-
-    if #plan == 0 then
-        print("")
-        print("Rien a lancer maintenant.")
-        return
-    end
-
-    print("")
-    print("A LANCER :")
-
-    local budget, worst = 13, 0
-    for _, item in ipairs(plan) do
-        local spend = math.min(budget, item.stock)
-        worst = worst + spend
-        print(string.format("  %-22s %-10s <- %s (%d en stock, budget %d)",
-            tostring(item.chromosome), item.allele, item.species,
-            item.stock, spend))
-    end
-
-    local labware = 0
-    for _, item in ipairs(context.transport:findAll(
-            {name = "gendustry:labware"}) or {}) do
-        labware = labware + (tonumber(item.size) or 0)
-    end
-
-    print("")
-    print("  " .. #plan .. " campagne(s), au pire " .. worst .. " abeille(s)")
-    print("  labware en stock : " .. labware)
-
-    if labware < worst then
-        print("  ATTENTION: pas assez de labware, la file s arretera en route.")
-    end
-
-    io.write("Confirmer ? (o = oui, n = non) : ")
-    answer = io.read()
-    if not answer or not (answer:lower():sub(1, 1) == "o"
-                       or answer:lower():sub(1, 1) == "y") then
-        print("Annule.")
-        return
-    end
-
-    local created = 0
-    for _, item in ipairs(plan) do
-        local params = genetics.campaignParams({
-            bee = {label = item.species .. " Drone"},
-            chromosome = tostring(item.chromosome),
-            allele = item.allele,
-            bees = math.min(budget, item.stock),
-        })
-
-        if params then
-            local id = context.queue:submit("campaign", params)
-            if id then created = created + 1 end
-        end
-    end
-
-    print(created .. " campagne(s) en file. Choisis 6 pour les faire tourner.")
 end
 
 --- Rank the species worth breeding, by how many missing genes each one brings
@@ -5198,18 +4952,12 @@ local ADVANCED = {
      action = "planChain"},
 
     {group = "Collecter des genes"},
-    {key = "a", label = "Extraire un gene d une abeille",
-     hint = "quand tu veux tenter un tirage sur une espece dont il te reste des drones",
-     action = "sampleGene"},
+    {key = "a", label = "Extraire les genes de tout le surplus",
+     hint = "de temps en temps: tout ce que tu as en trop passe au Sampler",
+     action = "harvestSurplus"},
     {key = "d", label = "Extraire un gene precis",
      hint = "quand il te manque un gene precis et que tu sais quelle espece le porte",
      action = "geneCampaign"},
-    {key = "i", label = "Sauver le gene d espece de chaque abeille",
-     hint = "quand tu veux pouvoir refabriquer n importe quelle espece plus tard",
-     action = "speciesSweep"},
-    {key = "t", label = "Extraire les genes manquants d un template",
-     hint = "quand il ne manque plus que des genes a un template",
-     action = "harvestProfile"},
 
     {group = "Proteger les genes"},
     {key = "b", label = "Copier un gene",

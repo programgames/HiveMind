@@ -1052,6 +1052,86 @@ do
                 detail and detail:find("option g"))
 end
 
+print("")
+print("-- ce qu on peut depenser, et ce qu on ne peut pas --")
+
+do
+    -- La regle tranchee avec le joueur: pour garder une espece il faut SOIT
+    -- une princesse et un drone, SOIT son gene d espece. Le plancher est donc
+    -- une princesse et DEUX drones -- le deuxieme est la marge d un accident.
+    local network = {
+        ["forestry:bee_drone_ge"] = {
+            -- une seule entree: AE2 empile par NBT, donc trente-deux clones
+            {label = "Forest Drone", size = 32},
+            -- deux entrees: deux lignees, deux genomes a apprendre
+            {label = "Cultivated Drone", size = 5},
+            {label = "Cultivated Drone", size = 4},
+            -- pile au plancher: rien a depenser
+            {label = "Wintry Drone", size = 2},
+            -- sans princesse: intouchable
+            {label = "Yellow Drone", size = 6},
+        },
+        ["forestry:bee_princess_ge"] = {
+            {label = "Forest Princess", size = 1},
+            {label = "Cultivated Princess", size = 2},
+            {label = "Wintry Princess", size = 1},
+        },
+    }
+
+    local transport = {
+        findAll = function(_, spec) return network[spec.name] or {} end,
+    }
+
+    local queue = {
+        list = function()
+            return {
+                {kind = "breed", status = "pending",
+                 params = {drone = {label = "Forest Drone"}}},
+                -- une tache terminee ne reserve plus rien
+                {kind = "breed", status = "complete",
+                 params = {drone = {label = "Forest Drone"}}},
+            }
+        end,
+    }
+
+    local entries = genetics.surplusDrones({transport = transport, queue = queue})
+
+    local byName = {}
+    for _, entry in ipairs(entries) do byName[entry.species] = entry end
+
+    -- 32 drones, plancher 2, une reservee par la file
+    check("le surplus retire le plancher et ce qui est reserve",
+          byName.Forest.spendable, 29)
+    check("et compte ce que la file a engage", byName.Forest.reserved, 1)
+    check("une tache terminee ne reserve plus rien", byName.Forest.reserved, 1)
+
+    -- AE2 separe les piles par NBT: deux entrees, deux lignees
+    check("deux lignees se comptent comme deux genomes",
+          byName.Cultivated.genomes, 2)
+    check("et leurs drones s additionnent", byName.Cultivated.drones, 9)
+    check("le surplus aussi", byName.Cultivated.spendable, 7)
+
+    -- Pile au plancher: on ne touche pas
+    check("au plancher, rien n est depensable", byName.Wintry.spendable, 0)
+    check("et l ecran saura pourquoi", byName.Wintry.protected,
+          "pas assez de drones en trop")
+
+    -- LE garde-fou: sans princesse, ces drones sont tout ce qui reste de
+    -- l espece, et un drone seul ne regenere rien
+    check("sans princesse, rien n est depensable", byName.Yellow.spendable, 0)
+    check("et la raison est nommee", byName.Yellow.protected,
+          "aucune princesse")
+
+    -- Le plancher est reglable, et le defaut est bien deux
+    local tighter = genetics.surplusDrones({transport = transport,
+                                            keepDrones = 1})
+    local loose = {}
+    for _, entry in ipairs(tighter) do loose[entry.species] = entry end
+
+    check("un plancher a un drone en libere un de plus",
+          loose.Forest.spendable, 31)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

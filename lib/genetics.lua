@@ -217,6 +217,126 @@ function genetics.princessCount(context, species)
     return count
 end
 
+--- How many drones of each species may be spent, and what must never be
+---
+--- The rule, decided with the player: to keep a species you need EITHER a
+--- princess and a drone, OR its Species gene. So a drone above that floor is
+--- spendable, and everything at or below it is not.
+---
+--- Three things it refuses to touch, and each was a way to lose a species:
+---
+---   * a species with NO PRINCESS. Its drones cannot regenerate it -- a drone
+---     alone breeds nothing -- so they are all that is left of it. Spending
+---     them is a gamble on one draw in thirteen, and it is not this option's
+---     to take.
+---   * the floor itself: one princess and TWO drones, not one. One drone is the
+---     theoretical minimum, and one accident -- a cross that eats the princess,
+---     a misclick -- ends the species. The second drone is the margin.
+---   * anything the queue has already spoken for. A cross waiting on three
+---     Forest Drones would fail on "introuvable dans le reseau", and nothing
+---     would say that we ate them.
+---
+--- @param options table {transport, queue, keepDrones, keepPrincesses}
+--- @return table[] entries {species, drones, princesses, genomes, reserved,
+---                          spendable, protected}
+function genetics.surplusDrones(options)
+    options = options or {}
+
+    local transport = options.transport
+    if not transport then return {} end
+
+    local floor = options.keepDrones or 2
+    local needPrincess = options.keepPrincesses or 1
+
+    -- AE2 separates stacks by NBT, so several entries under one label means
+    -- several LINEAGES. One entry of thirty-two means thirty-two clones, and
+    -- sampling them past their twenty-six alleles can only repeat itself.
+    local drones, genomes, princesses = {}, {}, {}
+
+    local function sweep(itemName, into, counted)
+        local ok, items = pcall(function()
+            return transport:findAll({name = itemName})
+        end)
+
+        if not ok or type(items) ~= "table" then return end
+
+        for _, item in ipairs(items) do
+            local label = tostring(item.label or "")
+            local species = label:gsub("%s+%a+$", "")
+
+            if species ~= "" then
+                into[species] = (into[species] or 0) + (tonumber(item.size) or 0)
+                if counted then
+                    counted[species] = (counted[species] or 0) + 1
+                end
+            end
+        end
+    end
+
+    sweep("forestry:bee_drone_ge", drones, genomes)
+    sweep("forestry:bee_princess_ge", princesses, nil)
+
+    -- What the queue is already counting on. Reading job params rather than
+    -- guessing: a job names the exact bees it will consume.
+    local reserved = {}
+
+    if options.queue then
+        local ok, list = pcall(function() return options.queue:list() end)
+
+        if ok and type(list) == "table" then
+            for _, job in ipairs(list) do
+                if job.status ~= "complete" and job.status ~= "cancelled" then
+                    for _, key in ipairs({"drone", "bee", "princess"}) do
+                        local spec = job.params and job.params[key]
+                        local label = spec and tostring(spec.label or "")
+
+                        if label and label:find(" Drone", 1, true) then
+                            local species = label:gsub("%s+%a+$", "")
+                            reserved[species] = (reserved[species] or 0) + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local entries = {}
+
+    for species, count in pairs(drones) do
+        local held = princesses[species] or 0
+        local booked = reserved[species] or 0
+
+        local entry = {
+            species = species,
+            drones = count,
+            princesses = held,
+            genomes = genomes[species] or 0,
+            reserved = booked,
+            spendable = 0,
+        }
+
+        if held < needPrincess then
+            entry.protected = "aucune princesse"
+        else
+            local free = count - floor - booked
+            if free > 0 then
+                entry.spendable = free
+            else
+                entry.protected = "pas assez de drones en trop"
+            end
+        end
+
+        table.insert(entries, entry)
+    end
+
+    table.sort(entries, function(a, b)
+        if a.spendable ~= b.spendable then return a.spendable > b.spendable end
+        return a.species < b.species
+    end)
+
+    return entries
+end
+
 --- Build and check the parameters of a sampling job
 --- @param options table {bee}
 --- @return table|nil params

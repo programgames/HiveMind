@@ -127,7 +127,11 @@ for _, action in ipairs(actions) do wired[action] = true end
 check("la recolte est atteignable depuis le menu", wired.harvestApiary == true)
 check("l'accumulation est atteignable depuis le menu",
       wired.accumulateDrones == true)
-check("l'extraction de gene est atteignable", wired.sampleGene == true)
+-- Trois options menaient au meme endroit par trois routes: une abeille a la
+-- fois, une espece a la fois, un profil a la fois. La regle du joueur est plus
+-- simple et plus sure que les trois -- garder une princesse et deux drones,
+-- depenser le reste -- alors elles n en font plus qu une.
+check("l'extraction de gene est atteignable", wired.harvestSurplus == true)
 
 -- Sampling is a lottery: thirteen bees on average per chosen gene, and a
 -- species whose drones share one genome can never yield anything else however
@@ -139,18 +143,25 @@ check("la lecture de genome est atteignable", wired.analyseBee == true)
 -- list of species covers every gene still missing.
 check("le plan de croisement est atteignable", wired.breedingPlan == true)
 
--- Collecting a Species gene one menu choice at a time is fine for two species
--- and hopeless for twenty
-check("le balayage des especes est atteignable", wired.speciesSweep == true)
-check("il ne relance pas une campagne deja en file",
-      text:find("deja en file", 1, true) ~= nil)
+-- Le gene d espece sort du meme geste que les autres: il n y a plus de
+-- balayage separe, il y a du surplus qui passe au Sampler
+check("le surplus part au Sampler d un seul geste",
+      wired.harvestSurplus == true)
+
+-- Relancer l option ne doit pas depenser deux fois les memes drones. Ce qui
+-- est deja en file compte comme reserve, donc la deuxieme passe voit moins de
+-- surplus -- sans qu il ait fallu ecrire un cas particulier.
+check("ce qui est deja en file est compte comme reserve",
+      text:find("reserve par la file", 1, true) ~= nil)
 check("il refuse de risquer le dernier drone d une espece",
-      text:find("Trop peu de drones", 1, true) ~= nil)
+      text:find("pas assez de drones en trop", 1, true) ~= nil
+      or io.open("lib/genetics.lua"):read("a")
+             :find("pas assez de drones en trop", 1, true) ~= nil)
 -- Thirteen drones against one, and the program cannot do the one itself
 check("il signale le raccourci qui coute un drone au lieu de treize",
       text:find("Perfected Imbuement Fabrial", 1, true) ~= nil)
 check("il annonce le cout total avant de confirmer",
-      text:find("au pire", 1, true) ~= nil)
+      text:find("autant d abeilles", 1, true) ~= nil)
 
 -- The Replicator is the only machine that makes a bee out of nothing, which is
 -- what turns the gene library from a museum into insurance
@@ -256,20 +267,28 @@ check("un reservoir vide se distingue d un reservoir bas",
 check("une machine non construite n est pas un probleme",
       text:find("link.enabled ~= false and link.machine ~= nil", 1, true) ~= nil)
 
--- Filling a template by hand is eleven separate campaigns and the carrier
--- species of each one typed from memory
-check("la recolte groupee est atteignable", wired.harvestProfile == true)
-check("elle ne relance pas un gene deja en file",
-      text:find("Deja en file : ", 1, true) ~= nil)
-check("elle distingue ce qui manque de ce qui est introuvable",
-      text:find("A ATTRAPER D ABORD", 1, true) ~= nil)
-check("elle prefere le porteur dont on a le plus de drones",
-      text:find("Prefer the carrier we hold most of", 1, true) ~= nil)
+-- Et les trois garde-fous qui empechent de perdre une espece: le plancher,
+-- l espece sans princesse, et ce que la file a deja engage
+check("le plancher est d une princesse et DEUX drones",
+      text:find("keepDrones or 2", 1, true) ~= nil
+      or io.open("lib/genetics.lua"):read("a"):find("keepDrones or 2", 1, true) ~= nil)
+check("une espece sans princesse n est jamais touchee",
+      text:find("aucune princesse", 1, true) ~= nil)
+check("et l ecran dit pourquoi",
+      text:find("un drone ne peut plus regenerer son", 1, true) ~= nil)
 check("elle croise la table du pack et les genomes lus",
       text:find("context.library:carriersOf(entry.slot, entry.allele)",
                 1, true) ~= nil)
-check("elle previent quand le labware ne suffira pas",
-      text:find("pas assez de labware", 1, true) ~= nil)
+
+-- Chaque tirage mange un sample vierge ET un labware: 300 tirages en epuisent
+-- 300 de chaque, et la file s arreterait au milieu sans le dire
+check("elle previent quand les consommables ne suffiront pas",
+      text:find("pas de quoi tout faire", 1, true) ~= nil)
+
+-- Une espece dont le genome est deja lu et deja en bibliotheque n a plus rien
+-- a apprendre: la sampler couterait une abeille pour un doublon
+check("une espece qui n apprend plus rien est epargnee",
+      text:find("context.library:teaches(entry.species)", 1, true) ~= nil)
 
 check("les porteurs sont declares en config",
       settingsText:find("config.gene_carriers", 1, true) ~= nil)
@@ -754,7 +773,7 @@ end
 -- apres, il ne sert plus a rien.
 do
     local destructive = {
-        {action = "sampleGene", warning = "DETRUIT l abeille"},
+        {action = "harvestSurplus", warning = "DETRUIT chaque abeille"},
         {action = "geneCampaign", warning = "detruit chaque abeille"},
         {action = "feedExtractor", warning = "DETRUITE"},
     }
@@ -1201,16 +1220,17 @@ do
     -- Le Sampler DETRUIT ce qu il lit et tire un chromosome sur treize. Une
     -- chasse lancee sur un seul drone perd cette abeille douze fois sur
     -- treize, et si c est la derniere, l espece entiere est a refaire.
-    -- speciesSweep refusait deja; harvestProfile, ecrite plus tard, non --
-    -- elle aurait brule le dernier drone Rocky du joueur.
-    local from = text:find("function hivemind.harvestProfile", 1, true)
-    local stop = text:find("\nend\n", from or 1, true) or #text
-    local body = from and text:sub(from, stop) or ""
+    -- speciesSweep refusait deja de bruler le dernier drone; harvestProfile,
+    -- ecrite plus tard, ne le refusait pas. Les deux ont disparu dans une
+    -- seule option, et le garde-fou vit maintenant dans le calcul du surplus,
+    -- ou il ne peut plus etre oublie par le prochain ecran ecrit.
+    local geneticsText = io.open("lib/genetics.lua"):read("a")
 
-    check("harvestProfile ecarte les especes trop justes",
-          body:find("RISKY", 1, true) ~= nil)
-    check("et dit pourquoi au lieu de les taire",
-          body:find("PAS ASSEZ DE DRONES", 1, true) ~= nil)
+    check("le plancher vit dans le calcul, pas dans un ecran",
+          geneticsText:find("function genetics.surplusDrones", 1, true) ~= nil)
+    check("une espece sans princesse y est protegee",
+          geneticsText:find('entry.protected = "aucune princesse"', 1, true) ~= nil)
+
 
     -- Et la chaine bloquee ne doit jamais atterrir dans la file.
     -- L ecran sert maintenant les DEUX templates: meme corps, un nom de profil

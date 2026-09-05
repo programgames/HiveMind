@@ -210,6 +210,59 @@ function Library:remember(label, chromosomes)
     return self:recordGenome(species, chromosomes)
 end
 
+--- Does this species still have something to teach us
+---
+--- The point of destroying a drone is the gene it yields. If every allele this
+--- species carries is already on the shelf, the Sampler would only ever hand
+--- back a duplicate -- and it would cost a bee, a blank sample and a labware to
+--- do it. Knowing that WITHOUT destroying anything is only possible because the
+--- genome was read once, for free, while the bee was in the apiary anyway.
+---
+--- A species whose genome was never read answers true: not knowing is not the
+--- same as knowing there is nothing.
+--- @param species string As a drone label spells it, without " Drone"
+--- @return boolean
+function Library:teaches(species)
+    self:load()
+
+    local recorded = self.index.genomes and self.index.genomes[species]
+    if not recorded then return true end
+
+    local genes = self:allGenes()
+
+    local function flatten(text)
+        return tostring(text):lower():gsub("[^%w]", "")
+    end
+
+    for key, entry in pairs(recorded) do
+        local slot = tonumber(key)
+        local held = (slot and genes[slot]) or {}
+
+        for _, uid in ipairs({entry.active, entry.inactive}) do
+            if uid then
+                local flat = flatten(uid)
+                local found = false
+
+                -- Suffix, never substring: the genome says
+                -- "forestry.floweringSlowest" and the shelf says "Slow", and a
+                -- substring test would call those a match -- the opposite value
+                for allele in pairs(held) do
+                    local target = flatten(allele)
+                    if #target > 0 and #flat >= #target
+                       and flat:sub(-#target) == target then
+                        found = true
+                        break
+                    end
+                end
+
+                if not found then return true end
+            end
+        end
+    end
+
+    return false
+end
+
 --- Every species known to carry an allele, from what has been read
 --- @param slot number
 --- @param uidSuffix string Allele as a sample label spells it, e.g. "Both 3"

@@ -491,6 +491,32 @@ file **continue avec les suivantes**. Seule une panne définitive arrête la pas
 
 ---
 
+**Pour garder une espèce il faut SOIT une princesse et un drone, SOIT son gène
+Species.** Tranché avec le joueur le 2026-09-05, et c'est la règle qui remplace
+toute la section « collecter des gènes » : la question n'est plus « quelle espèce
+sampler » mais « de quoi ai-je trop ». Le plancher retenu est **une princesse et
+DEUX drones** — un drone est le minimum théorique, le second est la marge d'un
+accident.
+
+Trois garde-fous, chacun étant une façon de perdre une espèce :
+
+- **Une espèce sans princesse n'est jamais touchée.** Un drone seul ne régénère
+  rien, donc ses drones sont tout ce qu'il en reste ; les dépenser serait parier
+  sur un tirage à une chance sur treize.
+- **Ce que la file a déjà engagé est décompté.** Sinon un croisement en attente
+  échoue plus tard sur « introuvable dans le réseau », sans que rien ne dise que
+  c'est nous qui avons mangé ses drones.
+- **Une espèce dont le génome est lu et déjà entièrement en bibliothèque est
+  épargnée.** `library:teaches(species)` le dit sans rien détruire — ce qui n'est
+  possible que parce que le génome a été retenu au passage.
+
+⚠️ **« 100 % des gènes d'une espèce » n'existe pas.** Seul le chromosome 0 est
+constant ; le reste dépend de la lignée. Ce qui est connaissable, c'est le génome
+d'un individu (13 chromosomes × 2 allèles), et **AE2 dit combien d'individus
+distincts on a** : il sépare les piles par NBT, donc `x32 — 1 genome` veut dire
+trente-deux clones, et les sampler au-delà de leurs 26 allèles ne peut rien
+apprendre.
+
 ## 7. Décisions verrouillées avec le joueur
 
 | Sujet | Décision |
