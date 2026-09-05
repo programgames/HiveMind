@@ -578,6 +578,38 @@ do
     os.remove(PATH)
 end
 
+print("")
+print("-- le titre d une tache met en tete ce qui la distingue --")
+
+do
+    -- Le journal affiche ce titre dans une colonne fixe, et "accumulation de
+    -- drones" fait vingt-deux caracteres a lui seul: l espece etait coupee a
+    -- tous les coups, et trois taches differentes ecrivaient la meme ligne.
+    local drones = {id = 1, kind = "multiply", params = {species = "Diligent"}}
+    local title = jobs.title(drones)
+
+    check("l espece vient en premier", title:sub(1, 8), "Diligent")
+    checkTruthy("et le genre de tache suit",
+                title:find("accumulation de drones", 1, true) ~= nil)
+
+    -- Coupe a vingt caracteres -- la largeur d origine -- on sait encore de
+    -- quelle tache il s agit
+    checkTruthy("coupe court, il reste identifiable",
+                title:sub(1, 20):find("Diligent", 1, true) ~= nil)
+
+    local cross = {id = 2, kind = "breed",
+                   params = {target = "forestry.speciesCultivated"}}
+    check("un croisement nomme son espece cible",
+          jobs.title(cross, function(uid)
+              return uid == "forestry.speciesCultivated" and "Cultivated" or nil
+          end):sub(1, 10), "Cultivated")
+
+    -- Une tache sans cible ne doit pas se retrouver avec un titre vide
+    local queen = {id = 3, kind = "replicate", params = {}}
+    check("une tache sans cible garde son genre",
+          jobs.title(queen), "replication d une reine")
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

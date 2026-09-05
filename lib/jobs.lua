@@ -118,6 +118,23 @@ function jobs.label(key)
     return jobs.LABELS[key] or tostring(key)
 end
 
+--- What a job is, in one line, discriminating part FIRST
+---
+--- The queue log shows this in a fixed column, and "accumulation de drones" is
+--- twenty-two characters on its own: the species was cut off every single time,
+--- so three different tasks printed the same line. The species is the only part
+--- that says WHICH task this is; the kind is context, and context is what gets
+--- cut when the column runs out.
+--- @param job table
+--- @param naming function|nil uid -> display name
+--- @return string
+function jobs.title(job, naming)
+    local kind = jobs.label(job and job.kind)
+    local goal = jobs.goal(job, naming)
+
+    return goal and (goal .. "  " .. kind) or kind
+end
+
 jobs.DEFAULT_MAX_ATTEMPTS = 3
 
 local Queue = {}

@@ -360,9 +360,11 @@ do
           jobsText:find("pcall(announce, job, step.name", 1, true) ~= nil)
 end
 
--- Dix croisements en vol sont indiscernables sous "#25 croisement"
+-- Dix croisements en vol sont indiscernables sous "#25 croisement".
+-- L objectif est desormais compose dans lib/jobs, ou il se teste vraiment:
+-- ici on verifie seulement que l ecran s en sert.
 check("chaque tache est nommee par son objectif",
-      text:find("jobs.goal(job, naming)", 1, true) ~= nil)
+      text:find("jobs.title(job, naming)", 1, true) ~= nil)
 check("et done/retry/needs_player sont traduits",
       text:find("jobs.outcomeLabel", 1, true) ~= nil)
 check("l avancement N/M est affiche",
@@ -605,6 +607,20 @@ do
     -- l ecart: c est le bug d origine, code en dur
     check("le nombre de copies suit la cible",
           text:find("for _ = 1, math.max(1, shortage.needed) do", 1, true) ~= nil)
+end
+
+-- Les colonnes du journal etaient figees a vingt caracteres, sur un ecran qui
+-- en fait cent soixante: la ligne en utilisait cinquante tout en coupant les
+-- deux seules choses a lire, l espece et l etape.
+do
+    check("les colonnes du journal suivent la largeur de l ecran",
+          text:find("local width = select(1, screen.size())", 1, true) ~= nil)
+    check("et ne sont plus ecrites en dur",
+          text:find("screen.fit(title(job), 20)", 1, true) == nil)
+
+    -- Le titre lui-meme vit dans lib/jobs, ou il se teste vraiment
+    check("le titre d une tache vient de la file",
+          text:find("jobs.title(job, naming)", 1, true) ~= nil)
 end
 
 -- Une ATTENTE disait "plus tard", puis l ecran disait "corrige la cause" sans

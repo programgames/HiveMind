@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.11.0"
+hivemind.VERSION = "1.11.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1477,14 +1477,20 @@ function hivemind.runQueue(context, options)
             context.log = function(text) said = tostring(text) end
 
             local function title(job)
-                local goal = jobs.goal(job, naming)
-                return jobs.label(job.kind) .. (goal and (" " .. goal) or "")
+                return jobs.title(job, naming)
             end
 
-            -- Widths chosen so a report of a couple of words lands on the same
-            -- line; anything longer goes underneath rather than being cut,
+            -- Sized on the screen instead of fixed at twenty. A tier 3 screen
+            -- is a hundred and sixty columns wide and the line used fifty of
+            -- them, while cutting the two things worth reading.
+            local width = select(1, screen.size())
+            local NAMED = math.max(20, math.min(40, math.floor((width - 14) * 0.45)))
+            local STEP = math.max(18, math.min(34, math.floor((width - 14) * 0.35)))
+
+            -- Room left on the line for a step's own report ("recolte: 7
+            -- items"); beyond that it goes underneath rather than being cut,
             -- because the long ones are the ones worth reading.
-            local ROOM = 26
+            local ROOM = math.max(20, width - 16 - NAMED - STEP)
 
             local report = context.queue:run(context, {
                 budget = options.budget,
@@ -1495,8 +1501,8 @@ function hivemind.runQueue(context, options)
                 onStep = function(job, name, index, total)
                     said = nil
                     io.write(string.format("#%-4d%s %d/%d %s", job.id,
-                        screen.fit(title(job), 20), index, total,
-                        screen.fit((name or "?"):gsub("%-", " "), 20)))
+                        screen.fit(title(job), NAMED), index, total,
+                        screen.fit((name or "?"):gsub("%-", " "), STEP)))
                 end,
 
                 onProgress = function(job, outcome, detail)
@@ -1532,7 +1538,7 @@ function hivemind.runQueue(context, options)
 
                     if job.status == jobs.COMPLETE then
                         print(string.format("#%-4d%s TERMINE", job.id,
-                            screen.fit(title(job), 20)))
+                            screen.fit(title(job), NAMED)))
                     end
 
                     said = nil
@@ -1569,7 +1575,7 @@ function hivemind.runQueue(context, options)
                 for _, job in ipairs(context.queue:pending()) do
                     if job.error then
                         print(string.format("  #%-4d%s", job.id,
-                            screen.fit(title(job), 24)))
+                            screen.fit(title(job), NAMED)))
                         for _, line in ipairs(screen.wrap(job.error, 62)) do
                             print("       " .. line)
                         end
