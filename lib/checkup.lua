@@ -17,6 +17,11 @@
 --
 -- The result is a list of findings, each carrying the gesture that fixes it,
 -- in the same words the queue uses when it stops for one.
+--
+-- Each section also carries a one-line summary, because that is what the screen
+-- shows when nothing is wrong. Forty lines of "ok" is not a verdict: it is a
+-- wall to read before finding out there was nothing to read. The detail only
+-- appears where something is actually broken.
 
 local screen = require("lib.screen")
 
@@ -93,6 +98,7 @@ end
 --- Check every declared machine answers on the face it was declared on
 --- @param options table {config, transport}
 --- @return table[] findings
+--- @return string summary
 function checkup.machines(options)
     local settings = options.config or {}
     local transport = options.transport
@@ -150,16 +156,29 @@ function checkup.machines(options)
                             .. " ne correspond pas a la machine",
                     })
                 else
+                    -- "15 slots, carte coherente" was the check talking to
+                    -- itself. What it verifies -- that the configuration does
+                    -- not aim at a slot the machine has not got -- only ever
+                    -- needs saying when it fails.
                     table.insert(findings, {
                         name = name, status = checkup.OK,
-                        detail = screen.count(size, "slot") .. ", carte coherente",
+                        detail = "en place",
                     })
                 end
             end
         end
     end
 
-    return findings
+    local placed, waiting = 0, 0
+    for _, finding in ipairs(findings) do
+        if finding.status == checkup.OK then placed = placed + 1
+        elseif finding.status == checkup.ABSENT then waiting = waiting + 1 end
+    end
+
+    local summary = screen.count(placed, "posee")
+    if waiting > 0 then summary = summary .. ", " .. waiting .. " pas encore" end
+
+    return findings, summary
 end
 
 --- Check every bench that receives items has its own ME Interface declared
@@ -199,13 +218,20 @@ function checkup.interfaces(options)
         local served = table.concat(needs[bench], ", ")
         local wanted = (settings.interfaces or {})[bench]
 
+        -- Named by the machines it feeds, not by its address. "Banc 65d3da44"
+        -- is a number to go and look up; "Banc Sampler" is a place in the base,
+        -- and it is the same bench either way. Sans article: "du Imprinter" et
+        -- "du Apiary" ne s ecrivent pas, et une elision par machine serait un
+        -- piege a chaque nom ajoute.
+        local named = "Banc " .. needs[bench][1]
+
         if not wanted then
             table.insert(findings, {
-                name = "Banc " .. tostring(bench),
+                name = named,
                 status = checkup.PROBLEM,
-                detail = "aucune interface declaree pour " .. served,
-                gesture = "lance tools/discover et ajoute l adresse dans"
-                    .. " config.interfaces",
+                detail = "aucune interface ME declaree, il ne peut rien recevoir",
+                gesture = "choisis 9 puis o: le programme regarde ou sont tes"
+                    .. " machines et ecrit la configuration",
             })
         else
             local found = nil
@@ -218,30 +244,36 @@ function checkup.interfaces(options)
 
             if found then
                 table.insert(findings, {
-                    name = "Banc " .. tostring(bench),
+                    name = named,
                     status = checkup.OK,
                     detail = "sert " .. served,
                 })
             else
                 table.insert(findings, {
-                    name = "Banc " .. tostring(bench),
+                    name = named,
                     status = checkup.PROBLEM,
-                    detail = "l interface " .. tostring(wanted)
-                        .. " est declaree mais le programme ne la voit pas",
-                    gesture = "verifie qu un Adapter touche cette ME Interface:"
-                        .. " sans lui elle est invisible et chaque livraison a"
-                        .. " " .. served .. " echoue",
+                    detail = "ne peut rien recevoir",
+                    gesture = "colle un Adapter contre son interface ME: sans"
+                        .. " lui elle n a pas d adresse, et rien ne peut etre"
+                        .. " livre a " .. served,
                 })
             end
         end
     end
 
-    return findings
+    local served = 0
+    for _, finding in ipairs(findings) do
+        if finding.status == checkup.OK then served = served + 1 end
+    end
+
+    return findings, screen.count(served, "banc") .. " "
+        .. screen.plural(served, "servi")
 end
 
 --- Check the consumables every genetics job spends
 --- @param options table {transport, thresholds}
 --- @return table[] findings
+--- @return string summary
 function checkup.supplies(options)
     local transport = options.transport
     local thresholds = options.thresholds or {}
@@ -254,6 +286,7 @@ function checkup.supplies(options)
     }
 
     local findings = {}
+    local counted = {}
 
     for _, entry in ipairs(watched) do
         local ok, items = attempt(function()
@@ -291,193 +324,22 @@ function checkup.supplies(options)
                     detail = count .. " en stock",
                 })
             end
+
+            table.insert(counted, entry.label .. " " .. count)
         end
     end
 
-    return findings
-end
-
---- The two machines the player fills by hand, and what goes in them
---- Everything else in the base is supplied from AE2. These two are not, and
---- not by accident: their transposers touch no ME Interface, so nothing the
---- program can do would reach their input slot. Feeding them is the player's
---- job, and it stays the player's job.
----
---- What the program CAN do costs nothing: the transposer already touches them,
---- so it can look inside. An empty belly is visible long before the tank it
---- feeds runs dry -- which is the difference between reading it here and
---- discovering it when a queue stops on the fourth step.
---- @type table<string, string>
-checkup.PLAYER_FED = {
-    protein_liquifier = "de quoi faire des proteines",
-    mutagen_producer  = "de quoi faire du mutagene",
-}
-
---- Is there anything left in the two machines the player fills
----
---- An empty input slot is NOT a fault on its own: a producer that has eaten
---- everything and filled its tank is a producer doing its work. It only
---- becomes a fault when the tank behind it is running out too, and that is
---- what the fluid readings are for. Saying it every time was the noise that
---- drowned the real warnings.
---- @param options table {config, transport, fluids}
---- @return table[] findings
-function checkup.producers(options)
-    local settings = options.config or {}
-    local transport = options.transport
-    local offset = tonumber(settings.slot_offset) or 0
-
-    -- Which of these tanks is actually running out, from the same readings the
-    -- CUVES section shows
-    local running_out = {}
-    for _, reading in ipairs(options.fluids or {}) do
-        if reading.key then
-            running_out[reading.key] = (reading.empty or reading.dry
-                                        or reading.low) == true
-        end
-    end
-
-    local keys = {}
-    for key in pairs(checkup.PLAYER_FED) do table.insert(keys, key) end
-    table.sort(keys)
-
-    local findings = {}
-
-    for _, key in ipairs(keys) do
-        local link = (settings.machines or {})[key]
-        local name = checkup.nameOf(key)
-        local wanted = checkup.PLAYER_FED[key]
-        local slot = link and (link.slots or {}).input
-
-        if not link then
-            -- Not in the configuration at all: nothing to say. A machine that
-            -- IS declared and not yet placed is a different thing, below.
-            slot = nil
-        elseif link.enabled == false or link.machine == nil then
-            table.insert(findings, {
-                name = name, status = checkup.ABSENT,
-                detail = "pas encore posee, rien a verifier",
-            })
-        elseif slot == nil then
-            table.insert(findings, {
-                name = name, status = checkup.ABSENT,
-                detail = "aucun slot d entree declare",
-            })
-        else
-            local ok, stack = attempt(function()
-                return transport:inspect(link, slot + offset)
-            end)
-
-            if not ok then
-                -- Nothing: a face that does not answer is already reported, by
-                -- name and with its gesture, in the MACHINES section. Saying it
-                -- twice turns one problem into two.
-            elseif type(stack) == "table" then
-                local size = tonumber(stack.size) or 1
-                table.insert(findings, {
-                    name = name, status = checkup.OK,
-                    detail = tostring(stack.label or stack.name)
-                        .. " x" .. size,
-                })
-            elseif running_out[key] then
-                table.insert(findings, {
-                    name = name, status = checkup.PROBLEM,
-                    detail = "vide, et sa cuve suit",
-                    gesture = "mets " .. wanted .. " dans le " .. name
-                        .. ": la chaine qui en boit va s arreter",
-                })
-            else
-                -- Empty and the tank is holding: it has eaten what it was given
-                -- and made what it had to make. Nothing to do.
-                table.insert(findings, {
-                    name = name, status = checkup.OK,
-                    detail = "vide, mais sa cuve tient encore",
-                })
-            end
-        end
-    end
-
-    return findings
-end
-
---- Turn the fluid readings into findings
---- The readings themselves come from the caller: reading a tank needs the live
---- machines, and this module is meant to be testable without them.
---- @param readings table[] From hivemind.fluidLevels
---- @return table[] findings
-function checkup.fluids(readings)
-    local findings = {}
-
-    for _, reading in ipairs(readings or {}) do
-        if reading.empty then
-            table.insert(findings, {
-                name = reading.machine, status = checkup.PROBLEM,
-                detail = "plus de " .. tostring(reading.fluid),
-                gesture = "remplis le " .. reading.machine .. ": c est a toi,"
-                    .. " le programme ne fait que lire cette cuve",
-            })
-        elseif reading.full then
-            -- The one tank that fills instead of emptying. Reporting it as
-            -- "out of ADN" would be exactly backwards.
-            table.insert(findings, {
-                name = reading.machine, status = checkup.PROBLEM,
-                detail = string.format("cuve pleine (%d/%d)",
-                    reading.amount or 0, reading.capacity or 0),
-                gesture = "vide le " .. reading.machine
-                    .. ": plein, il ne produit plus rien",
-            })
-        elseif reading.dry then
-            -- A buffered tank is full most of the time and that is normal.
-            -- Empty is the only state worth a word: whatever drinks from it
-            -- is about to stop.
-            table.insert(findings, {
-                name = reading.machine, status = checkup.PROBLEM,
-                detail = "plus de " .. tostring(reading.fluid),
-                gesture = "alimente le " .. reading.machine
-                    .. ": la chaine qui en boit va s arreter",
-            })
-        elseif reading.low then
-            table.insert(findings, {
-                name = reading.machine, status = checkup.PROBLEM,
-                detail = string.format("%s bas (%d/%d)",
-                    tostring(reading.fluid), reading.amount or 0,
-                    reading.capacity or 0),
-                gesture = "recharge le " .. reading.machine
-                    .. " avant de lancer une longue file",
-            })
-        else
-            local amount = reading.amount or 0
-            local capacity = tonumber(reading.capacity) or 0
-
-            -- "mutagene : 10000" leaves the reader asking "out of what".
-            local level = capacity > 0
-                and string.format("%d/%d", amount, capacity)
-                or tostring(amount)
-
-            local detail = tostring(reading.fluid) .. " : " .. level
-
-            -- A tank that FILLS is empty when the machine has nothing waiting,
-            -- which is the normal state. A bare zero on a checkup screen reads
-            -- as a fault, so it says which zero this is.
-            if reading.fills and amount == 0 then
-                detail = detail .. "  (rien a transferer, c est normal)"
-            end
-
-            table.insert(findings, {
-                name = reading.machine, status = checkup.OK, detail = detail,
-            })
-        end
-    end
-
-    return findings
+    return findings, table.concat(counted, ", ")
 end
 
 --- The whole checkup, in the order a player fixes things
 --- Power first: everything else reads as broken on a network that is off, and
 --- sending someone to check nine faces when the answer is a missing cable is
 --- the worst thing a diagnostic can do.
---- @param options table {config, transport, fluids}
+--- @param options table {config, transport, thresholds}
 --- @return table report {sections, ok, gestures, counts}
+---   each section carries label, summary and faults: the screen prints the
+---   summary, and opens up only the sections that have faults
 function checkup.run(options)
     options = options or {}
 
@@ -517,33 +379,47 @@ function checkup.run(options)
                     .. " stockage: verifie le cablage",
             })
         else
+            -- Le nombre d objets ne repond a aucune question qu on se pose ici:
+            -- soit le reseau repond, soit il ne repond pas.
             table.insert(network, {
                 name = "Reseau AE2", status = checkup.OK,
-                detail = screen.count(total, "objet") .. " "
-                    .. screen.plural(total, "visible"),
+                detail = "connecte",
             })
         end
     end
 
-    table.insert(sections, {title = "RESEAU", findings = network})
+    table.insert(sections, {title = "RESEAU", label = "Reseau AE2",
+                            findings = network,
+                            summary = network[1] and network[1].detail or "?"})
 
     -- ---------------------------------------------------------------
-    table.insert(sections, {title = "MACHINES",
-                            findings = checkup.machines(options)})
-    table.insert(sections, {title = "INTERFACES ME",
-                            findings = checkup.interfaces(options)})
-    table.insert(sections, {title = "CUVES",
-                            findings = checkup.fluids(options.fluids)})
-    table.insert(sections, {title = "LES DEUX MACHINES QUE TU REMPLIS",
-                            findings = checkup.producers(options)})
-    table.insert(sections, {title = "CONSOMMABLES",
-                            findings = checkup.supplies(options)})
+    -- Les cuves ne sont plus ici. Les liquides sont l affaire du joueur, c est
+    -- tranche, et rien n est perdu: la banniere du menu annonce toujours une
+    -- cuve vide, et la file s arrete dessus en nommant la machine a alimenter.
+    -- Cinq lignes de niveaux sur un ecran qui repond "puis-je commencer ?"
+    -- etaient cinq lignes a lire pour rien.
+    local machineFindings, machineSummary = checkup.machines(options)
+    table.insert(sections, {title = "MACHINES", label = "Machines",
+                            findings = machineFindings,
+                            summary = machineSummary})
+
+    local interfaceFindings, interfaceSummary = checkup.interfaces(options)
+    table.insert(sections, {title = "INTERFACES ME", label = "Interfaces ME",
+                            findings = interfaceFindings,
+                            summary = interfaceSummary})
+
+    local supplyFindings, supplySummary = checkup.supplies(options)
+    table.insert(sections, {title = "CONSOMMABLES", label = "Consommables",
+                            findings = supplyFindings,
+                            summary = supplySummary})
 
     -- ---------------------------------------------------------------
     local counts = {ok = 0, problem = 0, absent = 0}
     local gestures = {}
 
     for _, section in ipairs(sections) do
+        local faults = {}
+
         for _, finding in ipairs(section.findings) do
             if finding.status == checkup.OK then
                 counts.ok = counts.ok + 1
@@ -551,10 +427,19 @@ function checkup.run(options)
                 counts.absent = counts.absent + 1
             else
                 counts.problem = counts.problem + 1
+                table.insert(faults, finding)
                 if finding.gesture then
                     table.insert(gestures, finding.name .. " : " .. finding.gesture)
                 end
             end
+        end
+
+        -- What the screen actually prints in full: a section with nothing
+        -- wrong is one line, and only these get opened up
+        section.faults = faults
+
+        if #faults > 0 then
+            section.summary = screen.count(#faults, "chose") .. " a regler"
         end
     end
 

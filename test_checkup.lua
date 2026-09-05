@@ -85,6 +85,15 @@ local function fakeTransport(world)
     }
 end
 
+--- One section of the report, by its title
+--- @return table|nil
+local function findSection(report, title)
+    for _, section in ipairs(report.sections) do
+        if section.title == title then return section end
+    end
+    return nil
+end
+
 local function healthyWorld()
     return {
         online = true,
@@ -219,7 +228,7 @@ do
 
     check("verdict: pas pret", report.ok, false)
 
-    local finding = findingFor(allFindings(report), "Banc 65d3da44")
+    local finding = findingFor(allFindings(report), "Banc Sampler")
     check("l interface manquante est vue", finding.status, checkup.PROBLEM)
     checkTruthy("le geste parle de l Adapter",
                 finding.gesture and finding.gesture:find("Adapter"))
@@ -274,31 +283,6 @@ do
     check("un stock nul aussi", none.status, checkup.PROBLEM)
     checkTruthy("et le geste dit l autocraft",
                 none.gesture and none.gesture:find("autocraft"))
-end
-
-print("")
-print("-- les cuves, dans le bon sens --")
-
-do
-    -- La cuve du DNA Extractor se REMPLIT au lieu de se vider. La signaler
-    -- comme "plus d ADN" serait exactement l inverse de la verite.
-    local findings = checkup.fluids({
-        {machine = "Mutagen Producer", fluid = "mutagene", amount = 0,
-         capacity = 8000, empty = true, low = true},
-        {machine = "DNA Extractor", fluid = "ADN", amount = 7800,
-         capacity = 8000, fills = true, full = true},
-    })
-
-    local empty = findingFor(findings, "Mutagen Producer")
-    check("une cuve vide est un probleme", empty.status, checkup.PROBLEM)
-    checkTruthy("et le geste dit que c est au joueur de la remplir",
-                empty.gesture and empty.gesture:find("remplis"))
-
-    local full = findingFor(findings, "DNA Extractor")
-    check("une cuve pleine aussi", full.status, checkup.PROBLEM)
-    checkTruthy("mais le geste dit de la VIDER, pas de la remplir",
-                full.gesture and full.gesture:find("vide")
-                and not full.gesture:find("remplis"))
 end
 
 print("")
@@ -358,127 +342,80 @@ do
 end
 
 print("")
-print("-- ce qui reste dans les deux machines que le joueur remplit --")
-
--- Le Liquifier et le Mutagen Producer ne sont alimentes par personne: leurs
--- transposers ne touchent aucune interface ME. Le programme ne peut donc rien
--- y mettre -- mais il peut regarder dedans, et un ventre vide se voit bien
--- avant que la cuve qu il remplit ne soit seche.
--- Une machine apparait deux fois dans le rapport: la section MACHINES dit que
--- sa face repond, celle-ci dit ce qu il reste dedans. Chercher par nom dans
--- tout le rapport ramenait la premiere, et le test lisait la mauvaise ligne.
-local function fedFinding(report, name)
-    for _, section in ipairs(report.sections) do
-        if section.title == "LES DEUX MACHINES QUE TU REMPLIS" then
-            for _, finding in ipairs(section.findings) do
-                if finding.name == name then return finding end
-            end
-        end
-    end
-    return nil
-end
-
-local function fedConfig()
-    local settings = healthyConfig()
-
-    settings.machines.protein_liquifier = {transposer = "a142f36b", machine = 4,
-                                           source = nil, slots = {input = 0}}
-    settings.machines.mutagen_producer = {transposer = "d28c3d3d", machine = 2,
-                                          source = nil, slots = {input = 0}}
-    return settings
-end
-
-local function fedWorld(contents)
-    local world = healthyWorld()
-    world.sizes[4] = 1
-    world.sizes[2] = 1
-    world.contents = contents
-    return world
-end
+print("")
+print("-- une section se resume en une ligne, et ne s ouvre que si ca cloche --")
 
 do
-    -- Slot 0 de la machine, donc slot 1 du transposer: slot_offset vaut 1, et
-    -- se tromper d un cran est la faute que ce projet a deja payee une fois
-    local report = checkup.run({
-        config = fedConfig(),
-        transport = fakeTransport(fedWorld({
-            [4] = {[1] = {label = "Raw Porkchop", size = 12}},
-            [2] = {[1] = {label = "Glowstone Dust", size = 64}},
-        })),
-        fluids = {},
-    })
-
-    check("le verdict reste bon", report.ok, true)
-
-    local liquifier = fedFinding(report, "Protein Liquifier")
-    check("le Liquifier est repu", liquifier.status, checkup.OK)
-    checkTruthy("et on lit ce qu il mange",
-                liquifier.detail and liquifier.detail:find("Raw Porkchop"))
-    checkTruthy("avec la quantite",
-                liquifier.detail and liquifier.detail:find("12"))
-
-    local producer = fedFinding(report, "Mutagen Producer")
-    checkTruthy("le Producer aussi",
-                producer.detail and producer.detail:find("Glowstone"))
-end
-
-do
-    -- Un producteur vide n est PAS une panne: il a mange ce qu on lui a donne
-    -- et rempli sa cuve. Le dire a chaque fois etait le bruit qui noyait les
-    -- vrais avertissements.
-    local report = checkup.run({
-        config = fedConfig(),
-        transport = fakeTransport(fedWorld({})),
-        fluids = {{key = "mutagen_producer", machine = "Mutagen Producer",
-                   fluid = "mutagene", amount = 9000, capacity = 10000}},
-    })
-
-    check("un ventre vide sur une cuve pleine ne bloque rien", report.ok, true)
-
-    local producer = fedFinding(report, "Mutagen Producer")
-    check("et ne compte pas comme un probleme", producer.status, checkup.OK)
-    checkTruthy("mais le dit quand meme",
-                producer.detail and producer.detail:find("cuve tient"))
-end
-
-do
-    -- Vide ET la cuve qui suit: la chaine va s arreter, et c est la seule
-    -- situation qui merite un geste
-    local report = checkup.run({
-        config = fedConfig(),
-        transport = fakeTransport(fedWorld({})),
-        fluids = {{key = "mutagen_producer", machine = "Mutagen Producer",
-                   fluid = "mutagene", amount = 0, capacity = 10000,
-                   empty = true, low = true}},
-    })
-
-    check("la, il faut le remplir", report.ok, false)
-
-    local producer = fedFinding(report, "Mutagen Producer")
-    check("et c est un probleme", producer.status, checkup.PROBLEM)
-    checkTruthy("le geste dit quoi y mettre",
-                producer.gesture and producer.gesture:find("mutagene"))
-    checkTruthy("et pourquoi maintenant",
-                producer.gesture and producer.gesture:find("s arreter"))
-
-    -- Le Liquifier, lui, n a aucune cuve en peine dans ce relevé
-    local liquifier = fedFinding(report, "Protein Liquifier")
-    check("l autre machine n est pas entrainee avec", liquifier.status,
-          checkup.OK)
-end
-
-do
-    -- Une machine que la configuration ne nomme pas n a rien a signaler ici:
-    -- la section MACHINES est la seule a parler de ce qui est declare
     local report = checkup.run({
         config = healthyConfig(),
         transport = fakeTransport(healthyWorld()),
-        fluids = {},
     })
 
-    check("une machine non declaree ne dit rien",
-          fedFinding(report, "Protein Liquifier"), nil)
-    check("et ne compte pas comme absente", report.counts.absent, 0)
+    local network = report.sections[1]
+    check("le reseau se dit connecte", network.summary, "connecte")
+    check("et n a rien a montrer", #network.faults, 0)
+
+    local machines = findSection(report, "MACHINES")
+    checkTruthy("les machines se comptent",
+                machines.summary and machines.summary:find("posee"))
+    check("aucune n est a ouvrir", #machines.faults, 0)
+
+    local interfaces = findSection(report, "INTERFACES ME")
+    checkTruthy("les bancs servis se comptent",
+                interfaces.summary and interfaces.summary:find("banc"))
+
+    local supplies = findSection(report, "CONSOMMABLES")
+    checkTruthy("les consommables donnent leurs deux nombres",
+                supplies.summary and supplies.summary:find("labware")
+                and supplies.summary:find("samples"))
+
+    -- Chaque section porte un nom lisible: c est lui qui s affiche, pas le
+    -- titre en capitales
+    for _, section in ipairs(report.sections) do
+        checkTruthy("la section " .. section.title .. " a un nom court",
+                    section.label ~= nil and section.label ~= section.title)
+    end
+end
+
+do
+    -- Une section qui cloche remplace son resume par ce qu il y a a faire, et
+    -- c est elle seule que l ecran ouvre
+    local world = healthyWorld()
+    world.interfaces = {}
+
+    local report = checkup.run({
+        config = healthyConfig(),
+        transport = fakeTransport(world),
+    })
+
+    local interfaces = findSection(report, "INTERFACES ME")
+    check("la section signale le nombre de choses a regler",
+          interfaces.summary, "1 chose a regler")
+    check("et porte la ligne a ouvrir", #interfaces.faults, 1)
+
+    local machines = findSection(report, "MACHINES")
+    check("les sections saines restent fermees", #machines.faults, 0)
+    checkTruthy("et gardent leur resume",
+                machines.summary and machines.summary:find("posee"))
+end
+
+print("")
+print("-- les cuves ne sont plus l affaire de cet ecran --")
+
+do
+    -- Tranche avec le joueur: les liquides sont sa responsabilite. La banniere
+    -- du menu annonce toujours une cuve vide et la file s arrete dessus, donc
+    -- rien n est perdu -- mais cet ecran repond "puis-je commencer ?" et cinq
+    -- niveaux de cuve etaient cinq lignes a lire pour rien.
+    local report = checkup.run({
+        config = healthyConfig(),
+        transport = fakeTransport(healthyWorld()),
+    })
+
+    check("aucune section de cuves", findSection(report, "CUVES"), nil)
+    check("aucune section de producteurs",
+          findSection(report, "LES DEUX MACHINES QUE TU REMPLIS"), nil)
+    check("il en reste quatre", #report.sections, 4)
 end
 
 print("")

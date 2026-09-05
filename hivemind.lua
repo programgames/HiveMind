@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.6.0"
+hivemind.VERSION = "1.7.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1759,7 +1759,6 @@ end
 function hivemind.checkInstall(context)
     print("")
     print("=== VERIFIER L INSTALLATION ===")
-    print("Rien n est deplace: le programme regarde, il ne touche a rien.")
 
     -- Before checking anything, check that the configuration is about THIS
     -- world. A declared transposer address nothing answers to makes every
@@ -1793,40 +1792,44 @@ function hivemind.checkInstall(context)
         end
     end
 
-    local readings = {}
-    pcall(function() readings = hivemind.fluidLevels(context) end)
-
     local report = checkup.run({
         config = config,
         transport = context.transport,
-        fluids = readings,
         thresholds = (config.genetics or {}).supply_floor,
     })
 
+    -- One line per section when there is nothing to say. Forty lines of "ok"
+    -- is not a verdict: it is a wall to read before finding out there was
+    -- nothing to read, and a real problem disappeared into the middle of it.
+    print("")
+
     for _, section in ipairs(report.sections) do
-        print("")
-        print(section.title)
+        local label = section.label or section.title
+        local dots = string.rep(".", math.max(2, 22 - #label))
 
-        if #section.findings == 0 then
-            print("  (rien a verifier ici)")
-        end
+        print("  " .. (#section.faults > 0 and "!! " or "   ")
+            .. label .. " " .. dots .. " " .. tostring(section.summary))
+    end
 
-        for _, finding in ipairs(section.findings) do
-            local mark = "  ok "
-            if finding.status == checkup.PROBLEM then
-                mark = "  !! "
-            elseif finding.status == checkup.ABSENT then
-                mark = "  -- "
-            end
+    -- And the detail exactly where something is broken, with its gesture under
+    -- it: the numbered list at the bottom said the same things a second time,
+    -- away from the line that had raised them.
+    for _, section in ipairs(report.sections) do
+        if #section.faults > 0 then
+            print("")
+            print(section.title)
 
-            -- Name in its column, detail wrapped under it. Letting the
-            -- terminal wrap put line breaks mid-word, exactly on the lines
-            -- that say what is broken.
-            local lines = screen.wrap(finding.detail, 48)
-            print(mark .. screen.fit(finding.name, 24) .. " " .. lines[1])
+            for _, finding in ipairs(section.faults) do
+                print("  " .. screen.fit(finding.name, 24) .. " " .. finding.detail)
 
-            for index = 2, #lines do
-                print(string.rep(" ", 30) .. lines[index])
+                -- La fleche marque le debut du geste, une seule fois: la
+                -- repeter sur chaque ligne enveloppee donnait trois gestes la
+                -- ou il n y en a qu un.
+                for index, line in ipairs(screen.wrap(finding.gesture or "", 60)) do
+                    if line ~= "" then
+                        print((index == 1 and "     -> " or "        ") .. line)
+                    end
+                end
             end
         end
     end
@@ -1845,27 +1848,13 @@ function hivemind.checkInstall(context)
     end
 
     print("PAS ENCORE PRET — " .. screen.count(report.counts.problem, "chose")
-        .. " a regler :")
-    print("")
-
-    for index, gesture in ipairs(report.gestures) do
-        local lines = screen.wrap(gesture, 72)
-        print("  " .. index .. ". " .. lines[1])
-        for more = 2, #lines do print("     " .. lines[more]) end
-    end
-
-    print("")
+        .. " a regler, " .. screen.plural(report.counts.problem, "citee")
+        .. " ci-dessus.")
     print("Refais cette verification quand c est corrige.")
 
     return report
 end
 
---- Everything the breeding template still needs, in one plan
---- The pieces were all there and none of them met: option e said which alleles
---- were missing, option t queued the hunts, option 5 planned a chain to one
---- species. But the carriers -- Rocky, Wintry, Lime, Cyan -- are not in stock,
---- and nothing worked out how to get them. This joins the three.
---- @param context table
 --- What the second template will still need once this one is done
 --- There are two templates in the end: one to breed with and one to produce
 --- with. Option 3 only ever spoke of the first, so the work looked twice as
