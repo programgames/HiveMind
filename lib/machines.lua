@@ -525,8 +525,12 @@ function Apiary:awaitPrincess(timeout, interval)
         local elapsed = self.clock() - started
 
         if elapsed >= timeout then
+            -- Le temps ecoule est rendu a part: l appelant le cumule d une
+            -- passe a l autre, sans quoi trois passes de suite affichent le
+            -- meme nombre et se lisent comme un programme qui tourne en rond.
             return false, string.format(
-                "la reine vit encore apres %d s", math.floor(elapsed))
+                "la reine vit encore apres %d s", math.floor(elapsed)),
+                math.floor(elapsed)
         end
 
         -- One line after the first minute, so a long wait does not look like a

@@ -409,11 +409,20 @@ breeding.STEPS = {
                     and context.config.breeding.cycle_timeout_seconds)
                 or 900
 
-            local done, reason = apiary:awaitPrincess(wait)
+            local done, reason, elapsed = apiary:awaitPrincess(wait)
+
             if not done then
-                reason = tostring(reason) .. " (attente de " .. wait .. " s)"
+                -- Cumule sur disque: chaque passe repart de zero, donc sans
+                -- ce total trois attentes de suite affichent "242 s" et rien
+                -- ne distingue une reine qui vit longtemps d une file figee.
+                job.params.waited = (job.params.waited or 0) + (elapsed or wait)
+
+                return jobs.RETRY, tostring(reason)
+                    .. string.format(" (%d s d attente au total)",
+                                     job.params.waited)
             end
-            if not done then return jobs.RETRY, reason end
+
+            job.params.waited = nil
 
             return jobs.DONE
         end,

@@ -637,9 +637,18 @@ do
     check("elle nomme les taches sur lesquelles elle s est arretee",
           text:find("EN ATTENTE — la file s est arretee sur", 1, true) ~= nil)
 
-    -- Et elle dit quoi faire: une attente se relance, elle ne se repare pas
-    check("et dit que relancer suffit",
-          text:find("Relance cette option: rien n est perdu", 1, true) ~= nil)
+    -- Et elle propose de relancer sur place: une attente n a rien a faire
+    -- corriger, il lui faut du temps. Renvoyer au menu obligeait a retraverser
+    -- deux ecrans pour redemander exactement la meme chose.
+    check("elle propose d attendre encore, sans repasser par le menu",
+          text:find("Attendre encore un passage ?", 1, true) ~= nil)
+    check("et dit que rien n est perdu si on s arrete la",
+          text:find("Rien n est perdu: chaque tache reprend", 1, true) ~= nil)
+
+    -- Mais pas indefiniment: dix passes de quatre minutes, ce n est plus une
+    -- reine qui prend son temps
+    check("elle finit par envoyer regarder l apiary",
+          text:find("Toujours en attente apres dix passages", 1, true) ~= nil)
 end
 
 -- "(o/N)" code deux informations dans la casse d une lettre: ce que veut dire

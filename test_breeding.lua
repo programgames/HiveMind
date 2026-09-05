@@ -82,6 +82,7 @@ local function reset(options)
         mutagen = options.mutagen or 8000,
         energy = options.energy or 20000,
         errors = options.errors or {},
+        immortalQueen = options.immortalQueen or false,
         cycleRuns = 0,
         produceCalls = 0,
         collected = {},
@@ -129,6 +130,12 @@ local function tickQueen()
     end
 
     world.queenReads = (world.queenReads or 0) + 1
+
+    -- Une reine qui ne meurt jamais: c est le seul moyen de reproduire ici
+    -- une attente qui expire, et l attente qui expire est le cas ou le cumul
+    -- se lit
+    if world.immortalQueen then return end
+
     if world.queenReads < READS_BEFORE_DEATH then return end
 
     world.queenReads = 0
@@ -475,6 +482,39 @@ world.mutagen = 5000
 queue:run(context, {maxSteps = 40})
 check("cycle acheve apres remplissage", queue:get(1).status, jobs.COMPLETE)
 check("une seule production", world.produceCalls, 1)
+
+print("")
+print("-- une reine qui vit longtemps cumule son attente --")
+
+do
+    -- Chaque passe repart de zero, donc sans total trois attentes de suite
+    -- affichent le meme nombre: rien ne distingue une reine qui prend son
+    -- temps d une file figee, et c est exactement ce qu on a lu en jeu.
+    os.remove(QUEUE)
+    reset()
+    queue, context = buildStack()
+    queue:submit("breed", freshParams())
+
+    -- La reine ne meurt jamais: le mock ne fait avancer le cycle que quand on
+    -- lit son slot, et on fige le compteur pour qu elle survive a l attente
+    world.immortalQueen = true
+
+    queue:run(context, {maxSteps = 40})
+
+    local job = queue:get(1)
+    checkTruthy("l attente est cumulee sur disque",
+                (job.params.waited or 0) > 0)
+
+    local first = job.params.waited
+
+    queue:run(context, {maxSteps = 40})
+    checkTruthy("et elle grandit d une passe a l autre",
+                (queue:get(1).params.waited or 0) > first)
+
+    checkTruthy("la raison porte le total",
+                queue:get(1).error
+                and queue:get(1).error:find("au total", 1, true) ~= nil)
+end
 
 print("")
 print("-- apiary inadapte a l'abeille, sans upgrade dans le reseau --")

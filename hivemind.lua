@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.11.1"
+hivemind.VERSION = "1.12.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -1454,6 +1454,10 @@ function hivemind.runQueue(context, options)
     end
 
     local rounds = 0
+    -- Une passe qui ne s arrete que sur des ATTENTES n a rien a faire corriger:
+    -- il lui faut du temps, pas une intervention. Renvoyer au menu obligeait a
+    -- retraverser deux ecrans pour redemander la meme chose.
+    local onlyWaits = false
 
     while true do
         rounds = rounds + 1
@@ -1582,50 +1586,76 @@ function hivemind.runQueue(context, options)
                     end
                 end
 
-                print("")
-                print("Relance cette option: rien n est perdu, chaque tache")
-                print("reprend ou elle en est.")
+                onlyWaits = true
             end
         end
 
         local waiting = context.queue:waiting()
-        if #waiting == 0 then return end
 
-        -- The gestures, together, in one place. Scattered through a hundred
-        -- lines of step log they were unreadable, which is how a queue could
-        -- sit stopped for an evening on a bee anyone could have moved.
-        print("")
-        print("IL FAUT TA MAIN — " .. screen.count(#waiting, "tache")
-            .. " " .. screen.plural(#waiting, "attend") .. " :")
-        for _, job in ipairs(waiting) do
-            -- The one thing on this screen the reader has to act on; cutting
-            -- it at the terminal's whim is the last place to allow that
-            local lines = screen.wrap(tostring(job.action), 66)
-            print(string.format("  #%-4d%s", job.id, lines[1]))
-            for index = 2, #lines do print("       " .. lines[index]) end
-        end
+        if #waiting == 0 then
+            if not (onlyWaits and interactive) then return end
 
-        if not interactive then return end
+            -- Dix passes de quatre minutes, c est quarante minutes: passe ce
+            -- point, ce n est plus une reine qui prend son temps
+            if rounds >= 10 then
+                print("")
+                print("Toujours en attente apres dix passages: va regarder")
+                print("l apiary, il lui manque sans doute sa fleur ou sa")
+                print("lumiere.")
+                return
+            end
 
-        print("")
-        io.write("C est fait ? (o = reprendre, autre = laisser en attente): ")
-        local answer = io.read()
+            print("")
+            io.write("Attendre encore un passage ?"
+                .. " (o = oui, autre = revenir au menu) : ")
 
-        if not answer or not (answer:lower():sub(1, 1) == "o"
-                           or answer:lower():sub(1, 1) == "y") then
-            print("Les taches restent en attente. Choisis a nouveau cette option"
-                .. " quand ce sera fait.")
-            return
-        end
+            local answer = io.read()
+            if not answer or answer:lower():sub(1, 1) ~= "o" then
+                print("Rien n est perdu: chaque tache reprend ou elle en est.")
+                return
+            end
 
-        context.queue:resumeAll()
+            onlyWaits = false
+        else
+            -- The gestures, together, in one place. Scattered through a
+            -- hundred lines of step log they were unreadable, which is how a
+            -- queue could sit stopped for an evening on a bee anyone could
+            -- have moved.
+            print("")
+            print("IL FAUT TA MAIN — " .. screen.count(#waiting, "tache")
+                .. " " .. screen.plural(#waiting, "attend") .. " :")
 
-        -- A player who answers yes without doing anything gets the same list
-        -- back. Ten rounds of that is a loop, not a conversation.
-        if rounds >= 10 then
-            print("Toujours au meme point apres dix reprises: laisse la file"
-                .. " et regarde les machines.")
-            return
+            for _, job in ipairs(waiting) do
+                -- The one thing on this screen the reader has to act on;
+                -- cutting it at the terminal's whim is the last place to
+                -- allow that
+                local lines = screen.wrap(tostring(job.action), 66)
+                print(string.format("  #%-4d%s", job.id, lines[1]))
+                for index = 2, #lines do print("       " .. lines[index]) end
+            end
+
+            if not interactive then return end
+
+            print("")
+            io.write("C est fait ? (o = reprendre, autre = laisser en attente): ")
+            local answer = io.read()
+
+            if not answer or not (answer:lower():sub(1, 1) == "o"
+                               or answer:lower():sub(1, 1) == "y") then
+                print("Les taches restent en attente. Choisis a nouveau cette"
+                    .. " option quand ce sera fait.")
+                return
+            end
+
+            context.queue:resumeAll()
+
+            -- A player who answers yes without doing anything gets the same
+            -- list back. Ten rounds of that is a loop, not a conversation.
+            if rounds >= 10 then
+                print("Toujours au meme point apres dix reprises: laisse la"
+                    .. " file et regarde les machines.")
+                return
+            end
         end
     end
 end
