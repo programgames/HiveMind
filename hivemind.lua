@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.9.0"
+hivemind.VERSION = "1.9.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -4769,25 +4769,28 @@ local ADVANCED = {
 --
 -- Nothing is removed. Every option below still exists under 9, with the same
 -- key and the same behaviour, for anyone who already knows what they want.
+-- Le menu principal est un PARCOURS: 1 puis 2 puis 3 puis 4, et 6 entre les
+-- deux. Une description qui repond "dans quel cas" repond donc ici "a quel
+-- moment", et c est exactement ce dont quelqu un qui n a rien lu a besoin.
 local MAIN = {
     {key = "1", label = "Verifier l installation",
-     hint = "machines, faces, slots, interfaces, cuves: un verdict, rien n est deplace",
+     hint = "a faire en premier, et des qu une tache echoue sans raison visible",
      action = "checkInstall"},
     {key = "2", label = "Valider la liste des abeilles de base",
-     hint = "celles qu aucun croisement ne peut produire: ce qui te manque encore",
+     hint = "une fois l installation validee: ce qu il faut aller attraper toi-meme",
      action = "buildBase"},
     {key = "3", label = "Fabriquer le template d elevage",
-     hint = "les 11 genes, qui les porte, et la chaine pour obtenir ces porteurs",
+     hint = "une fois les abeilles de base rentrees: il rend tout le reste plus rapide",
      action = "buildTemplate"},
     {key = "4", label = "Obtenir une abeille",
-     hint = "dis laquelle: le programme calcule et enchaine tout (demande 3)",
+     hint = "une fois le template assemble: dis laquelle, le programme fait le reste",
      action = "planChain"},
 
     {group = "Faire tourner"},
     -- Key 6 and not 5: thirteen screens end with "Choisis 6 pour la faire
     -- tourner", and moving it would have made every one of them wrong.
     {key = "6", label = "Avancer les taches en cours",
-     hint = "journal en direct, et il te dit quand il a besoin de ta main",
+     hint = "apres chaque ecran qui met du travail en file, et pour reprendre une tache en attente",
      action = "runQueue"},
 }
 
