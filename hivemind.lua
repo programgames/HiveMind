@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.7.2"
+hivemind.VERSION = "1.8.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -4799,15 +4799,23 @@ local MAIN = {
 
 --- How many lines the full menu needs, groups, blanks and prompt included
 --- @return number
-local function fullMenuHeight(entries)
-    -- Title, banner, up to two tank warnings, blank, up to three advice lines,
-    -- blank, "0 Quitter", prompt. Underestimating this puts the top of the menu
-    -- off screen, which is the very thing the fold exists to prevent.
-    local lines = 12
-    for _, entry in ipairs(entries) do
-        lines = lines + (entry.group and 2 or 1)
-    end
-    return lines
+--- How tall the full listing needs the screen to be
+---
+--- This was 12 lines of chrome plus TWO lines per group, and the advanced menu
+--- has eight groups: 55 lines. An OpenComputers screen stops at 50, whatever
+--- the tier. The full listing was therefore unreachable on every possible
+--- machine, and every hint written for it went to a branch nothing ever took --
+--- which is exactly why option labels had to carry their own explanation.
+---
+--- Two things changed. The chrome is now passed in rather than assumed: the
+--- main menu really does carry tank warnings and advice, the advanced one
+--- carries two lines of text and nothing else. And a group takes one line, not
+--- two -- a blank line above eight headers cost eight lines to say nothing.
+--- @param entries table[]
+--- @param chrome number Lines this screen spends on anything but the options
+--- @return number
+local function fullMenuHeight(entries, chrome)
+    return (chrome or 12) + #entries
 end
 
 --- Draw the options, folding them when the screen is too short
@@ -4816,15 +4824,32 @@ end
 --- line. The keys themselves never change: the compact menu is the same menu.
 --- @param width number
 --- @param height number
-local function drawOptions(width, height, entries)
-    if height >= fullMenuHeight(entries) and width >= 120 then
+local function drawOptions(width, height, entries, chrome)
+    if height >= fullMenuHeight(entries, chrome) and width >= 100 then
+        -- The label column was a fixed forty, and %-40s does not truncate: a
+        -- longer label pushed its own hint out of the column and every line
+        -- below it read as misaligned. Measured instead, so the column is
+        -- always wide enough for the widest label there actually is.
+        local column = 20
+        for _, entry in ipairs(entries) do
+            if not entry.group and #entry.label > column then
+                column = #entry.label
+            end
+        end
+        column = math.min(column, math.max(20, width - 30))
+
+        -- And the hint is cut to the room left. It used to run past the edge
+        -- and wrap, which pushed the bottom of the menu -- and the prompt --
+        -- off a screen that was otherwise tall enough.
+        local room = math.max(12, width - column - 9)
+
         for _, entry in ipairs(entries) do
             if entry.group then
-                print("")
-                print("  " .. entry.group)
+                print("  -- " .. entry.group .. " --")
             else
-                print(string.format("    %s  %-40s %s",
-                    entry.key, entry.label, entry.hint))
+                print(string.format("    %s  %-" .. column .. "s %s",
+                    entry.key, screen.fit(entry.label, column),
+                    screen.fit(entry.hint or "", room)))
             end
         end
         return
@@ -4872,7 +4897,9 @@ local function advancedMenu(context)
         print("Chaque machine et chaque gene, un par un. Le menu principal")
         print("enchaine ces memes actions tout seul; ici tu les choisis.")
 
-        drawOptions(width, height, ADVANCED)
+        -- Titre, deux lignes d explication, une ligne vide, "0 Retour", la
+        -- question, et une de marge
+        drawOptions(width, height, ADVANCED, 7)
 
         print("")
         print("    0  Retour")
@@ -4940,7 +4967,9 @@ local function menu(context)
             end
         end
 
-        drawOptions(width, height, MAIN)
+        -- Le menu principal porte en plus la banniere, les alertes de cuve et
+    -- jusqu a trois lignes de conseil
+    drawOptions(width, height, MAIN, 12)
 
         print("")
         print("    9  Outils avances                        "

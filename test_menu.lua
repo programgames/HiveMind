@@ -531,6 +531,54 @@ do
           #wrong == 0)
 end
 
+-- Un ecran OpenComputers ne depasse JAMAIS 50 lignes, tier 3 compris. La liste
+-- complete -- celle qui porte les groupes et la description de chaque option --
+-- en exigeait 55: elle ne pouvait s afficher sur aucun materiel existant, et
+-- toutes les descriptions ecrites pour elle partaient dans une branche que rien
+-- n a jamais prise. Le joueur ne voyait que des libelles nus, ce qui explique
+-- qu il ait fallu leur faire porter leur propre explication.
+do
+    local MAX_ROWS = 50
+
+    --- Combien de lignes une table de menu occupe, groupes compris
+    local function heightOf(name)
+        local from = text:find("local " .. name .. " = {", 1, true)
+        local stop = text:find("\n}", from, true) or #text
+        local body = text:sub(from, stop)
+
+        local groups = select(2, body:gsub("{group%s*=", ""))
+        local options = select(2, body:gsub("{key%s*=", ""))
+
+        return groups, options
+    end
+
+    --- Ce que le programme se reserve autour des options, lu dans l appel
+    local function chromeOf(name)
+        return tonumber(text:match("drawOptions%(width, height, "
+                                   .. name .. ", (%d+)%)")) or 12
+    end
+
+    for _, name in ipairs({"MAIN", "ADVANCED"}) do
+        local groups, options = heightOf(name)
+        local needed = chromeOf(name) + groups + options
+
+        check("la liste complete de " .. name .. " tient sur un ecran reel ("
+              .. needed .. " lignes sur " .. MAX_ROWS .. ")",
+              needed <= MAX_ROWS, true)
+    end
+
+    -- Et un groupe tient sur une ligne: une ligne vide au-dessus de huit
+    -- titres coutait huit lignes pour ne rien dire
+    check("un groupe ne consomme qu une ligne",
+          text:find('print("  -- " .. entry.group .. " --")', 1, true) ~= nil)
+
+    -- %-40s ne tronque pas: un libelle plus long poussait sa propre description
+    -- hors de la colonne, et toutes les lignes en dessous se lisaient de travers
+    check("la colonne des libelles est mesuree, pas fixee",
+          text:find("if not entry.group and #entry.label > column then",
+                    1, true) ~= nil)
+end
+
 -- Every label says what happens, and where something is destroyed the listing
 -- says so before the choice rather than in the confirmation after it
 -- Le libelle dit l action, la description dit ce qu elle coute. "Convertir
@@ -546,13 +594,19 @@ check("les actions destructrices le disent dans le menu",
 check("les conseils sont bornes", text:find("if index <= 3 then", 1, true) ~= nil)
 check("les avertissements de reservoir aussi",
       text:find("if index <= 2 then print", 1, true) ~= nil)
+-- La hauteur reservee n est plus la meme pour les deux ecrans: le menu
+-- principal porte vraiment ces alertes et ces conseils, l avance porte deux
+-- lignes de texte et rien d autre. Supposer le pire des deux partout rendait
+-- la liste complete impossible a atteindre.
 check("et la hauteur necessaire les compte",
-      text:find("local lines = 12", 1, true) ~= nil)
+      text:find("drawOptions(width, height, MAIN, 12)", 1, true) ~= nil)
+check("l ecran avance ne reserve que ce qu il occupe",
+      text:find("drawOptions(width, height, ADVANCED, 7)", 1, true) ~= nil)
 
 -- Height alone was not enough: on a narrow tall screen the full listing was
 -- chosen and every line wrapped, which is worse than folding
 check("le menu complet exige aussi de la largeur",
-      text:find("width >= 120", 1, true) ~= nil)
+      text:find("width >= 100", 1, true) ~= nil)
 
 check("le menu se replie quand l ecran est trop court",
       text:find("fullMenuHeight", 1, true) ~= nil
