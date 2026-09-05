@@ -152,7 +152,9 @@ check("le surplus part au Sampler d un seul geste",
 -- est deja en file compte comme reserve, donc la deuxieme passe voit moins de
 -- surplus -- sans qu il ait fallu ecrire un cas particulier.
 check("ce qui est deja en file est compte comme reserve",
-      text:find("reserve par la file", 1, true) ~= nil)
+      text:find("reserve)", 1, true) ~= nil
+      and io.open("lib/genetics.lua"):read("a")
+              :find("reserved[species]", 1, true) ~= nil)
 check("il refuse de risquer le dernier drone d une espece",
       text:find("pas assez de drones en trop", 1, true) ~= nil
       or io.open("lib/genetics.lua"):read("a")
@@ -288,7 +290,16 @@ check("elle previent quand les consommables ne suffiront pas",
 -- Une espece dont le genome est deja lu et deja en bibliotheque n a plus rien
 -- a apprendre: la sampler couterait une abeille pour un doublon
 check("une espece qui n apprend plus rien est epargnee",
-      text:find("context.library:teaches(entry.species)", 1, true) ~= nil)
+      text:find("context.library:novelty(entry.species)", 1, true) ~= nil)
+
+-- Cent cinq drones qui partagent UN genome ne portent que les memes treize
+-- chromosomes: en tirer cent trois, c est payer cent bees pour des doublons
+check("le nombre de tirages est plafonne par lignee",
+      text:find("entry.genomes * DRAWS_PER_GENOME", 1, true) ~= nil)
+check("et par ce qui reste vraiment a apprendre",
+      text:find("novelty * DRAWS_PER_ALLELE", 1, true) ~= nil)
+check("l ecran dit ce qu il epargne et pourquoi",
+      text:find("epargnes: ", 1, true) ~= nil)
 
 check("les porteurs sont declares en config",
       settingsText:find("config.gene_carriers", 1, true) ~= nil)
@@ -648,8 +659,11 @@ do
 
     check("l option 3 propose de lire les genomes sur place",
           text:find("Lire les genomes en stock maintenant ?", 1, true) ~= nil)
-    check("et ne renvoie plus vers 9 puis l",
-          text:find("choisis 9 puis l", 1, true) == nil)
+    -- L option 3 ne renvoie plus ailleurs: elle propose la lecture sur place.
+    -- L ecran des genes, lui, renvoie -- et c est le bon endroit: une lecture
+    -- gratuite y remplace une quarantaine de tirages a l aveugle.
+    check("l ecran des genes conseille de lire avant de detruire",
+          text:find("choisis 9 puis l AVANT de confirmer", 1, true) ~= nil)
 end
 
 -- LE PARCOURS S ARRETAIT AVANT DE PRODUIRE. Quatre options menaient a un

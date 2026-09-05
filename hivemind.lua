@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.17.0"
+hivemind.VERSION = "1.17.1"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -3737,6 +3737,17 @@ end
 --- So the question stops being "which species should I sample" and becomes
 --- "what do I have too much of". The answer is computed, not chosen.
 --- @param context table
+--- Tirages qu il faut compter pour atteindre UN allele precis
+--- Le Sampler tire un chromosome sur treize au hasard, donc viser un gene
+--- coute treize tirages en moyenne.
+local DRAWS_PER_ALLELE = 13
+
+--- Tirages au-dela desquels une lignee n a plus rien a donner
+--- Collectionner les treize chromosomes d un genome inconnu demande environ
+--- 13 x H(13) = 41 tirages. Passe ce point on paie des doublons, et le seul
+--- moyen de faire mieux est de LIRE le genome au lieu de le deviner.
+local DRAWS_PER_GENOME = 41
+
 function hivemind.harvestSurplus(context)
     print("")
     print("=== EXTRAIRE LES GENES DE TOUT LE SURPLUS ===")
@@ -3771,10 +3782,42 @@ function hivemind.harvestSurplus(context)
             -- Un genome deja lu dit exactement ce que cette abeille apporte.
             -- Si la bibliotheque a tout, la detruire n apprendrait rien -- et
             -- c est la seule facon de le savoir SANS la detruire.
-            if context.library:teaches(entry.species) then
-                table.insert(plan, entry)
-            else
+            local novelty, read = context.library:novelty(entry.species)
+
+            if read and novelty == 0 then
                 table.insert(nothingNew, entry)
+            else
+                -- LE PLAFOND. Cent cinq drones qui partagent UN genome ne
+                -- peuvent porter que les memes treize chromosomes: en tirer
+                -- cent trois, c est payer cent bees pour des doublons. AE2
+                -- separe les piles par NBT, donc le nombre d entrees EST le
+                -- nombre de lignees distinctes.
+                local cap
+
+                if read then
+                    -- On sait quoi chercher: le Sampler tire un chromosome sur
+                    -- treize au hasard, donc atteindre UN allele voulu coute
+                    -- une treizaine de tirages
+                    cap = novelty * DRAWS_PER_ALLELE
+                    entry.why = screen.count(novelty, "gene")
+                        .. " a prendre"
+                else
+                    -- On ne sait pas: collectionner les treize chromosomes
+                    -- d une lignee en demande une quarantaine (13 x H(13))
+                    cap = entry.genomes * DRAWS_PER_GENOME
+                    entry.why = "genome jamais lu"
+                end
+
+                if cap < entry.spendable then
+                    entry.capped = entry.spendable - cap
+                    entry.spendable = cap
+                end
+
+                if entry.spendable > 0 then
+                    table.insert(plan, entry)
+                else
+                    table.insert(nothingNew, entry)
+                end
             end
         end
     end
@@ -3792,8 +3835,29 @@ function hivemind.harvestSurplus(context)
                 .. screen.fit(screen.count(entry.genomes, "genome"), 12)
                 .. "-> " .. entry.spendable .. " a tirer"
                 .. (entry.reserved > 0
-                    and ("  (" .. entry.reserved .. " reserve par la file)")
+                    and ("  (" .. entry.reserved .. " reserve)")
                     or ""))
+
+            if entry.capped then
+                print("     " .. entry.capped .. " epargnes: "
+                    .. tostring(entry.why))
+            end
+        end
+
+        -- Lire un genome ne coute AUCUNE abeille, et remplace une quarantaine
+        -- de tirages a l aveugle par une reponse exacte
+        local blind = 0
+        for _, entry in ipairs(plan) do
+            if entry.why == "genome jamais lu" then blind = blind + 1 end
+        end
+
+        if blind > 0 then
+            print("")
+            print("  " .. screen.count(blind, "espece") .. " "
+                .. screen.plural(blind, "dont le genome n a jamais ete lu")
+                .. ".")
+            print("  Le lire ne coute AUCUNE abeille et dit exactement ce")
+            print("  qu elle apporte: choisis 9 puis l AVANT de confirmer.")
         end
     end
 

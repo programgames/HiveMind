@@ -223,12 +223,26 @@ end
 --- @param species string As a drone label spells it, without " Drone"
 --- @return boolean
 function Library:teaches(species)
+    local novelty, read = self:novelty(species)
+    return (not read) or novelty > 0
+end
+
+--- How many alleles this species carries that the shelf has not got
+--- The count, not just the yes or no: it decides how many bees are worth
+--- destroying. The Sampler draws one chromosome in thirteen at random, so
+--- reaching ONE wanted allele costs about thirteen draws -- and wanting none
+--- costs none at all.
+--- @param species string
+--- @return number novelty Alleles missing from the shelf that this bee carries
+--- @return boolean read Whether its genome was ever read
+function Library:novelty(species)
     self:load()
 
     local recorded = self.index.genomes and self.index.genomes[species]
-    if not recorded then return true end
+    if not recorded then return 0, false end
 
     local genes = self:allGenes()
+    local novelty, seen = 0, {}
 
     local function flatten(text)
         return tostring(text):lower():gsub("[^%w]", "")
@@ -255,12 +269,20 @@ function Library:teaches(species)
                     end
                 end
 
-                if not found then return true end
+                if not found then
+                    -- Un allele porte par cette abeille et absent de
+                    -- l etagere: compte une fois, meme si deux chromosomes
+                    -- le portent
+                    if not seen[flat] then
+                        seen[flat] = true
+                        novelty = novelty + 1
+                    end
+                end
             end
         end
     end
 
-    return false
+    return novelty, true
 end
 
 --- Every species known to carry an allele, from what has been read
