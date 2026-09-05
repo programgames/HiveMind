@@ -71,7 +71,7 @@ local hivemind = {}
 -- without counting bytes. raw.githubusercontent.com serves through a CDN that
 -- can hand out the previous file for a few minutes after a push, which has
 -- already cost one round of confusion.
-hivemind.VERSION = "1.5.0"
+hivemind.VERSION = "1.6.0"
 
 --- Resolve a component, without throwing when it is absent
 --- @param kind string
@@ -3841,6 +3841,9 @@ function hivemind.fluidLevels(context)
                 local amount = tank.amount or 0
 
                 table.insert(readings, {
+                    -- The machine key, not just its display name: the checkup
+                    -- has to line a tank up with the slot that feeds it
+                    key = entry.key,
                     machine = entry.name,
                     fluid = entry.fluid,
                     label = tank.label,

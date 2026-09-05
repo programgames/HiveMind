@@ -297,6 +297,109 @@ function checkup.supplies(options)
     return findings
 end
 
+--- The two machines the player fills by hand, and what goes in them
+--- Everything else in the base is supplied from AE2. These two are not, and
+--- not by accident: their transposers touch no ME Interface, so nothing the
+--- program can do would reach their input slot. Feeding them is the player's
+--- job, and it stays the player's job.
+---
+--- What the program CAN do costs nothing: the transposer already touches them,
+--- so it can look inside. An empty belly is visible long before the tank it
+--- feeds runs dry -- which is the difference between reading it here and
+--- discovering it when a queue stops on the fourth step.
+--- @type table<string, string>
+checkup.PLAYER_FED = {
+    protein_liquifier = "de quoi faire des proteines",
+    mutagen_producer  = "de quoi faire du mutagene",
+}
+
+--- Is there anything left in the two machines the player fills
+---
+--- An empty input slot is NOT a fault on its own: a producer that has eaten
+--- everything and filled its tank is a producer doing its work. It only
+--- becomes a fault when the tank behind it is running out too, and that is
+--- what the fluid readings are for. Saying it every time was the noise that
+--- drowned the real warnings.
+--- @param options table {config, transport, fluids}
+--- @return table[] findings
+function checkup.producers(options)
+    local settings = options.config or {}
+    local transport = options.transport
+    local offset = tonumber(settings.slot_offset) or 0
+
+    -- Which of these tanks is actually running out, from the same readings the
+    -- CUVES section shows
+    local running_out = {}
+    for _, reading in ipairs(options.fluids or {}) do
+        if reading.key then
+            running_out[reading.key] = (reading.empty or reading.dry
+                                        or reading.low) == true
+        end
+    end
+
+    local keys = {}
+    for key in pairs(checkup.PLAYER_FED) do table.insert(keys, key) end
+    table.sort(keys)
+
+    local findings = {}
+
+    for _, key in ipairs(keys) do
+        local link = (settings.machines or {})[key]
+        local name = checkup.nameOf(key)
+        local wanted = checkup.PLAYER_FED[key]
+        local slot = link and (link.slots or {}).input
+
+        if not link then
+            -- Not in the configuration at all: nothing to say. A machine that
+            -- IS declared and not yet placed is a different thing, below.
+            slot = nil
+        elseif link.enabled == false or link.machine == nil then
+            table.insert(findings, {
+                name = name, status = checkup.ABSENT,
+                detail = "pas encore posee, rien a verifier",
+            })
+        elseif slot == nil then
+            table.insert(findings, {
+                name = name, status = checkup.ABSENT,
+                detail = "aucun slot d entree declare",
+            })
+        else
+            local ok, stack = attempt(function()
+                return transport:inspect(link, slot + offset)
+            end)
+
+            if not ok then
+                -- Nothing: a face that does not answer is already reported, by
+                -- name and with its gesture, in the MACHINES section. Saying it
+                -- twice turns one problem into two.
+            elseif type(stack) == "table" then
+                local size = tonumber(stack.size) or 1
+                table.insert(findings, {
+                    name = name, status = checkup.OK,
+                    detail = tostring(stack.label or stack.name)
+                        .. " x" .. size,
+                })
+            elseif running_out[key] then
+                table.insert(findings, {
+                    name = name, status = checkup.PROBLEM,
+                    detail = "vide, et sa cuve suit",
+                    gesture = "mets " .. wanted .. " dans le " .. name
+                        .. ": la chaine qui en boit va s arreter",
+                })
+            else
+                -- Empty and the tank is holding: it has eaten what it was given
+                -- and made what it had to make. Nothing to do.
+                table.insert(findings, {
+                    name = name, status = checkup.OK,
+                    detail = "vide, mais sa cuve tient encore",
+                })
+            end
+        end
+    end
+
+    return findings
+end
+
 --- Turn the fluid readings into findings
 --- The readings themselves come from the caller: reading a tank needs the live
 --- machines, and this module is meant to be testable without them.
@@ -431,6 +534,8 @@ function checkup.run(options)
                             findings = checkup.interfaces(options)})
     table.insert(sections, {title = "CUVES",
                             findings = checkup.fluids(options.fluids)})
+    table.insert(sections, {title = "LES DEUX MACHINES QUE TU REMPLIS",
+                            findings = checkup.producers(options)})
     table.insert(sections, {title = "CONSOMMABLES",
                             findings = checkup.supplies(options)})
 

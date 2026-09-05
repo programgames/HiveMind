@@ -75,6 +75,13 @@ local function fakeTransport(world)
         findAll = function(self, spec)
             return (world.stock or {})[spec.name] or {}
         end,
+
+        -- Read-only look into one slot, keyed by face then by TRANSPOSER slot:
+        -- the caller adds slot_offset, exactly as the real one does
+        inspect = function(self, link, slot)
+            local inventory = (world.contents or {})[link.machine]
+            return inventory and inventory[slot] or nil
+        end,
     }
 end
 
@@ -348,6 +355,130 @@ do
     check("deux passes donnent le meme ordre", names(), names())
     check("et cet ordre est alphabetique", names(),
           "Genetic Transposer|Imprinter|Sampler")
+end
+
+print("")
+print("-- ce qui reste dans les deux machines que le joueur remplit --")
+
+-- Le Liquifier et le Mutagen Producer ne sont alimentes par personne: leurs
+-- transposers ne touchent aucune interface ME. Le programme ne peut donc rien
+-- y mettre -- mais il peut regarder dedans, et un ventre vide se voit bien
+-- avant que la cuve qu il remplit ne soit seche.
+-- Une machine apparait deux fois dans le rapport: la section MACHINES dit que
+-- sa face repond, celle-ci dit ce qu il reste dedans. Chercher par nom dans
+-- tout le rapport ramenait la premiere, et le test lisait la mauvaise ligne.
+local function fedFinding(report, name)
+    for _, section in ipairs(report.sections) do
+        if section.title == "LES DEUX MACHINES QUE TU REMPLIS" then
+            for _, finding in ipairs(section.findings) do
+                if finding.name == name then return finding end
+            end
+        end
+    end
+    return nil
+end
+
+local function fedConfig()
+    local settings = healthyConfig()
+
+    settings.machines.protein_liquifier = {transposer = "a142f36b", machine = 4,
+                                           source = nil, slots = {input = 0}}
+    settings.machines.mutagen_producer = {transposer = "d28c3d3d", machine = 2,
+                                          source = nil, slots = {input = 0}}
+    return settings
+end
+
+local function fedWorld(contents)
+    local world = healthyWorld()
+    world.sizes[4] = 1
+    world.sizes[2] = 1
+    world.contents = contents
+    return world
+end
+
+do
+    -- Slot 0 de la machine, donc slot 1 du transposer: slot_offset vaut 1, et
+    -- se tromper d un cran est la faute que ce projet a deja payee une fois
+    local report = checkup.run({
+        config = fedConfig(),
+        transport = fakeTransport(fedWorld({
+            [4] = {[1] = {label = "Raw Porkchop", size = 12}},
+            [2] = {[1] = {label = "Glowstone Dust", size = 64}},
+        })),
+        fluids = {},
+    })
+
+    check("le verdict reste bon", report.ok, true)
+
+    local liquifier = fedFinding(report, "Protein Liquifier")
+    check("le Liquifier est repu", liquifier.status, checkup.OK)
+    checkTruthy("et on lit ce qu il mange",
+                liquifier.detail and liquifier.detail:find("Raw Porkchop"))
+    checkTruthy("avec la quantite",
+                liquifier.detail and liquifier.detail:find("12"))
+
+    local producer = fedFinding(report, "Mutagen Producer")
+    checkTruthy("le Producer aussi",
+                producer.detail and producer.detail:find("Glowstone"))
+end
+
+do
+    -- Un producteur vide n est PAS une panne: il a mange ce qu on lui a donne
+    -- et rempli sa cuve. Le dire a chaque fois etait le bruit qui noyait les
+    -- vrais avertissements.
+    local report = checkup.run({
+        config = fedConfig(),
+        transport = fakeTransport(fedWorld({})),
+        fluids = {{key = "mutagen_producer", machine = "Mutagen Producer",
+                   fluid = "mutagene", amount = 9000, capacity = 10000}},
+    })
+
+    check("un ventre vide sur une cuve pleine ne bloque rien", report.ok, true)
+
+    local producer = fedFinding(report, "Mutagen Producer")
+    check("et ne compte pas comme un probleme", producer.status, checkup.OK)
+    checkTruthy("mais le dit quand meme",
+                producer.detail and producer.detail:find("cuve tient"))
+end
+
+do
+    -- Vide ET la cuve qui suit: la chaine va s arreter, et c est la seule
+    -- situation qui merite un geste
+    local report = checkup.run({
+        config = fedConfig(),
+        transport = fakeTransport(fedWorld({})),
+        fluids = {{key = "mutagen_producer", machine = "Mutagen Producer",
+                   fluid = "mutagene", amount = 0, capacity = 10000,
+                   empty = true, low = true}},
+    })
+
+    check("la, il faut le remplir", report.ok, false)
+
+    local producer = fedFinding(report, "Mutagen Producer")
+    check("et c est un probleme", producer.status, checkup.PROBLEM)
+    checkTruthy("le geste dit quoi y mettre",
+                producer.gesture and producer.gesture:find("mutagene"))
+    checkTruthy("et pourquoi maintenant",
+                producer.gesture and producer.gesture:find("s arreter"))
+
+    -- Le Liquifier, lui, n a aucune cuve en peine dans ce relevé
+    local liquifier = fedFinding(report, "Protein Liquifier")
+    check("l autre machine n est pas entrainee avec", liquifier.status,
+          checkup.OK)
+end
+
+do
+    -- Une machine que la configuration ne nomme pas n a rien a signaler ici:
+    -- la section MACHINES est la seule a parler de ce qui est declare
+    local report = checkup.run({
+        config = healthyConfig(),
+        transport = fakeTransport(healthyWorld()),
+        fluids = {},
+    })
+
+    check("une machine non declaree ne dit rien",
+          fedFinding(report, "Protein Liquifier"), nil)
+    check("et ne compte pas comme absente", report.counts.absent, 0)
 end
 
 print("")

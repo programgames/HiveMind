@@ -106,6 +106,8 @@ chantiers produisent des tâches qui meurent d'un geste de cinq secondes.
       Transposer
 - [x] 4.8 L'option 1 détecte une configuration qui n'est pas celle de ce monde
       et propose d'écrire la sienne
+- [x] 4.7 L'option 1 regarde dans les deux machines que le joueur remplit :
+      un ventre vide se voit avant que la cuve ne soit sèche
 - [ ] 4.8 Un monde neuf mené de l'option 1 au premier croisement, en jeu
 
 ## Fait en jeu
