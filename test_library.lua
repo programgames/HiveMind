@@ -527,6 +527,42 @@ do
           #shelf:missingForProfile({[2] = "Shortest"}), 1)
 end
 
+print("")
+print("-- ce qui passe sous le nez du programme est retenu --")
+
+do
+    -- Lire un genome exigeait un aller-retour dans l apiary, et l apiary ne
+    -- rend pas son slot drone: chaque abeille coutait un retrait a la main.
+    -- Mais des abeilles y passent tout le temps pour d autres raisons, et leur
+    -- genome etait lu -- pour verifier l espece produite -- puis jete.
+    local shelf = newLibrary()
+
+    -- La forme que genome.parse rend vraiment: les chromosomes sont sous une
+    -- cle "chromosomes", pas a la racine
+    local chromosomes = {chromosomes = {
+        [0] = {active = "forestry.speciesForest",
+               inactive = "forestry.speciesForest"},
+        [1] = {active = "forestry.speedSlowest",
+               inactive = "forestry.speedSlowest"},
+    }}
+
+    check("un genome vu au passage est ecrit",
+          shelf:remember("Forest Drone", chromosomes) > 0, true)
+    checkTruthy("et l espece est reconnue sans son role",
+                shelf:knownGenomes()["Forest"] ~= nil)
+
+    -- Appele depuis des etapes qui tournent a chaque passe: reecrire a chaque
+    -- fois serait une ecriture disque par cycle d apiary
+    check("le relire n ecrit plus rien",
+          shelf:remember("Forest Drone", chromosomes), 0)
+    check("une reine de la meme espece non plus",
+          shelf:remember("Forest Queen", chromosomes), 0)
+
+    -- Et rien d exploitable ne doit rien casser
+    check("sans genome, rien", shelf:remember("Forest Drone", nil), 0)
+    check("sans etiquette, rien", shelf:remember(nil, chromosomes), 0)
+end
+
 print("=== Resultats ===")
 print("Reussis : " .. passed)
 print("Echoues : " .. failed)

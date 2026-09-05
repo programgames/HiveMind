@@ -179,6 +179,37 @@ function Library:recordGenome(species, chromosomes)
     return recorded
 end
 
+--- Write down a genome that happened to pass under our nose
+---
+--- Reading a genome used to mean a special trip: park a drone in the apiary,
+--- read it, take it back -- except the apiary does not give its drone slot
+--- back, so every bee costs a manual removal.
+---
+--- But bees pass through that apiary all the time for other reasons. A cross
+--- puts a queen in it. An accumulation puts a pair in it, every cycle. Their
+--- genomes were parsed anyway -- to check the mutation produced the right
+--- species -- and then thrown away. Free knowledge, dropped.
+---
+--- Only writes when it teaches something new: this is called from steps that
+--- run on every pass, and recordGenome saves to disk.
+--- @param label string|nil The bee's item label, e.g. "Forest Drone"
+--- @param chromosomes table|nil Already-parsed genome
+--- @return number recorded
+function Library:remember(label, chromosomes)
+    if type(chromosomes) ~= "table" then return 0 end
+
+    -- "Forest Drone", "Common Queen", "Meadows Princess" -> the species
+    local species = tostring(label or ""):gsub("%s+%a+$", "")
+    if species == "" then return 0 end
+
+    self:load()
+
+    local known = self.index.genomes and self.index.genomes[species]
+    if known then return 0 end
+
+    return self:recordGenome(species, chromosomes)
+end
+
 --- Every species known to carry an allele, from what has been read
 --- @param slot number
 --- @param uidSuffix string Allele as a sample label spells it, e.g. "Both 3"

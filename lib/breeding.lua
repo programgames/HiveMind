@@ -354,6 +354,18 @@ breeding.STEPS = {
                 return jobs.RETRY, wait
             end
 
+            -- La reine produite porte son genome complet, et il est deja lu
+            -- ici pour verifier l espece. L ecrire coute une ligne et evite un
+            -- aller-retour dans l apiary plus tard -- l apiary qui, justement,
+            -- ne rend pas son slot drone.
+            local produced = mutatron:output()
+            if produced and produced.nbt and context.library then
+                pcall(function()
+                    context.library:remember(produced.label,
+                                             genome.parse(produced.nbt))
+                end)
+            end
+
             local queen_slot = apiary:slots().queen
             if apiary:slot(queen_slot) then
                 return jobs.RETRY, "le slot reine de l'apiary est deja occupe"

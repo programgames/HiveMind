@@ -236,6 +236,17 @@ multiply.STEPS = {
             -- and then waited on for ever. Now the missing upgrade is fetched
             -- from the ME network and slotted in; when that cannot be done the
             -- job asks for a hand instead of waiting on nothing.
+            -- Le couple est dans l apiary de toute facon, et son genome se lit
+            -- sans rien deplacer. Une accumulation apprend donc gratuitement ce
+            -- qu un balayage devait aller chercher abeille par abeille.
+            if context.library then
+                pcall(function()
+                    for _, bee in pairs(apiary:bees()) do
+                        context.library:remember(bee.label, bee.genome)
+                    end
+                end)
+            end
+
             local blocking = apiary:environmentErrors()
             if #blocking > 0 then
                 return upgrades.resolve(apiary, context, job, blocking)

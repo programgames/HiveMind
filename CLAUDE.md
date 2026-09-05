@@ -109,6 +109,20 @@ Les outils vivent dans `tools/` qui **n'est pas dans le PATH d'OpenOS** : il fau
   toutes les autres faces du même transposer**. `avoid` exclut les faces
   occupées par une autre machine : vider un drone dans l'entrée du Mutatron
   serait pire que de le laisser en place.
+
+  **Mesuré en jeu le 2026-09-05, avec toutes les faces essayées : Forestry
+  refuse bel et bien.** Aucune porte ne s'ouvre. Le retrait manuel est la seule
+  issue automatisable, et le balayage saute l'espèce plutôt que de tout arrêter.
+
+- **Un génome qui passe sous le nez du programme est retenu.** Une abeille est
+  dans l'apiary à chaque croisement (la reine) et à chaque cycle d'accumulation
+  (le couple), et son génome y était déjà lu — pour vérifier l'espèce produite —
+  puis jeté. `library:remember(label, chromosomes)` l'écrit, et n'écrit que si
+  l'espèce est nouvelle : ces étapes tournent à chaque passe, et `recordGenome`
+  sauvegarde sur disque.
+
+  C'est le vrai contournement du slot drone bloqué : plutôt que d'aller lire
+  une abeille, on retient celles qui passent de toute façon.
 - **Étiquette d'un Gene Sample** : `Bee Sample - <Chromosome>: <Allèle>`.
   Séparateur ` - `, pas `: `.
 - **La bibliothèque, ce sont les gene samples, pas les templates.** Un sample
