@@ -174,6 +174,8 @@ w(string.rep("-", 72))
 w("SIDES -- as seen from the block holding the inventory controller")
 w(string.rep("-", 72))
 
+local ALL_SIDES = {sides.bottom, sides.top, sides.back, sides.front, sides.right, sides.left}
+
 local SIDE_NAMES = {
     [sides.bottom] = "bottom (down)",
     [sides.top]    = "top (up)",
@@ -197,7 +199,7 @@ end
 
 local sideReport = {}
 if inv then
-    for _, side in ipairs({sides.bottom, sides.top, sides.back, sides.front, sides.right, sides.left}) do
+    for _, side in ipairs(ALL_SIDES) do
         local size = inv.getInventorySize(side)
         local guess = ""
 
@@ -244,46 +246,54 @@ w()
 -- The driver names a slot and says what is in it. The inventory controller reads the
 -- same physical inventory under its own indexing. If driver slot s and controller
 -- slot s+k hold the same item for every occupied slot, k is the offset.
-local function detectOffset(address, side, label)
-    w(string.rep("-", 72))
-    w("OFFSET TEST -- " .. label)
-    w(string.rep("-", 72))
+local function detectOffset(address, side, label, silent)
+    local say = silent and function() end or w
+
+    say(string.rep("-", 72))
+    say("OFFSET TEST -- " .. label)
+    say(string.rep("-", 72))
 
     if not address then
-        w("  driver absent, skipping")
-        w()
+        say("  driver absent, skipping")
+        say()
 
         return nil
     end
     if not inv then
-        w("  no inventory_controller, skipping")
-        w()
+        say("  no inventory_controller, skipping")
+        say()
+
+        return nil
+    end
+    if not side then
+        say("  no side identified for this machine, skipping")
+        say()
 
         return nil
     end
 
     local size = inv.getInventorySize(side)
     if not size then
-        w(string.format("  nothing readable on side %d -- wrong side?", side))
-        w()
+        say(string.format("  nothing readable on side %d -- wrong side?", side))
+        say()
 
         return nil
     end
 
     local driverSlots = call(address, "listSlots")
     if type(driverSlots) ~= "table" then
-        w("  listSlots() did not answer a table -- is the Adapter still touching it?")
-        w()
+        say("  listSlots() did not answer a table -- is the Adapter still touching it?")
+        say()
 
         return nil
     end
 
-    w(string.format("  inventory_controller reports %d slots", size))
-    w(string.format("  driver listSlots().size = %s", tostring(driverSlots.size)))
+    say(string.format("  inventory_controller reports %d slots", size))
+    say(string.format("  driver listSlots().size = %s", tostring(driverSlots.size)))
     if driverSlots.size and driverSlots.size ~= size then
-        w("  !! sizes disagree: the two are not looking at the same inventory")
+        say("  !! sizes disagree: the two are not looking at the same inventory")
     end
-    w()
+    say()
 
     -- Occupied slots as the controller sees them.
     local controllerItems = {}
@@ -317,10 +327,10 @@ local function detectOffset(address, side, label)
     end
 
     if next(driverItems) == nil then
-        w("  the driver reports no occupied slot, so there is nothing to correlate.")
-        w("  Load the machine (a bee in the apiary, or a product in the mutatron)")
-        w("  and run this again -- the test needs at least one item to line up.")
-        w()
+        say("  the driver reports no occupied slot, so there is nothing to correlate.")
+        say("  Load the machine (a bee in the apiary, or a product in the mutatron)")
+        say("  and run this again -- the test needs at least one item to line up.")
+        say()
 
         return nil
     end
@@ -343,27 +353,27 @@ local function detectOffset(address, side, label)
             if matches(item, controllerItems[slot + k]) then agree = agree + 1 end
         end
 
-        w(string.format("  offset %+d: %d/%d driver slots line up", k, agree, total))
+        say(string.format("  offset %+d: %d/%d driver slots line up", k, agree, total))
         if total > 0 and agree == total and not verdict then verdict = k end
     end
-    w()
+    say()
 
     if verdict then
-        w(string.format("  ==> OFFSET = %+d", verdict))
-        w(string.format("      controller_slot = driver_slot %+d", verdict))
+        say(string.format("  ==> OFFSET = %+d", verdict))
+        say(string.format("      controller_slot = driver_slot %+d", verdict))
     else
-        w("  ==> INCONCLUSIVE. Load more slots and run again, or the two components")
-        w("      are not addressing the same inventory.")
+        say("  ==> INCONCLUSIVE. Load more slots and run again, or the two components")
+        say("      are not addressing the same inventory.")
     end
-    w()
+    say()
 
     -- The named slots, translated both ways, so the config can be written by hand.
-    w("  Named slots (driver index -> controller index):")
+    say("  Named slots (driver index -> controller index):")
     for _, key in ipairs(sortedKeys(driverSlots)) do
         local value = driverSlots[key]
         if type(value) == "number" and key ~= "size" then
             local translated = verdict and tostring(value + verdict) or "?"
-            w(string.format("    %-14s %3d -> %s   %s", key, value, translated,
+            say(string.format("    %-14s %3d -> %s   %s", key, value, translated,
                 describe(verdict and controllerItems[value + verdict]) or ""))
         elseif type(value) == "table" then
             local parts = {}
@@ -371,16 +381,90 @@ local function detectOffset(address, side, label)
                 parts[#parts + 1] = verdict and tostring(v + verdict) or ("?" .. tostring(v))
             end
             table.sort(parts, function(a, b) return (tonumber(a) or 0) < (tonumber(b) or 0) end)
-            w(string.format("    %-14s -> {%s}", key, table.concat(parts, ",")))
+            say(string.format("    %-14s -> {%s}", key, table.concat(parts, ",")))
         end
     end
-    w()
+    say()
 
     return verdict, driverSlots
 end
 
-local apiaryOffset, apiarySlots = detectOffset(apiary, APIARY_SIDE, "INDUSTRIAL APIARY")
-local advOffset, advSlots = detectOffset(adv, MUTATRON_SIDE, "ADVANCED MUTATRON")
+
+--- Pick the side a machine is really on
+---
+--- The size of an inventory is a weak clue: a computer case answers ten slots, exactly like the
+--- Advanced Mutatron. So when several sides share the size, each is probed in silence and the one
+--- that actually lines up wins. An explicit --apiary= or --mutatron= always overrides this.
+--- @return number|nil side The chosen side
+--- @return number count How many sides shared that size
+local function chooseSide(address, label, override, driverSize)
+    if override then
+
+        return override, 1
+    end
+    if not inv or not address or not driverSize then
+
+        return nil, 0
+    end
+
+    local candidates = {}
+    for _, side in ipairs(ALL_SIDES) do
+        if inv.getInventorySize(side) == driverSize then
+            candidates[#candidates + 1] = side
+        end
+    end
+
+    if #candidates == 0 then
+
+        return nil, 0
+    end
+    if #candidates == 1 then
+
+        return candidates[1], 1
+    end
+
+    for _, side in ipairs(candidates) do
+        if detectOffset(address, side, label, true) then
+
+            return side, #candidates
+        end
+    end
+
+    return candidates[1], #candidates
+end
+
+local function driverSize(address)
+    local sl = call(address, "listSlots")
+    if type(sl) == "table" then return sl.size end
+
+    return nil
+end
+
+local apiarySide, apiaryShared = chooseSide(apiary, "INDUSTRIAL APIARY",
+    options.apiary and APIARY_SIDE or nil, driverSize(apiary))
+local advSide, advShared = chooseSide(adv, "ADVANCED MUTATRON",
+    options.mutatron and MUTATRON_SIDE or nil, driverSize(adv))
+
+local function announce(label, side, shared)
+    if not side then
+        w(string.format("  %s: no side of this block has the right slot count", label))
+
+        return
+    end
+
+    w(string.format("  %s is on the %s side%s", label, SIDE_NAMES[side] or tostring(side),
+        shared > 1 and string.format("  (%d sides shared that slot count)", shared) or ""))
+end
+
+w(string.rep("-", 72))
+w("SIDES CHOSEN FOR THE OFFSET TEST")
+w(string.rep("-", 72))
+announce("Industrial Apiary", apiarySide, apiaryShared or 0)
+announce("Advanced Mutatron", advSide, advShared or 0)
+w()
+
+local apiaryOffset, apiarySlots = detectOffset(apiary, apiarySide, "INDUSTRIAL APIARY")
+local advOffset, advSlots = detectOffset(adv, advSide, "ADVANCED MUTATRON")
 
 -- 4. Verdict on the config currently in main.lua -----------------------------
 w(string.rep("=", 72))

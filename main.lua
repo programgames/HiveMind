@@ -536,12 +536,19 @@ config = {
     use_chat_notifications = true,    -- Enable Notification Interface notifications
     chat_player_name = nil,           -- Player name for notifications (not used with Notification Interface)
 
-    -- Machine positions (sides relative to computer/robot)
-    mutatron_side = sides.front,      -- Advanced Mutatron location
-    apiary_side = sides.back,         -- Industrial Apiary location
-    input_chest_side = sides.left,    -- Princess/drone input chest
+    -- Machine positions, as seen from the block holding the inventory controller (the Adapter).
+    -- These are NOT sides of the computer: only mech_user_side below is. Run check_slots to read
+    -- the real ones off your build -- its SIDES block names what sits on each of the six.
+    mutatron_side = sides.right,      -- Advanced Mutatron location
+    apiary_side = sides.left,         -- Industrial Apiary location
+    input_chest_side = sides.back,    -- Princess/drone/labware input chest
     output_chest_side = sides.down,   -- Product output chest
-    mech_user_inventory_side = sides.right, -- Mechanical User's inventory (same as redstone side)
+
+    -- Where to read the beebee gun, or nil when the Mechanical User is not against the adapter.
+    -- It cannot be: it has to touch the apiary to click it, and two blocks already touching each
+    -- other share no neighbour. Left nil, the program says once that it cannot verify the gun and
+    -- carries on rather than blocking on a slot it will never see.
+    mech_user_inventory_side = nil,
 
     -- Slot configurations
     -- These literals are fallbacks for the degraded mode only (no drivers on the network).
@@ -2638,6 +2645,11 @@ end
 --- @return string|nil gunName Name of the gun item if found
 --- @return boolean readable False when that side holds no readable inventory at all
 function checkBeebeeGun()
+    if not config.mech_user_inventory_side then
+
+        return false, nil, false
+    end
+
     if not inv_controller.getInventorySize(config.mech_user_inventory_side) then
 
         return false, nil, false
