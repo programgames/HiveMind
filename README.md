@@ -43,34 +43,60 @@ An OpenComputers program for automating bee breeding using Forestry, Gendustry, 
 ## Physical Setup
 
 ### Machine Layout
-Place blocks adjacent to the computer according to this configuration:
+
+The block at the centre is an **Adapter holding an Inventory Controller Upgrade**, not the
+computer: a computer case has no upgrade slot. Every side the program refers to is counted from
+that Adapter, and the computer connects to it with cable.
 
 ```
-    [Storage]
-        |
-[Input] - [Computer] - [Mechanical User]
-        |
-   [Advanced Mutatron]
-        |
-  [Industrial Apiary]
-        |
-    [Output]
+                [Advanced Mutatron]
+                        |
+[Input chest] --- [Adapter + Inventory Controller] --- [Mechanical User]
+                        |
+                [Industrial Apiary]
+
+              cable down to the computer
+              output chest underneath
 ```
+
+The Adapter touching the two Gendustry machines is also what exposes them as the `advmutatron`
+and `industrial_apiary` components. A separate Adapter against each machine works just as well.
 
 ### Side Configuration
-Default sides (configurable in code):
-- Left: Input chest
+
+An Adapter has no visible facing, so which side is "front" cannot be told by eye. Run
+`check_slots` and read its **SIDES** block: it names what sits on each of the six sides and
+flags the ones whose slot count matches a machine. Set the config from that, not from a guess.
+
+Defaults:
+- Left: Input chest (princesses, drones and **labware**)
 - Front: Advanced Mutatron
 - Back: Industrial Apiary
 - Bottom: Output chest
-- Right: Mechanical User (redstone connection)
+- Right: Mechanical User
+
+Two keys, two reference blocks:
+- `mech_user_side` is the redstone output, counted **from the computer**
+- `mech_user_inventory_side` is where the beebee gun is read, counted **from the Adapter**
+
+They default to the same value, which is a coincidence rather than a rule. Redstone travels
+along a wire, so the Mechanical User need not touch the Adapter; if it does not, the program
+says once that it cannot verify the gun and carries on.
 
 ### Wiring
 1. Connect Mechanical User to computer with redstone
 2. Position Mechanical User to activate the Industrial Apiary
 3. Place beebee gun with Assassin Queen in Mechanical User's inventory slot 1
-4. Ensure all machines have adequate power
-5. Connect Adapter blocks to Gendustry machines for API access (optional)
+4. Ensure all machines have adequate power, and the Mutatron mutagen
+5. Adapters on the Gendustry machines are **required**, not optional: without them the program
+   cannot select a mutation, wait on a signal or read a genome, and falls back to the blind
+   fixed-timer behaviour
+
+### Do not install the Automation upgrade
+
+It puts the princess back in the queen slot and starts another cycle, which takes away the parent
+the next cross needs, and makes an empty queen slot stop meaning "the cycle ended". The program
+warns when it sees one.
 
 ## Software Installation
 
@@ -89,10 +115,26 @@ local config = {
     apiary_side = sides.back,         -- Industrial Apiary location
     input_chest_side = sides.left,    -- Input chest location
     output_chest_side = sides.down,   -- Output chest location
-    apiary_wait_time = 30,            -- Apiary processing time (seconds)
+    apiary_wait_time = 30,            -- Apiary fallback timer, used only without the drivers
     beebee_gun_slot = 1,              -- Beebee gun slot in Mechanical User
+    slot_offset = 1,                  -- Driver slot index -> inventory_controller index
     enabled_mods = {"Forestry", "MagicBees", "ExtraBees", "Career Bees", "MeatballCraft"}, -- Limit included mods
 }
+```
+
+Run `check_slots` once and set `slot_offset` from the two `OFFSET` verdicts it prints. Everything
+else the program reads from the machines themselves.
+
+## Verifying the setup
+
+```
+check_slots                       -- read-only: starts nothing, moves nothing
+check_slots --out=/home/report.txt
+```
+
+It lists the components on the network, what sits on each of the six sides, the slot offset, a
+verdict on the current config, and the state the program depends on -- mutagen, energy, hive
+errors, climate, modifiers and whether an Automation upgrade is installed.
 ```
 
 Tip: Use enabled_mods to restrict which mods’ species are considered when planning.

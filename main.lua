@@ -2628,32 +2628,76 @@ end
 --- Check if Mechanical User has beebee gun equipped
 --- @return boolean hasGun True if beebee gun is found
 --- @return string|nil gunName Name of the gun item if found
+--- Check whether the Mechanical User holds a beebee gun
+---
+--- Three answers, not two. The redstone that fires the Mechanical User travels as far as a wire
+--- goes, but reading its inventory needs the block to touch the one holding the inventory
+--- controller. When it does not, the slot is unreadable -- which is not the same thing as an
+--- empty one, and must not stop the run.
+--- @return boolean hasGun True if a beebee gun was found
+--- @return string|nil gunName Name of the gun item if found
+--- @return boolean readable False when that side holds no readable inventory at all
 function checkBeebeeGun()
+    if not inv_controller.getInventorySize(config.mech_user_inventory_side) then
+
+        return false, nil, false
+    end
+
     local stack = inv_controller.getStackInSlot(config.mech_user_inventory_side, config.beebee_gun_slot)
 
     if stack and stack.name then
         local name = stack.name:lower()
         if name:find("beebee") or name:find("bee.*gun") then
-            return true, stack.name
+
+            return true, stack.name, true
         end
     end
-    return false, nil
+
+    return false, nil, true
 end
 
 -- Wait for beebee gun to be available in Mechanical User
 function waitForBeebeeGun()
-    local hasGun, gunName = checkBeebeeGun()
+    local hasGun, gunName, readable = checkBeebeeGun()
+
+    -- The Mechanical User is not next to the inventory controller, so its slots cannot be read.
+    -- Say so once and carry on: blocking here would stop a setup that is merely wired with
+    -- redstone rather than placed against the adapter.
+    if not readable then
+        if not control_state.beebee_unreadable_warned then
+            control_state.beebee_unreadable_warned = true
+            drawGUI({progress = "BeeBee Gun not verifiable",
+                     errors = "No readable inventory on the Mechanical User side - firing blind",
+                     status = "Warning"})
+        end
+
+        return true
+    end
 
     if not hasGun then
         updateStatusIndicators("waiting", "Waiting for beebee gun", gui_state.current_species)
         handleError("Beebee gun not found in Mechanical User slot " .. config.beebee_gun_slot, validateBeebeeGun)
+
+        if control_state.abort_requested then
+
+            return false
+        end
+
+        -- Read again: the name from before the pause is still nil, and concatenating it threw
+        hasGun, gunName = checkBeebeeGun()
+        if not hasGun then
+
+            return false
+        end
     end
 
     if control_state.abort_requested then
+
         return false
     end
 
-    drawGUI({progress = "Beebee gun ready: " .. gunName, status = "Ready"})
+    drawGUI({progress = "Beebee gun ready: " .. tostring(gunName or "unknown"), status = "Ready"})
+
     return true
 end
 
@@ -4015,6 +4059,7 @@ control_state = {
     last_error = "",
     abort_requested = false,
     validation_required = false,
+    beebee_unreadable_warned = false,  -- The unreadable-gun warning is only worth saying once
     signal_queue = {},              -- Machine signals pulled while waiting for another one
     automation_warned = false       -- The Automation upgrade warning is only worth saying once
 }
