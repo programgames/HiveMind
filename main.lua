@@ -108,11 +108,32 @@ local gendustry = {
 --- @param kind string Exact component type name
 --- @return string|nil address
 local function gendustryAddress(kind)
-    local ok, iterator = pcall(component.list, kind, true)
-    if not ok or type(iterator) ~= "function" then return nil end
+    local ok, listing = pcall(component.list, kind, true)
+    if not ok or listing == nil then return nil end
 
-    return iterator()
- end
+    -- component.list answers a TABLE, not a function: one that can be walked with pairs and also
+    -- called like an iterator, through a __call metamethod. Insisting on a function rejected every
+    -- real answer, so no driver was ever found in game.
+    if type(listing) == "function" then
+
+        return listing()
+    end
+
+    if type(listing) == "table" then
+        local called, address = pcall(listing)
+        if called and address then
+
+            return address
+        end
+
+        for address in pairs(listing) do
+
+            return address
+        end
+    end
+
+    return nil
+end
 
 --- Invoke a callback on a component address without ever raising.
 --- @param address string|nil Component address
@@ -609,16 +630,33 @@ refreshGendustrySlots()
 -- Generate dynamic bee list from mutations database
 local function generateBeeList(modlist)
     local bees = {}
+    local seen = {}
+
+    local function add(species)
+        if species and not seen[species] then
+            seen[species] = true
+            table.insert(bees, species)
+        end
+    end
 
     -- Add all bees from mutations
     for species, data in pairs(mutations) do
         if not modlist or (modlist and modlist[data.mod]) then
-            table.insert(bees, species)
+            add(species)
+
+            -- And their parents. The database is keyed by what a cross PRODUCES, so a base
+            -- species -- Forest, Meadows, the ones actually in the starting chest -- is never a
+            -- key. Left out, extractSpecies could not name them, and scanInventory reported an
+            -- empty chest while looking straight at them.
+            for _, parent in ipairs(data.parents or {}) do
+                add(parent)
+            end
         end
     end
 
     -- Sort alphabetically for easier browsing
     table.sort(bees)
+
     return bees
 end
 
@@ -687,7 +725,7 @@ function scanInventory()
             for slot = 1, inv_size do
                 local stack = inv_controller.getStackInSlot(side, slot)
                 if stack then
-                    local item_name = stack.name or stack.label or ""
+                    local item_name = stack.label or stack.name or ""
 
                     -- TODO: if we find any queen, we should kill them to get princess + drone back and rescan
                     if item_name:lower():find("princess") or item_name:lower():find("queen") then
@@ -730,7 +768,7 @@ function scanInventory()
                 for slot = 1, inv_size do
                     local stack = inv_controller.getStackInSlot(side, slot)
                     if stack then
-                        local item_name = stack.name or stack.label or ""
+                        local item_name = stack.label or stack.name or ""
                         if item_name:lower():find("princess") or item_name:lower():find("queen") then
                             local species = extractSpecies(item_name)
                             if species then
@@ -2758,21 +2796,34 @@ function moveItem(from_side, from_slot, to_side, to_slot, count)
 end
 
 -- Find item in inventory by name pattern (searches multiple inventories)
+--- Find an item in one inventory by pattern
+---
+--- Matches the display label as well as the item id. The species of a bee lives only in the
+--- label -- every Forestry princess is `forestry:bee_princess_ge` -- so searching the id alone
+--- never found "Meadows Princess", and the program stopped on the first cross asking for a bee
+--- that was sitting in the chest in front of it.
+--- @param side number Inventory side
+--- @param pattern string Lua pattern, matched case-insensitively
+--- @return number|nil slot, table|nil stack
 function findItem(side, pattern)
     local inv_size = inv_controller.getInventorySize(side)
     if not inv_size then return nil end
 
+    local needle = pattern:lower()
+
     for slot = 1, inv_size do
         local stack = inv_controller.getStackInSlot(side, slot)
 
-        if stack and stack.name then
-            local name = stack.name:lower()
+        if stack then
+            local label = (stack.label or ""):lower()
+            local name = (stack.name or ""):lower()
 
-            if name:find(pattern:lower()) then
+            if label:find(needle) or name:find(needle) then
                 return slot, stack
             end
         end
     end
+
     return nil
 end
 
@@ -2830,8 +2881,15 @@ function loadMutatron(parent1, parent2)
         return false, abort_msg
     end
 
-    -- Find princess and drone across all inventories
-    local princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*(princess|queen)")
+    -- Find princess and drone across all inventories.
+    --
+    -- Two searches rather than "princess|queen": Lua patterns have no alternation, so that group
+    -- was matched literally and never found anything.
+    local princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*princess")
+    if not princess_slot then
+        princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*queen")
+    end
+
     local drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
 
     if not princess_slot then
@@ -3374,13 +3432,21 @@ local driver_slots_applied = false
 --- Convert one driver slot index to an inventory_controller slot index
 --- @param index number|nil Slot index as reported by listSlots()
 --- @return number|nil converted Index usable with inventory_controller, or nil
+--- Accept a slot index that has already been translated
+---
+--- gendustry.slots.* are shifted to controller numbering once, when the drivers are resolved.
+--- Shifting them a second time here put the parents in the mutatron's slots 2 and 3 instead of
+--- 1 and 2, so the machine saw an empty pair and offered no mutation at all -- a failure that
+--- reads as "these parents cannot breed that", not as an off-by-one.
+--- @param index any A slot index from gendustry.slots
+--- @return number|nil index The index unchanged, or nil when it is not one
 local function toControllerSlot(index)
     if type(index) ~= "number" then
 
         return nil
     end
 
-    return index + (config.slot_offset or 0)
+    return index
 end
 
 --- Overwrite the literal slot configuration with what the drivers report
@@ -6104,10 +6170,12 @@ end
 -- Run the program when this file is executed, not when it is required.
 --
 -- Without this the file defined main() and never called it: running it on the computer loaded
--- every function, returned the table below and exited, with nothing on screen. Lua passes the
--- module name in `...` to a required file and nothing to a script, which is how the two are told
--- apart -- the same guard test_planning.lua uses.
-if ... == nil then
+-- every function, returned the table below and exited, with nothing on screen.
+--
+-- The importer says so explicitly rather than the file guessing from `...`: what a shell passes a
+-- program varies, and a guard that reads the arguments fails silently and looks exactly like the
+-- bug it replaced -- an empty screen and no error.
+if not _G.HIVEMIND_AS_MODULE then
     main()
 end
 
@@ -6133,6 +6201,18 @@ return {
     -- Status functions (for integration tests)
     updateStatusIndicators = updateStatusIndicators,
     checkBeebeeGun = checkBeebeeGun,
+
+    -- The execution path, so test_ingame.lua can drive it against a simulated world
+    scanInventory = scanInventory,
+    checkGendustryAPI = checkGendustryAPI,
+    loadMutatron = loadMutatron,
+    waitForMutatronOutput = waitForMutatronOutput,
+    moveQueenToApiary = moveQueenToApiary,
+    collectApiaryProducts = collectApiaryProducts,
+    validateMutatronOutput = validateMutatronOutput,
+    useGendustryAPI = useGendustryAPI,
+    killQueenWithBeebeeGun = killQueenWithBeebeeGun,
+    inventory = inventory,
 
     -- Genetics and species registry (tasks 26, 27)
     auditSpeciesDatabase = auditSpeciesDatabase,

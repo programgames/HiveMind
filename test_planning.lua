@@ -126,6 +126,9 @@ end
 -- Initialize mocking before requiring main
 mockOpenComputersEnvironment()
 
+-- main.lua runs its interactive program unless told it is being imported
+_G.HIVEMIND_AS_MODULE = true
+
 -- Now we can safely import main.lua
 local main = require("main")
 
