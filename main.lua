@@ -2910,7 +2910,24 @@ end
 function moveItem(from_side, from_slot, to_side, to_slot, count)
     count = count or 64
 
-    local moved = inv_controller.transferItem(from_side, to_side, count, from_slot, to_slot)
+    -- A nil slot used to reach transferItem and raise from inside OpenComputers, which produced a
+    -- stack trace and no clue about which item was missing. Say it plainly instead.
+    if from_side == nil or from_slot == nil or to_side == nil or to_slot == nil then
+        print(string.format("Cannot move: side/slot missing (from %s/%s to %s/%s)",
+            tostring(from_side), tostring(from_slot), tostring(to_side), tostring(to_slot)))
+
+        return false
+    end
+
+    local ok, moved = pcall(inv_controller.transferItem, from_side, to_side, count, from_slot, to_slot)
+    if not ok then
+        print("Transfer refused: " .. tostring(moved))
+
+        return false
+    end
+
+    moved = moved or 0
+
     if moved > 0 then
         print("Moved " .. moved .. " items from slot " .. from_slot .. " to slot " .. to_slot)
         return true
@@ -3094,16 +3111,36 @@ function loadMutatron(parent1, parent2)
 
     local drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
 
+    -- Look again after the pause. handleError returns once the bee has been put in a chest, but
+    -- the slot found before the pause is still nil -- and it went straight into transferItem,
+    -- which raised from inside OpenComputers instead of saying which bee was missing.
     if not princess_slot then
         handleError("Could not find " .. parent1 .. " princess/queen in any inventory!",
                    function() return validateBeeAvailability(parent1, "princess") end)
         if control_state.abort_requested then return false, "Aborted" end
+
+        princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*princess")
+        if not princess_slot then
+            princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*queen")
+        end
+
+        if not princess_slot then
+
+            return false, "No " .. parent1 .. " princess or queen available"
+        end
     end
 
     if not drone_slot then
         handleError("Could not find " .. parent2 .. " drone in any inventory!",
                    function() return validateBeeAvailability(parent2, "drone") end)
         if control_state.abort_requested then return false, "Aborted" end
+
+        drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
+
+        if not drone_slot then
+
+            return false, "No " .. parent2 .. " drone available"
+        end
     end
 
     -- Move items to mutatron. Ask the drivers for the real slot indices first: without them the

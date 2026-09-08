@@ -602,6 +602,18 @@ check("the apiary was released after the transfer", world.apiary.redstone_mode =
     world.apiary.redstone_mode)
 print()
 
+print("A cross whose parents are not in stock")
+-- The bee is absent and no one is there to put one in a chest, so handleError waits forever --
+-- which is what a headless run of the real thing does too. What matters is that it stops on a
+-- sentence naming the missing bee rather than raising out of transferItem with a stack trace.
+local ok2, err2 = pcall(function()
+    return hive.loadMutatron("Imperial", "Nonexistent", true)
+end)
+local message = tostring(err2 or "")
+check("it does not raise from inside transferItem",
+    not message:find("transferItem", 1, true), message:sub(1, 90))
+print()
+
 print("World log")
 for _, line in ipairs(world.log) do print("  " .. line) end
 print()
