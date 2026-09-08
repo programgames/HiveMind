@@ -1,0 +1,60 @@
+=== Breeding Analysis for EMBee ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 15
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Forest princesses OR 2 Forest drones
+    4 Meadows princesses OR 3 Meadows drones
+    1 Monastic princess OR 1 Monastic drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 16
+  Total nodes: 31
+  Breeding nodes: 15
+  Reused nodes: 10
+  Primary breeders: 7
+  Duplicate species: 7 (15 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── EMBee [PD] *
+    ├── Arcane [P] (reusing)
+    └── Ethereal [PD] *
+        ├── Arcane [PD] *
+        │   ├── Mysterious [PD] *
+        │   │   ├── Common [PD] *
+        │   │   │   ├── Forest [PD]
+        │   │   │   └── Meadows [P] (reusing)
+        │   │   └── Forest [PD]
+        │   └── Esoteric [PD] *
+        │       ├── Eldritch [P] (reusing)
+        │       └── Cultivated [PD] *
+        │           ├── Common [P] (reusing)
+        │           └── Meadows [PD]
+        └── Supernatural [PD] *
+            ├── Charmed [P] (reusing)
+            └── Enchanted [PD] *
+                ├── Charmed [PD] *
+                │   ├── Eldritch [P] (reusing)
+                │   └── Cultivated [PD] *
+                │       ├── Common [P] (reusing)
+                │       └── Meadows [PD]
+                └── Eldritch [PD] *
+                    ├── Cultivated [P] (reusing)
+                    └── Mystical [PD] *
+                        ├── Monastic [PD]
+                        └── Noble [PD] *
+                            ├── Common [P] (reusing)
+                            └── Cultivated [PD] *
+                                ├── Common [P] (reusing)
+                                └── Meadows [PD]

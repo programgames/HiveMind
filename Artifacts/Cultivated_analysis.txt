@@ -1,0 +1,32 @@
+=== Breeding Analysis for Cultivated ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 2
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    2 Meadows princesses OR 1 Meadows drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 4
+  Total nodes: 5
+  Breeding nodes: 2
+  Reused nodes: 1
+  Primary breeders: 1
+  Duplicate species: 1 (1 duplicate instances)
+  Max depth: 3
+
+🌳 BREEDING TREE:
+└── Cultivated [PD] *
+    ├── Common [PD] *
+    │   ├── Forest [PD]
+    │   └── Meadows [P] (reusing)
+    └── Meadows [PD]

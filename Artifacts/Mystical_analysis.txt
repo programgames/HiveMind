@@ -1,0 +1,34 @@
+=== Breeding Analysis for Mystical ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 4
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Monastic princess OR 1 Monastic drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 7
+  Total nodes: 9
+  Breeding nodes: 4
+  Reused nodes: 2
+  Primary breeders: 2
+  Duplicate species: 2 (2 duplicate instances)
+  Max depth: 5
+
+🌳 BREEDING TREE:
+└── Mystical [PD] *
+    ├── Monastic [PD]
+    └── Noble [PD] *
+        ├── Common [P] (reusing)
+        └── Cultivated [PD] *
+            ├── Common [PD] *
+            │   ├── Forest   
+            │   └── Meadows    (reusing)
+            └── Meadows   

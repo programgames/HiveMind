@@ -1,0 +1,58 @@
+=== Breeding Analysis for Serenading ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 11
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Radiant
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    4 Forest princesses OR 4 Forest drones
+    4 Meadows princesses OR 3 Meadows drones
+    1 Monastic princess OR 1 Monastic drone
+    1 Radiant princess OR 1 Radiant drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Common: 3 occurrences, 0 reused, could reuse 1 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 13
+  Total nodes: 23
+  Breeding nodes: 11
+  Reused nodes: 3
+  Primary breeders: 3
+  Duplicate species: 4 (10 duplicate instances)
+  Max depth: 8
+
+🌳 BREEDING TREE:
+└── Serenading [PD] *
+    ├── Radiant [PD]
+    └── Arcane [PD] *
+        ├── Mysterious [PD] *
+        │   ├── Common [PD] *
+        │   │   ├── Forest [PD]
+        │   │   └── Meadows [P] (reusing)
+        │   └── Forest [PD]
+        └── Esoteric [PD] *
+            ├── Eldritch [PD] *
+            │   ├── Cultivated [P] (reusing)
+            │   └── Mystical [PD] *
+            │       ├── Monastic [PD]
+            │       └── Noble [PD] *
+            │           ├── Common [PD] * ← COULD REUSE
+            │           │   ├── Forest [PD]
+            │           │   └── Meadows [PD]
+            │           └── Cultivated [P] (reusing)
+            └── Cultivated [PD] *
+                ├── Common [PD] * ← COULD REUSE
+                │   ├── Forest [PD]
+                │   └── Meadows [PD]
+                └── Meadows [PD]

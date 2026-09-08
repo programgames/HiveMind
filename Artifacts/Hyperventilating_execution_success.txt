@@ -1,0 +1,65 @@
+=== Execution Analysis for Hyperventilating ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 7
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 7
+  GUI calls: 14, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Hyperventilating
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 8
+     Tree species: Hyperventilating
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=388, progress=Completed Common, step_type=breeding, total_steps=8
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=389, progress=Completed Cultivated, step_type=breeding, total_steps=8
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=390, progress=Completed Noble, step_type=breeding, total_steps=8
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=Majestic, progress=Breeding: Noble + Cultivated -> Majestic, step_type=breeding
+     Progress: Breeding: Noble + Cultivated -> Majestic
+  12. [BREEDING] ✅ Noble + Cultivated -> Majestic
+  13. [GUI_CALL] current_species=Majestic, current_step=391, progress=Completed Majestic, step_type=breeding, total_steps=8
+     Progress: Completed Majestic
+  14. [GUI_CALL] current_species=Imperial, progress=Breeding: Noble + Majestic -> Imperial, step_type=breeding
+     Progress: Breeding: Noble + Majestic -> Imperial
+  15. [BREEDING] ✅ Noble + Majestic -> Imperial
+  16. [GUI_CALL] current_species=Imperial, current_step=392, progress=Completed Imperial, step_type=breeding, total_steps=8
+     Progress: Completed Imperial
+  17. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Student
+  18. [BREEDING] ✅ Common + Cultivated -> Student
+  19. [GUI_CALL] current_species=Student, current_step=393, progress=Completed Student, step_type=breeding, total_steps=8
+     Progress: Completed Student
+  20. [GUI_CALL] current_species=Hyperventilating, progress=Breeding: Imperial + Student -> Hyperventilating, step_type=breeding
+     Progress: Breeding: Imperial + Student -> Hyperventilating
+  21. [BREEDING] ✅ Imperial + Student -> Hyperventilating
+  22. [GUI_CALL] current_species=Hyperventilating, current_step=394, progress=Completed Hyperventilating, step_type=breeding, total_steps=8
+     Progress: Completed Hyperventilating
+  23. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Hyperventilating, TreeExists=true, Steps=8
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 14
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

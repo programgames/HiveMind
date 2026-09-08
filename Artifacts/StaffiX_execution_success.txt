@@ -1,0 +1,90 @@
+=== Execution Analysis for StaffiX ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 12
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 12
+  GUI calls: 24, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: StaffiX
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 12
+     Tree species: StaffiX
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=645, progress=Completed Common, step_type=breeding, total_steps=12
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=646, progress=Completed Cultivated, step_type=breeding, total_steps=12
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=647, progress=Completed Noble, step_type=breeding, total_steps=12
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  12. [BREEDING] ✅ Common + Cultivated -> Diligent
+  13. [GUI_CALL] current_species=Diligent, current_step=648, progress=Completed Diligent, step_type=breeding, total_steps=12
+     Progress: Completed Diligent
+  14. [GUI_CALL] current_species=Ancient, progress=Breeding: Noble + Diligent -> Ancient, step_type=breeding
+     Progress: Breeding: Noble + Diligent -> Ancient
+  15. [BREEDING] ✅ Noble + Diligent -> Ancient
+  16. [GUI_CALL] current_species=Ancient, current_step=649, progress=Completed Ancient, step_type=breeding, total_steps=12
+     Progress: Completed Ancient
+  17. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  18. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  19. [GUI_CALL] current_species=Sinister, current_step=650, progress=Completed Sinister, step_type=breeding, total_steps=12
+     Progress: Completed Sinister
+  20. [GUI_CALL] current_species=Frugal, progress=Breeding: Modest + Sinister -> Frugal, step_type=breeding
+     Progress: Breeding: Modest + Sinister -> Frugal
+  21. [BREEDING] ✅ Modest + Sinister -> Frugal
+  22. [GUI_CALL] current_species=Frugal, current_step=651, progress=Completed Frugal, step_type=breeding, total_steps=12
+     Progress: Completed Frugal
+  23. [GUI_CALL] current_species=Austere, progress=Breeding: Modest + Frugal -> Austere, step_type=breeding
+     Progress: Breeding: Modest + Frugal -> Austere
+  24. [BREEDING] ✅ Modest + Frugal -> Austere
+  25. [GUI_CALL] current_species=Austere, current_step=652, progress=Completed Austere, step_type=breeding, total_steps=12
+     Progress: Completed Austere
+  26. [GUI_CALL] current_species=Secluded, progress=Breeding: Austere + Monastic -> Secluded, step_type=breeding
+     Progress: Breeding: Austere + Monastic -> Secluded
+  27. [BREEDING] ✅ Austere + Monastic -> Secluded
+  28. [GUI_CALL] current_species=Secluded, current_step=653, progress=Completed Secluded, step_type=breeding, total_steps=12
+     Progress: Completed Secluded
+  29. [GUI_CALL] current_species=Primeval, progress=Breeding: Secluded + Ancient -> Primeval, step_type=breeding
+     Progress: Breeding: Secluded + Ancient -> Primeval
+  30. [BREEDING] ✅ Secluded + Ancient -> Primeval
+  31. [GUI_CALL] current_species=Primeval, current_step=654, progress=Completed Primeval, step_type=breeding, total_steps=12
+     Progress: Completed Primeval
+  32. [GUI_CALL] current_species=Prehistoric, progress=Breeding: Primeval + Ancient -> Prehistoric, step_type=breeding
+     Progress: Breeding: Primeval + Ancient -> Prehistoric
+  33. [BREEDING] ✅ Primeval + Ancient -> Prehistoric
+  34. [GUI_CALL] current_species=Prehistoric, current_step=655, progress=Completed Prehistoric, step_type=breeding, total_steps=12
+     Progress: Completed Prehistoric
+  35. [GUI_CALL] current_species=StaffiX, progress=Breeding: Water + Prehistoric -> StaffiX, step_type=breeding
+     Progress: Breeding: Water + Prehistoric -> StaffiX
+  36. [BREEDING] ✅ Water + Prehistoric -> StaffiX
+  37. [GUI_CALL] current_species=StaffiX, current_step=656, progress=Completed StaffiX, step_type=breeding, total_steps=12
+     Progress: Completed StaffiX
+  38. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=StaffiX, TreeExists=true, Steps=12
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 24
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

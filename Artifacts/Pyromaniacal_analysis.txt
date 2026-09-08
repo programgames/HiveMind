@@ -1,0 +1,68 @@
+=== Breeding Analysis for Pyromaniacal ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 19
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    5 Meadows princesses OR 4 Meadows drones
+    1 Modest princess OR 1 Modest drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 19
+  Total nodes: 39
+  Breeding nodes: 19
+  Reused nodes: 14
+  Primary breeders: 8
+  Duplicate species: 7 (20 duplicate instances)
+  Max depth: 7
+
+🌳 BREEDING TREE:
+└── Pyromaniacal [PD] *
+    ├── Rainbow [PD] *
+    │   ├── PHD [PD] *
+    │   │   ├── Student [PD] *
+    │   │   │   ├── Cultivated [PD] *
+    │   │   │   │   ├── Common [P] (reusing)
+    │   │   │   │   └── Meadows [PD]
+    │   │   │   └── Common [P] (reusing)
+    │   │   └── Graduate [P] (reusing)
+    │   └── Artistic [PD] *
+    │       ├── Graduate [PD] *
+    │       │   ├── Student [P] (reusing)
+    │       │   └── Common [PD] *
+    │       │       ├── Forest [PD]
+    │       │       └── Meadows [P] (reusing)
+    │       └── Cultivated [P] (reusing)
+    └── Devil [PD] *
+        ├── Demonic [PD] *
+        │   ├── Fiendish [PD] *
+        │   │   ├── Cultivated [PD] *
+        │   │   │   ├── Common [P] (reusing)
+        │   │   │   └── Meadows [PD]
+        │   │   └── Sinister [P] (reusing)
+        │   └── Sinister [PD] *
+        │       ├── Cultivated [P] (reusing)
+        │       └── Modest [PD]
+        └── Smelter [PD] *
+            ├── Industrious [PD] *
+            │   ├── Unweary [PD] *
+            │   │   ├── Cultivated [PD] *
+            │   │   │   ├── Common [P] (reusing)
+            │   │   │   └── Meadows [PD]
+            │   │   └── Diligent [P] (reusing)
+            │   └── Diligent [PD] *
+            │       ├── Cultivated [PD] *
+            │       │   ├── Common [P] (reusing)
+            │       │   └── Meadows [PD]
+            │       └── Common [P] (reusing)
+            └── Graduate [P] (reusing)

@@ -1,0 +1,85 @@
+=== Breeding Analysis for Chevron ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 25
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Wintry
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Forest princesses OR 3 Forest drones
+    7 Meadows princesses OR 7 Meadows drones
+    1 Wintry princess OR 1 Wintry drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Cultivated: 5 occurrences, 0 reused, could reuse 0 more
+    → Graduate: 2 occurrences, 0 reused, could reuse 0 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 21
+  Total nodes: 51
+  Breeding nodes: 25
+  Reused nodes: 15
+  Primary breeders: 8
+  Duplicate species: 9 (30 duplicate instances)
+  Max depth: 10
+
+🌳 BREEDING TREE:
+└── Chevron [PD] *
+    ├── Robot [PD] *
+    │   ├── Electrician [PD] *
+    │   │   ├── Engineer [PD] *
+    │   │   │   ├── PHD [PD] *
+    │   │   │   │   ├── Student [P] (reusing)
+    │   │   │   │   └── Graduate [PD] *
+    │   │   │   │       ├── Student [PD] *
+    │   │   │   │       │   ├── Cultivated [PD] * ← COULD REUSE
+    │   │   │   │       │   │   ├── Common [PD] *
+    │   │   │   │       │   │   │   ├── Forest [PD]
+    │   │   │   │       │   │   │   └── Meadows [PD]
+    │   │   │   │       │   │   └── Meadows [PD]
+    │   │   │   │       │   └── Common [P] (reusing)
+    │   │   │   │       └── Common [P] (reusing)
+    │   │   │   └── Noble [PD] *
+    │   │   │       ├── Common [P] (reusing)
+    │   │   │       └── Cultivated [PD] *
+    │   │   │           ├── Common [P] (reusing)
+    │   │   │           └── Meadows [PD]
+    │   │   └── Clockwork [P] (reusing)
+    │   └── Clockwork [PD] *
+    │       ├── Engineer [P] (reusing)
+    │       └── Smelter [PD] *
+    │           ├── Industrious [PD] *
+    │           │   ├── Unweary [PD] *
+    │           │   │   ├── Cultivated [PD] *
+    │           │   │   │   ├── Common [P] (reusing)
+    │           │   │   │   └── Meadows [PD]
+    │           │   │   └── Diligent [P] (reusing)
+    │           │   └── Diligent [P] (reusing)
+    │           └── Graduate [PD] *
+    │               ├── Student [PD] *
+    │               │   ├── Cultivated [PD] *
+    │               │   │   ├── Common [P] (reusing)
+    │               │   │   └── Meadows [PD]
+    │               │   └── Common [P] (reusing)
+    │               └── Common [P] (reusing)
+    └── Light Blue [PD] *
+        ├── White [PD] *
+        │   ├── Diligent [P] (reusing)
+        │   └── Wintry [PD]
+        └── Blue [PD] *
+            ├── Diligent [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [P] (reusing)
+            │   │   └── Meadows [PD]
+            │   └── Common [PD] *
+            │       ├── Forest [PD]
+            │       └── Meadows [PD]
+            └── Forest [PD]

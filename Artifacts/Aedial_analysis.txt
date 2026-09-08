@@ -1,0 +1,78 @@
+=== Breeding Analysis for Aedial ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 21
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+  4. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    6 Forest princesses OR 6 Forest drones
+    7 Meadows princesses OR 6 Meadows drones
+    2 Modest princesses OR 2 Modest drones
+    2 Monastic princesses OR 1 Monastic drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Common: 5 occurrences, 1 reused, could reuse 1 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 21
+  Total nodes: 43
+  Breeding nodes: 21
+  Reused nodes: 7
+  Primary breeders: 8
+  Duplicate species: 8 (22 duplicate instances)
+  Max depth: 10
+
+🌳 BREEDING TREE:
+└── Aedial [PD] *
+    ├── Scholarly [PD] *
+    │   ├── Arcane [P] (reusing)
+    │   └── Pupil [PD] *
+    │       ├── Monastic [P] (reusing)
+    │       └── Arcane [PD] *
+    │           ├── Mysterious [PD] *
+    │           │   ├── Common [PD] *
+    │           │   │   ├── Forest [PD]
+    │           │   │   └── Meadows [P] (reusing)
+    │           │   └── Forest [PD]
+    │           └── Esoteric [PD] *
+    │               ├── Eldritch [PD] *
+    │               │   ├── Cultivated [P] (reusing)
+    │               │   └── Mystical [PD] *
+    │               │       ├── Monastic [PD]
+    │               │       └── Noble [PD] *
+    │               │           ├── Common [PD] * ← COULD REUSE
+    │               │           │   ├── Forest [PD]
+    │               │           │   └── Meadows [PD]
+    │               │           └── Cultivated [P] (reusing)
+    │               └── Cultivated [PD] *
+    │                   ├── Common [PD] * ← COULD REUSE
+    │                   │   ├── Forest [PD]
+    │                   │   └── Meadows [PD]
+    │                   └── Meadows [PD]
+    └── Skeletal [PD] *
+        ├── Desolate [PD] *
+        │   ├── Barren [PD] *
+        │   │   ├── Arid [PD] *
+        │   │   │   ├── Frugal [PD] *
+        │   │   │   │   ├── Sinister [PD] *
+        │   │   │   │   │   ├── Cultivated [PD] *
+        │   │   │   │   │   │   ├── Common [PD] * ← COULD REUSE
+        │   │   │   │   │   │   │   ├── Forest [PD]
+        │   │   │   │   │   │   │   └── Meadows [PD]
+        │   │   │   │   │   │   └── Meadows [PD]
+        │   │   │   │   │   └── Modest [PD]
+        │   │   │   │   └── Modest [PD]
+        │   │   │   └── Meadows [PD]
+        │   │   └── Common [P] (reusing)
+        │   └── Arid [P] (reusing)
+        └── Forest [PD]

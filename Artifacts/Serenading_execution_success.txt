@@ -1,0 +1,75 @@
+=== Execution Analysis for Serenading ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 9
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 9
+  GUI calls: 18, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Serenading
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 11
+     Tree species: Serenading
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=608, progress=Completed Common, step_type=breeding, total_steps=11
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=609, progress=Completed Cultivated, step_type=breeding, total_steps=11
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=610, progress=Completed Noble, step_type=breeding, total_steps=11
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=Mystical, progress=Breeding: Noble + Monastic -> Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  12. [BREEDING] ✅ Noble + Monastic -> Mystical
+  13. [GUI_CALL] current_species=Mystical, current_step=611, progress=Completed Mystical, step_type=breeding, total_steps=11
+     Progress: Completed Mystical
+  14. [GUI_CALL] current_species=Eldritch, progress=Breeding: Mystical + Cultivated -> Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  15. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  16. [GUI_CALL] current_species=Eldritch, current_step=612, progress=Completed Eldritch, step_type=breeding, total_steps=11
+     Progress: Completed Eldritch
+  17. [GUI_CALL] current_species=Esoteric, progress=Breeding: Cultivated + Eldritch -> Esoteric, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Esoteric
+  18. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  19. [GUI_CALL] current_species=Esoteric, current_step=613, progress=Completed Esoteric, step_type=breeding, total_steps=11
+     Progress: Completed Esoteric
+  20. [GUI_CALL] current_species=Mysterious, progress=Breeding: Forest + Common -> Mysterious, step_type=breeding
+     Progress: Breeding: Forest + Common -> Mysterious
+  21. [BREEDING] ✅ Forest + Common -> Mysterious
+  22. [GUI_CALL] current_species=Mysterious, current_step=614, progress=Completed Mysterious, step_type=breeding, total_steps=11
+     Progress: Completed Mysterious
+  23. [GUI_CALL] current_species=Arcane, progress=Breeding: Esoteric + Mysterious -> Arcane, step_type=breeding
+     Progress: Breeding: Esoteric + Mysterious -> Arcane
+  24. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  25. [GUI_CALL] current_species=Arcane, current_step=615, progress=Completed Arcane, step_type=breeding, total_steps=11
+     Progress: Completed Arcane
+  26. [GUI_CALL] current_species=Serenading, progress=Breeding: Arcane + Radiant -> Serenading, step_type=breeding
+     Progress: Breeding: Arcane + Radiant -> Serenading
+  27. [BREEDING] ✅ Arcane + Radiant -> Serenading
+  28. [GUI_CALL] current_species=Serenading, current_step=616, progress=Completed Serenading, step_type=breeding, total_steps=11
+     Progress: Completed Serenading
+  29. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Serenading, TreeExists=true, Steps=11
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 18
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

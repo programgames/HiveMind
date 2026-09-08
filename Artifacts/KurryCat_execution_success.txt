@@ -1,0 +1,100 @@
+=== Execution Analysis for KurryCat ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 14
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 14
+  GUI calls: 28, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: KurryCat
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 14
+     Tree species: KurryCat
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=396, progress=Completed Common, step_type=breeding, total_steps=14
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=397, progress=Completed Cultivated, step_type=breeding, total_steps=14
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=398, progress=Completed Noble, step_type=breeding, total_steps=14
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=Mystical, progress=Breeding: Noble + Monastic -> Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  12. [BREEDING] ✅ Noble + Monastic -> Mystical
+  13. [GUI_CALL] current_species=Mystical, current_step=399, progress=Completed Mystical, step_type=breeding, total_steps=14
+     Progress: Completed Mystical
+  14. [GUI_CALL] current_species=Eldritch, progress=Breeding: Mystical + Cultivated -> Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  15. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  16. [GUI_CALL] current_species=Eldritch, current_step=400, progress=Completed Eldritch, step_type=breeding, total_steps=14
+     Progress: Completed Eldritch
+  17. [GUI_CALL] current_species=Esoteric, progress=Breeding: Cultivated + Eldritch -> Esoteric, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Esoteric
+  18. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  19. [GUI_CALL] current_species=Esoteric, current_step=401, progress=Completed Esoteric, step_type=breeding, total_steps=14
+     Progress: Completed Esoteric
+  20. [GUI_CALL] current_species=Mysterious, progress=Breeding: Forest + Common -> Mysterious, step_type=breeding
+     Progress: Breeding: Forest + Common -> Mysterious
+  21. [BREEDING] ✅ Forest + Common -> Mysterious
+  22. [GUI_CALL] current_species=Mysterious, current_step=402, progress=Completed Mysterious, step_type=breeding, total_steps=14
+     Progress: Completed Mysterious
+  23. [GUI_CALL] current_species=Arcane, progress=Breeding: Esoteric + Mysterious -> Arcane, step_type=breeding
+     Progress: Breeding: Esoteric + Mysterious -> Arcane
+  24. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  25. [GUI_CALL] current_species=Arcane, current_step=403, progress=Completed Arcane, step_type=breeding, total_steps=14
+     Progress: Completed Arcane
+  26. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Student
+  27. [BREEDING] ✅ Common + Cultivated -> Student
+  28. [GUI_CALL] current_species=Student, current_step=404, progress=Completed Student, step_type=breeding, total_steps=14
+     Progress: Completed Student
+  29. [GUI_CALL] current_species=Graduate, progress=Breeding: Common + Student -> Graduate, step_type=breeding
+     Progress: Breeding: Common + Student -> Graduate
+  30. [BREEDING] ✅ Common + Student -> Graduate
+  31. [GUI_CALL] current_species=Graduate, current_step=405, progress=Completed Graduate, step_type=breeding, total_steps=14
+     Progress: Completed Graduate
+  32. [GUI_CALL] current_species=Pupil, progress=Breeding: Arcane + Monastic -> Pupil, step_type=breeding
+     Progress: Breeding: Arcane + Monastic -> Pupil
+  33. [BREEDING] ✅ Arcane + Monastic -> Pupil
+  34. [GUI_CALL] current_species=Pupil, current_step=406, progress=Completed Pupil, step_type=breeding, total_steps=14
+     Progress: Completed Pupil
+  35. [GUI_CALL] current_species=Scholarly, progress=Breeding: Pupil + Arcane -> Scholarly, step_type=breeding
+     Progress: Breeding: Pupil + Arcane -> Scholarly
+  36. [BREEDING] ✅ Pupil + Arcane -> Scholarly
+  37. [GUI_CALL] current_species=Scholarly, current_step=407, progress=Completed Scholarly, step_type=breeding, total_steps=14
+     Progress: Completed Scholarly
+  38. [GUI_CALL] current_species=PHD, progress=Breeding: Graduate + Student -> PHD, step_type=breeding
+     Progress: Breeding: Graduate + Student -> PHD
+  39. [BREEDING] ✅ Graduate + Student -> PHD
+  40. [GUI_CALL] current_species=PHD, current_step=408, progress=Completed PHD, step_type=breeding, total_steps=14
+     Progress: Completed PHD
+  41. [GUI_CALL] current_species=KurryCat, progress=Breeding: Scholarly + PHD -> KurryCat, step_type=breeding
+     Progress: Breeding: Scholarly + PHD -> KurryCat
+  42. [BREEDING] ✅ Scholarly + PHD -> KurryCat
+  43. [GUI_CALL] current_species=KurryCat, current_step=409, progress=Completed KurryCat, step_type=breeding, total_steps=14
+     Progress: Completed KurryCat
+  44. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=KurryCat, TreeExists=true, Steps=14
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 28
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

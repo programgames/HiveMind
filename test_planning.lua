@@ -493,7 +493,8 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
 
     local content = {}
     table.insert(content, "=== Breeding Analysis for " .. target .. " ===")
-    table.insert(content, "Generated: " .. os.date())
+    -- No timestamp in the file: these artifacts are committed and compared, and a wall-clock
+    -- line would make all 97 differ on every run, hiding the one that actually changed.
     table.insert(content, "")
 
     if not plan then
@@ -508,7 +509,9 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
             table.insert(content, "✅ BREEDING PLAN SUCCESS")
         end
 
-        table.insert(content, string.format("Planning duration: %.2f ms", duration or 0))
+        -- The duration is measured, not written: a wall-clock reading differs on every run and
+        -- would make every artifact differ, hiding the changes that matter. It goes to stdout.
+        print(string.format("  planning duration: %.2f ms", duration or 0))
         table.insert(content, "Total steps: " .. plan.total_steps)
         table.insert(content, "Can execute: " .. (plan.can_execute and "YES" or "NO"))
         table.insert(content, "")
@@ -542,7 +545,16 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
                 end
             end
 
-            for species, requirements in pairs(missing_species) do
+            -- Sorted: pairs() order is not defined, and an artifact that reorders itself on
+            -- every run cannot be diffed against a previous one.
+            local missing_names = {}
+            for species in pairs(missing_species) do
+                table.insert(missing_names, species)
+            end
+            table.sort(missing_names)
+
+            for _, species in ipairs(missing_names) do
+                local requirements = missing_species[species]
                 local options = {}
                 if requirements.princess_count > 0 then
                     table.insert(options, requirements.princess_count .. " " .. species .. " princess" .. (requirements.princess_count > 1 and "es" or ""))
@@ -568,7 +580,16 @@ local function dumpTreeAnalysis(target, plan, sanity_issues, duration)
             for _, issue in ipairs(sanity_issues) do
                 if issue.type == "missed_reuse" then
                     table.insert(content, "  Potential missed reuse opportunities:")
-                    for species, analysis in pairs(issue.details) do
+
+                    -- Sorted, like every other listing here: pairs() order is not defined
+                    local detail_names = {}
+                    for species in pairs(issue.details) do
+                        table.insert(detail_names, species)
+                    end
+                    table.sort(detail_names)
+
+                    for _, species in ipairs(detail_names) do
+                        local analysis = issue.details[species]
                         if analysis.potential_additional_reuse then
                             local reused_count = analysis.reused or 0
                             table.insert(content, "    → " .. species .. ": " .. analysis.occurrences .. " occurrences, " ..
@@ -1109,7 +1130,8 @@ local function dumpExecutionAnalysis(target, execution_log, breeding_steps, accu
     local content = {}
     table.insert(content, "=== Execution Analysis for " .. target .. " ===")
     table.insert(content, "Test Type: " .. test_type)
-    table.insert(content, "Generated: " .. os.date())
+    -- No timestamp in the file: these artifacts are committed and compared, and a wall-clock
+    -- line would make all 97 differ on every run, hiding the one that actually changed.
     table.insert(content, "")
 
     -- Execution summary
@@ -1487,6 +1509,8 @@ local function testExecuteBreedingTree()
             for key, value in pairs(args) do
                 table.insert(gui_info, key .. "=" .. tostring(value))
             end
+            -- Same reason: the key order of a table is not stable across runs
+            table.sort(gui_info)
         end
 
         -- Log GUI call to execution log
@@ -2140,6 +2164,86 @@ local function testExecuteBreedingTreeErrorHandling()
 end
 
 -- Combined test runner that includes execution tests
+-- Dominance weighting (task 27)
+--
+-- countTreeCost must stay exactly countTreeSteps while config.dominance_weighting is false, which
+-- is what keeps the 97 committed artifacts valid. This is the only test that exercises the
+-- weighted branch, and it does so without a Gendustry component: setSpeciesTemplateOverride seeds
+-- the template cache directly, so getSpeciesStepWeight reads a known allele.
+local function testDominanceWeighting()
+    print("=== Running Dominance Weighting Tests ===")
+
+    local passed, failed = 0, 0
+
+    local function check(label, actual, expected)
+        if actual == expected then
+            passed = passed + 1
+            print(string.format("  OK   %-46s = %s", label, tostring(actual)))
+        else
+            failed = failed + 1
+            print(string.format("  FAIL %-46s = %s, expected %s", label, tostring(actual),
+                tostring(expected)))
+        end
+    end
+
+    -- Two crosses: Recessive is bred from Alpha and an intermediate Dominant, itself bred from
+    -- two leaves. Leaves have no parents, so they are not crosses.
+    local tree = {
+        species = "Recessive",
+        left_parent = {
+            species = "Dominant",
+            left_parent = {species = "Leaf1"},
+            right_parent = {species = "Leaf2"}
+        },
+        right_parent = {species = "Alpha"}
+    }
+
+    local weighting_before = main.config.dominance_weighting
+    local recessive_weight_before = main.config.recessive_step_weight
+
+    check("countTreeSteps", main.countTreeSteps(tree), 2)
+
+    -- Off by default: cost and steps must not diverge, or every committed artifact is invalid
+    main.config.dominance_weighting = false
+    check("countTreeCost, weighting off", main.countTreeCost(tree), 2)
+    check("weight of an unknown species, weighting off", main.getSpeciesStepWeight("Recessive"), 1)
+
+    -- A recessive species allele needs both parents to carry it, so the cross costs more
+    main.setSpeciesTemplateOverride("Recessive", {
+        species = {uid = "test.speciesRecessive", name = "Recessive", dominant = false}
+    })
+    main.setSpeciesTemplateOverride("Dominant", {
+        species = {uid = "test.speciesDominant", name = "Dominant", dominant = true}
+    })
+
+    main.config.dominance_weighting = true
+    main.config.recessive_step_weight = 2
+
+    check("weight of a recessive species", main.getSpeciesStepWeight("Recessive"), 2)
+    check("weight of a dominant species", main.getSpeciesStepWeight("Dominant"), 1)
+    check("countTreeCost, weighting on", main.countTreeCost(tree), 3)
+
+    -- The weight is read from config, not baked in
+    main.config.recessive_step_weight = 5
+    check("countTreeCost, recessive weight 5", main.countTreeCost(tree), 6)
+
+    -- A species the registry does not know must not be penalised
+    check("weight of a species with no template", main.getSpeciesStepWeight("Leaf1"), 1)
+
+    -- Teardown. Leaving the flag on would change every plan the rest of the suite computes.
+    main.setSpeciesTemplateOverride("Recessive", nil)
+    main.setSpeciesTemplateOverride("Dominant", nil)
+    main.config.dominance_weighting = weighting_before
+    main.config.recessive_step_weight = recessive_weight_before
+
+    check("countTreeCost after teardown", main.countTreeCost(tree), main.countTreeSteps(tree))
+    check("weighting restored", main.config.dominance_weighting, weighting_before)
+
+    print(string.format("Dominance weighting: %d passed, %d failed", passed, failed))
+
+    return failed == 0
+end
+
 local function runAllTestsComplete()
     print("=== Complete HiveMind Test Suite ===")
 
@@ -2157,10 +2261,15 @@ local function runAllTestsComplete()
     testExecuteBreedingTreeErrorHandling()
     print()
 
+    -- Run dominance weighting test (task 27)
+    local dominance_passed = testDominanceWeighting()
+    print()
+
     -- Combined results
     print("=== Overall Test Results ===")
     print("Planning tests: " .. (planning_passed and "✅ PASSED" or "❌ FAILED"))
     print("Execution tests: " .. (execution_success and "✅ PASSED" or "❌ FAILED"))
+    print("Dominance weighting: " .. (dominance_passed and "✅ PASSED" or "❌ FAILED"))
     print()
     print("📁 Comprehensive test artifacts generated:")
     print("   - Artifacts/*_analysis.txt - Breeding path analysis")
@@ -2168,7 +2277,7 @@ local function runAllTestsComplete()
     print("   - Debug information shows exactly what executeBreedingTree received and returned")
     print("   - Failure artifacts explain why execution failed and what to check")
 
-    if planning_passed and execution_success then
+    if planning_passed and execution_success and dominance_passed then
         print("🎉 All tests passed!")
         return true
     else
@@ -2192,5 +2301,6 @@ return {
     complexityStressTest = complexityStressTest,
     testExecuteBreedingTree = testExecuteBreedingTree,
     testExecuteBreedingTreeErrorHandling = testExecuteBreedingTreeErrorHandling,
+    testDominanceWeighting = testDominanceWeighting,
     test_cases = test_cases
 }

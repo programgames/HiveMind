@@ -1,0 +1,75 @@
+=== Execution Analysis for Dentist ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 9
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 9
+  GUI calls: 18, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Dentist
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 10
+     Tree species: Dentist
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=282, progress=Completed Common, step_type=breeding, total_steps=10
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=283, progress=Completed Cultivated, step_type=breeding, total_steps=10
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=284, progress=Completed Noble, step_type=breeding, total_steps=10
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=High-Pitched, progress=Breeding: Oxygen + Deep Learner -> High-Pitched, step_type=breeding
+     Progress: Breeding: Oxygen + Deep Learner -> High-Pitched
+  12. [BREEDING] ✅ Oxygen + Deep Learner -> High-Pitched
+  13. [GUI_CALL] current_species=High-Pitched, current_step=285, progress=Completed High-Pitched, step_type=breeding, total_steps=10
+     Progress: Completed High-Pitched
+  14. [GUI_CALL] current_species=Majestic, progress=Breeding: Noble + Cultivated -> Majestic, step_type=breeding
+     Progress: Breeding: Noble + Cultivated -> Majestic
+  15. [BREEDING] ✅ Noble + Cultivated -> Majestic
+  16. [GUI_CALL] current_species=Majestic, current_step=286, progress=Completed Majestic, step_type=breeding, total_steps=10
+     Progress: Completed Majestic
+  17. [GUI_CALL] current_species=Imperial, progress=Breeding: Noble + Majestic -> Imperial, step_type=breeding
+     Progress: Breeding: Noble + Majestic -> Imperial
+  18. [BREEDING] ✅ Noble + Majestic -> Imperial
+  19. [GUI_CALL] current_species=Imperial, current_step=287, progress=Completed Imperial, step_type=breeding, total_steps=10
+     Progress: Completed Imperial
+  20. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Student
+  21. [BREEDING] ✅ Common + Cultivated -> Student
+  22. [GUI_CALL] current_species=Student, current_step=288, progress=Completed Student, step_type=breeding, total_steps=10
+     Progress: Completed Student
+  23. [GUI_CALL] current_species=Hyperventilating, progress=Breeding: Imperial + Student -> Hyperventilating, step_type=breeding
+     Progress: Breeding: Imperial + Student -> Hyperventilating
+  24. [BREEDING] ✅ Imperial + Student -> Hyperventilating
+  25. [GUI_CALL] current_species=Hyperventilating, current_step=289, progress=Completed Hyperventilating, step_type=breeding, total_steps=10
+     Progress: Completed Hyperventilating
+  26. [GUI_CALL] current_species=Dentist, progress=Breeding: High-Pitched + Hyperventilating -> Dentist, step_type=breeding
+     Progress: Breeding: High-Pitched + Hyperventilating -> Dentist
+  27. [BREEDING] ✅ High-Pitched + Hyperventilating -> Dentist
+  28. [GUI_CALL] current_species=Dentist, current_step=290, progress=Completed Dentist, step_type=breeding, total_steps=10
+     Progress: Completed Dentist
+  29. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Dentist, TreeExists=true, Steps=10
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 18
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

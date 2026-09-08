@@ -1,0 +1,58 @@
+=== Breeding Analysis for KurryCat ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 14
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Forest princesses OR 2 Forest drones
+    2 Meadows princesses OR 1 Meadows drone
+    2 Monastic princesses
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 17
+  Total nodes: 29
+  Breeding nodes: 14
+  Reused nodes: 12
+  Primary breeders: 8
+  Duplicate species: 7 (12 duplicate instances)
+  Max depth: 10
+
+🌳 BREEDING TREE:
+└── KurryCat [PD] *
+    ├── PHD [PD] *
+    │   ├── Student [P] (reusing)
+    │   └── Graduate [PD] *
+    │       ├── Student [PD] *
+    │       │   ├── Cultivated [PD] *
+    │       │   │   ├── Common [P] (reusing)
+    │       │   │   └── Meadows [PD]
+    │       │   └── Common [P] (reusing)
+    │       └── Common [P] (reusing)
+    └── Scholarly [PD] *
+        ├── Arcane [P] (reusing)
+        └── Pupil [PD] *
+            ├── Monastic [P] (reusing)
+            └── Arcane [PD] *
+                ├── Mysterious [PD] *
+                │   ├── Common [P] (reusing)
+                │   └── Forest [PD]
+                └── Esoteric [PD] *
+                    ├── Eldritch [PD] *
+                    │   ├── Cultivated [P] (reusing)
+                    │   └── Mystical [PD] *
+                    │       ├── Monastic [P] (reusing)
+                    │       └── Noble [PD] *
+                    │           ├── Common [PD] *
+                    │           │   ├── Forest [PD]
+                    │           │   └── Meadows [P] (reusing)
+                    │           └── Cultivated [P] (reusing)
+                    └── Cultivated [P] (reusing)

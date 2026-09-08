@@ -1,0 +1,64 @@
+=== Breeding Analysis for LordRaine ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 13
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Ender
+  2. Forest
+  3. Mad Scientist
+  4. Meadows
+  5. Modest
+  6. Monastic
+  7. Sorcerous
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Ender princesses OR 1 Ender drone
+    1 Forest princess OR 1 Forest drone
+    2 Mad Scientist princesses OR 2 Mad Scientist drones
+    2 Meadows princesses OR 1 Meadows drone
+    3 Modest princesses OR 1 Modest drone
+    2 Monastic princesses
+    1 Sorcerous princess OR 1 Sorcerous drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 20
+  Total nodes: 27
+  Breeding nodes: 13
+  Reused nodes: 7
+  Primary breeders: 6
+  Duplicate species: 6 (7 duplicate instances)
+  Max depth: 13
+
+🌳 BREEDING TREE:
+└── LordRaine [PD] *
+    ├── Temporal [PD] *
+    │   ├── Quantum Strange [PD] *
+    │   │   ├── Phantasmal [P] (reusing)
+    │   │   └── Mad Scientist [PD]
+    │   └── Quantum Charming [PD] *
+    │       ├── Mad Scientist [PD]
+    │       └── Phantasmal [PD] *
+    │           ├── Spectral [PD] *
+    │           │   ├── Hermitic [PD] *
+    │           │   │   ├── Monastic [P] (reusing)
+    │           │   │   └── Secluded [PD] *
+    │           │   │       ├── Monastic [P] (reusing)
+    │           │   │       └── Austere [PD] *
+    │           │   │           ├── Frugal [PD] *
+    │           │   │           │   ├── Sinister [PD] *
+    │           │   │           │   │   ├── Cultivated [PD] *
+    │           │   │           │   │   │   ├── Common [PD] *
+    │           │   │           │   │   │   │   ├── Forest [PD]
+    │           │   │           │   │   │   │   └── Meadows [P] (reusing)
+    │           │   │           │   │   │   └── Meadows [PD]
+    │           │   │           │   │   └── Modest [P] (reusing)
+    │           │   │           │   └── Modest [P] (reusing)
+    │           │   │           └── Modest [PD]
+    │           │   └── Ender [P] (reusing)
+    │           └── Ender [PD]
+    └── Sorcerous [PD]

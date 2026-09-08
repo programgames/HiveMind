@@ -1,0 +1,26 @@
+=== Breeding Analysis for NonExistent ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 0
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. NonExistent
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 NonExistent princess OR 1 NonExistent drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 1
+  Total nodes: 1
+  Breeding nodes: 0
+  Reused nodes: 0
+  Primary breeders: 0
+  Duplicate species: 0 (0 duplicate instances)
+  Max depth: 1
+
+🌳 BREEDING TREE:
+└── NonExistent [PD]

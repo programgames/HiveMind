@@ -1,0 +1,60 @@
+=== Execution Analysis for Meatball ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 6
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 6
+  GUI calls: 12, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Meatball
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 7
+     Tree species: Meatball
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=462, progress=Completed Common, step_type=breeding, total_steps=7
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=463, progress=Completed Cultivated, step_type=breeding, total_steps=7
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  9. [BREEDING] ✅ Common + Cultivated -> Diligent
+  10. [GUI_CALL] current_species=Diligent, current_step=464, progress=Completed Diligent, step_type=breeding, total_steps=7
+     Progress: Completed Diligent
+  11. [GUI_CALL] current_species=Unweary, progress=Breeding: Diligent + Cultivated -> Unweary, step_type=breeding
+     Progress: Breeding: Diligent + Cultivated -> Unweary
+  12. [BREEDING] ✅ Diligent + Cultivated -> Unweary
+  13. [GUI_CALL] current_species=Unweary, current_step=465, progress=Completed Unweary, step_type=breeding, total_steps=7
+     Progress: Completed Unweary
+  14. [GUI_CALL] current_species=Industrious, progress=Breeding: Diligent + Unweary -> Industrious, step_type=breeding
+     Progress: Breeding: Diligent + Unweary -> Industrious
+  15. [BREEDING] ✅ Diligent + Unweary -> Industrious
+  16. [GUI_CALL] current_species=Industrious, current_step=466, progress=Completed Industrious, step_type=breeding, total_steps=7
+     Progress: Completed Industrious
+  17. [GUI_CALL] current_species=Meatball, progress=Breeding: Industrious + Common -> Meatball, step_type=breeding
+     Progress: Breeding: Industrious + Common -> Meatball
+  18. [BREEDING] ✅ Industrious + Common -> Meatball
+  19. [GUI_CALL] current_species=Meatball, current_step=467, progress=Completed Meatball, step_type=breeding, total_steps=7
+     Progress: Completed Meatball
+  20. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Meatball, TreeExists=true, Steps=7
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 12
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

@@ -1,0 +1,55 @@
+=== Execution Analysis for Imperial ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 5
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 5
+  GUI calls: 10, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Imperial
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 6
+     Tree species: Imperial
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=4, progress=Completed Common, step_type=breeding, total_steps=6
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=5, progress=Completed Cultivated, step_type=breeding, total_steps=6
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] current_species=Noble, current_step=6, progress=Completed Noble, step_type=breeding, total_steps=6
+     Progress: Completed Noble
+  11. [GUI_CALL] current_species=Majestic, progress=Breeding: Noble + Cultivated -> Majestic, step_type=breeding
+     Progress: Breeding: Noble + Cultivated -> Majestic
+  12. [BREEDING] ✅ Noble + Cultivated -> Majestic
+  13. [GUI_CALL] current_species=Majestic, current_step=7, progress=Completed Majestic, step_type=breeding, total_steps=6
+     Progress: Completed Majestic
+  14. [GUI_CALL] current_species=Imperial, progress=Breeding: Noble + Majestic -> Imperial, step_type=breeding
+     Progress: Breeding: Noble + Majestic -> Imperial
+  15. [BREEDING] ✅ Noble + Majestic -> Imperial
+  16. [GUI_CALL] current_species=Imperial, current_step=8, progress=Completed Imperial, step_type=breeding, total_steps=6
+     Progress: Completed Imperial
+  17. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Imperial, TreeExists=true, Steps=6
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 10
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

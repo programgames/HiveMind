@@ -1,0 +1,124 @@
+=== Breeding Analysis for Connor ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 44
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+  4. Monastic
+  5. Oblivion
+  6. Rocky
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Forest princesses OR 2 Forest drones
+    8 Meadows princesses OR 7 Meadows drones
+    3 Modest princesses OR 2 Modest drones
+    2 Monastic princesses OR 2 Monastic drones
+    2 Oblivion princesses OR 1 Oblivion drone
+    1 Rocky princess OR 1 Rocky drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 42
+  Total nodes: 89
+  Breeding nodes: 44
+  Reused nodes: 30
+  Primary breeders: 17
+  Duplicate species: 16 (47 duplicate instances)
+  Max depth: 11
+
+🌳 BREEDING TREE:
+└── Connor [PD] *
+    ├── Draconic [PD] *
+    │   ├── Imperial [PD] *
+    │   │   ├── Majestic [PD] *
+    │   │   │   ├── Cultivated [P] (reusing)
+    │   │   │   └── Noble [PD] *
+    │   │   │       ├── Common [P] (reusing)
+    │   │   │       └── Cultivated [PD] *
+    │   │   │           ├── Common [P] (reusing)
+    │   │   │           └── Meadows [PD]
+    │   │   └── Noble [P] (reusing)
+    │   └── Abandoned [PD] *
+    │       ├── Nameless [PD] *
+    │       │   ├── Ethereal [PD] *
+    │       │   │   ├── Arcane [PD] *
+    │       │   │   │   ├── Mysterious [PD] *
+    │       │   │   │   │   ├── Common [P] (reusing)
+    │       │   │   │   │   └── Forest [PD]
+    │       │   │   │   └── Esoteric [PD] *
+    │       │   │   │       ├── Eldritch [P] (reusing)
+    │       │   │   │       └── Cultivated [PD] *
+    │       │   │   │           ├── Common [P] (reusing)
+    │       │   │   │           └── Meadows [PD]
+    │       │   │   └── Supernatural [PD] *
+    │       │   │       ├── Charmed [P] (reusing)
+    │       │   │       └── Enchanted [PD] *
+    │       │   │           ├── Charmed [PD] *
+    │       │   │           │   ├── Eldritch [P] (reusing)
+    │       │   │           │   └── Cultivated [PD] *
+    │       │   │           │       ├── Common [P] (reusing)
+    │       │   │           │       └── Meadows [PD]
+    │       │   │           └── Eldritch [PD] *
+    │       │   │               ├── Cultivated [P] (reusing)
+    │       │   │               └── Mystical [PD] *
+    │       │   │                   ├── Monastic [PD]
+    │       │   │                   └── Noble [P] (reusing)
+    │       │   └── Oblivion [P] (reusing)
+    │       └── Oblivion [PD]
+    └── Radioactive [PD] *
+        ├── Glittering [PD] *
+        │   ├── Rusty [P] (reusing)
+        │   └── Majestic [PD] *
+        │       ├── Cultivated [PD] *
+        │       │   ├── Common [P] (reusing)
+        │       │   └── Meadows [PD]
+        │       └── Noble [PD] *
+        │           ├── Common [PD] *
+        │           │   ├── Forest [PD]
+        │           │   └── Meadows [P] (reusing)
+        │           └── Cultivated [P] (reusing)
+        └── Nuclear [PD] *
+            ├── Rusty [PD] *
+            │   ├── Resilient [P] (reusing)
+            │   └── Meadows [PD]
+            └── Unstable [PD] *
+                ├── Resilient [PD] *
+                │   ├── Robust [PD] *
+                │   │   ├── Unweary [P] (reusing)
+                │   │   └── Tolerant [PD] *
+                │   │       ├── Diligent [P] (reusing)
+                │   │       └── Rocky [PD]
+                │   └── Industrious [PD] *
+                │       ├── Unweary [PD] *
+                │       │   ├── Cultivated [P] (reusing)
+                │       │   └── Diligent [PD] *
+                │       │       ├── Cultivated [PD] *
+                │       │       │   ├── Common [P] (reusing)
+                │       │       │   └── Meadows [PD]
+                │       │       └── Common [P] (reusing)
+                │       └── Diligent [P] (reusing)
+                └── Prehistoric [PD] *
+                    ├── Ancient [P] (reusing)
+                    └── Primeval [PD] *
+                        ├── Ancient [PD] *
+                        │   ├── Diligent [PD] *
+                        │   │   ├── Cultivated [PD] *
+                        │   │   │   ├── Common [P] (reusing)
+                        │   │   │   └── Meadows [PD]
+                        │   │   └── Common [P] (reusing)
+                        │   └── Noble [P] (reusing)
+                        └── Secluded [PD] *
+                            ├── Monastic [PD]
+                            └── Austere [PD] *
+                                ├── Frugal [PD] *
+                                │   ├── Sinister [PD] *
+                                │   │   ├── Cultivated [P] (reusing)
+                                │   │   └── Modest [PD]
+                                │   └── Modest [P] (reusing)
+                                └── Modest [PD]

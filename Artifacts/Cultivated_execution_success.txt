@@ -1,0 +1,40 @@
+=== Execution Analysis for Cultivated ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 2
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 2
+  GUI calls: 4, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Cultivated
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 2
+     Tree species: Cultivated
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=2, progress=Completed Common, step_type=breeding, total_steps=2
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=3, progress=Completed Cultivated, step_type=breeding, total_steps=2
+     Progress: Completed Cultivated
+  8. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Cultivated, TreeExists=true, Steps=2
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 4
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

@@ -1,0 +1,72 @@
+=== Breeding Analysis for Stargazer ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 16
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Ender
+  2. Forest
+  3. Marble
+  4. Meadows
+  5. Modest
+  6. Monastic
+  7. Steadfast
+  8. Valiant
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Ender princesses OR 2 Ender drones
+    1 Forest princess OR 1 Forest drone
+    2 Marble princesses OR 1 Marble drone
+    2 Meadows princesses OR 1 Meadows drone
+    3 Modest princesses OR 1 Modest drone
+    2 Monastic princesses
+    1 Steadfast princess OR 1 Steadfast drone
+    1 Valiant princess OR 1 Valiant drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 24
+  Total nodes: 33
+  Breeding nodes: 16
+  Reused nodes: 9
+  Primary breeders: 8
+  Duplicate species: 8 (9 duplicate instances)
+  Max depth: 11
+
+🌳 BREEDING TREE:
+└── Stargazer [PD] *
+    ├── Classical [PD] *
+    │   ├── Roman [P] (reusing)
+    │   └── Greek [PD] *
+    │       ├── Marble [PD]
+    │       └── Roman [PD] *
+    │           ├── Heroic [PD] *
+    │           │   ├── Steadfast [PD]
+    │           │   └── Valiant [PD]
+    │           └── Marble [P] (reusing)
+    └── Quantum [PD] *
+        ├── Spatial [PD] *
+        │   ├── Hermitic [P] (reusing)
+        │   └── Abnormal [PD] *
+        │       ├── Secluded [P] (reusing)
+        │       └── Ender [PD]
+        └── Spectral [PD] *
+            ├── Hermitic [PD] *
+            │   ├── Monastic [P] (reusing)
+            │   └── Secluded [PD] *
+            │       ├── Monastic [P] (reusing)
+            │       └── Austere [PD] *
+            │           ├── Frugal [PD] *
+            │           │   ├── Sinister [PD] *
+            │           │   │   ├── Cultivated [PD] *
+            │           │   │   │   ├── Common [PD] *
+            │           │   │   │   │   ├── Forest [PD]
+            │           │   │   │   │   └── Meadows [P] (reusing)
+            │           │   │   │   └── Meadows [PD]
+            │           │   │   └── Modest [P] (reusing)
+            │           │   └── Modest [P] (reusing)
+            │           └── Modest [PD]
+            └── Ender [PD]

@@ -1,0 +1,46 @@
+=== Breeding Analysis for UselessForce ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 8
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    3 Meadows princesses OR 3 Meadows drones
+    1 Modest princess OR 1 Modest drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 10
+  Total nodes: 17
+  Breeding nodes: 8
+  Reused nodes: 4
+  Primary breeders: 3
+  Duplicate species: 3 (7 duplicate instances)
+  Max depth: 5
+
+🌳 BREEDING TREE:
+└── UselessForce [PD] *
+    ├── Fiendish [PD] *
+    │   ├── Cultivated [PD] *
+    │   │   ├── Common [P] (reusing)
+    │   │   └── Meadows [PD]
+    │   └── Sinister [PD] *
+    │       ├── Cultivated [P] (reusing)
+    │       └── Modest [PD]
+    └── Red [PD] *
+        ├── Diligent [PD] *
+        │   ├── Cultivated [PD] *
+        │   │   ├── Common [P] (reusing)
+        │   │   └── Meadows [PD]
+        │   └── Common [P] (reusing)
+        └── Common [PD] *
+            ├── Forest [PD]
+            └── Meadows [PD]

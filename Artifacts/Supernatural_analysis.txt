@@ -1,0 +1,44 @@
+=== Breeding Analysis for Supernatural ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 9
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Monastic princess OR 1 Monastic drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 11
+  Total nodes: 19
+  Breeding nodes: 9
+  Reused nodes: 7
+  Primary breeders: 5
+  Duplicate species: 5 (8 duplicate instances)
+  Max depth: 8
+
+🌳 BREEDING TREE:
+└── Supernatural [PD] *
+    ├── Charmed [P] (reusing)
+    └── Enchanted [PD] *
+        ├── Charmed [PD] *
+        │   ├── Eldritch [P] (reusing)
+        │   └── Cultivated [P] *
+        │       ├── Common [P] (reusing)
+        │       └── Meadows   
+        └── Eldritch [PD] *
+            ├── Cultivated [P] (reusing)
+            └── Mystical [P] *
+                ├── Monastic [PD]
+                └── Noble [P] *
+                    ├── Common [P] (reusing)
+                    └── Cultivated [P] *
+                        ├── Common [P] *
+                        │   ├── Forest   
+                        │   └── Meadows    (reusing)
+                        └── Meadows    (reusing)

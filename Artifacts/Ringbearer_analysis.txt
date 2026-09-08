@@ -1,0 +1,120 @@
+=== Breeding Analysis for Ringbearer ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 39
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Infernal
+  3. Meadows
+  4. Monastic
+  5. Oblivion
+  6. Rocky
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    4 Forest princesses OR 4 Forest drones
+    2 Infernal princesses OR 2 Infernal drones
+    10 Meadows princesses OR 9 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
+    1 Oblivion princess OR 1 Oblivion drone
+    1 Rocky princess OR 1 Rocky drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Eldritch: 2 occurrences, 0 reused, could reuse 0 more
+    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
+    → Noble: 3 occurrences, 0 reused, could reuse 1 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 32
+  Total nodes: 79
+  Breeding nodes: 39
+  Reused nodes: 21
+  Primary breeders: 12
+  Duplicate species: 14 (47 duplicate instances)
+  Max depth: 12
+
+🌳 BREEDING TREE:
+└── Ringbearer [PD] *
+    ├── Endearing [PD] *
+    │   ├── Carbon [PD] *
+    │   │   ├── Stannum [PD] *
+    │   │   │   ├── Industrious [P] (reusing)
+    │   │   │   └── Forest [PD]
+    │   │   └── Spiteful [PD] *
+    │   │       ├── Hateful [PD] *
+    │   │       │   ├── Eldritch [PD] *
+    │   │       │   │   ├── Cultivated [P] (reusing)
+    │   │       │   │   └── Mystical [PD] * ← COULD REUSE
+    │   │       │   │       ├── Monastic [PD]
+    │   │       │   │       └── Noble [PD] *
+    │   │       │   │           ├── Common [P] (reusing)
+    │   │       │   │           └── Cultivated [PD] *
+    │   │       │   │               ├── Common [PD] *
+    │   │       │   │               │   ├── Forest [PD]
+    │   │       │   │               │   └── Meadows [PD]
+    │   │       │   │               └── Meadows [PD]
+    │   │       │   └── Infernal [PD]
+    │   │       └── Infernal [PD]
+    │   └── Winsome [PD] *
+    │       ├── Platinum [PD] *
+    │       │   ├── Invar [PD] *
+    │       │   │   ├── Nickel [PD] *
+    │       │   │   │   ├── Esoteric [PD] *
+    │       │   │   │   │   ├── Eldritch [PD] * ← COULD REUSE
+    │       │   │   │   │   │   ├── Cultivated [PD] *
+    │       │   │   │   │   │   │   ├── Common [P] (reusing)
+    │       │   │   │   │   │   │   └── Meadows [PD]
+    │       │   │   │   │   │   └── Mystical [PD] * ← COULD REUSE
+    │       │   │   │   │   │       ├── Monastic [PD]
+    │       │   │   │   │   │       └── Noble [PD] *
+    │       │   │   │   │   │           ├── Common [PD] *
+    │       │   │   │   │   │           │   ├── Forest [PD]
+    │       │   │   │   │   │           │   └── Meadows [PD]
+    │       │   │   │   │   │           └── Cultivated [P] (reusing)
+    │       │   │   │   │   └── Cultivated [P] (reusing)
+    │       │   │   │   └── Ferrous [PD] *
+    │       │   │   │       ├── Industrious [PD] *
+    │       │   │   │       │   ├── Unweary [PD] *
+    │       │   │   │       │   │   ├── Cultivated [PD] *
+    │       │   │   │       │   │   │   ├── Common [P] (reusing)
+    │       │   │   │       │   │   │   └── Meadows [PD]
+    │       │   │   │       │   │   └── Diligent [P] (reusing)
+    │       │   │   │       │   └── Diligent [P] (reusing)
+    │       │   │   │       └── Common [P] (reusing)
+    │       │   │   └── Ferrous [P] (reusing)
+    │       │   └── Nickel [P] (reusing)
+    │       └── Oblivion [PD]
+    └── Glittering [PD] *
+        ├── Rusty [PD] *
+        │   ├── Resilient [PD] *
+        │   │   ├── Robust [PD] *
+        │   │   │   ├── Unweary [P] (reusing)
+        │   │   │   └── Tolerant [PD] *
+        │   │   │       ├── Diligent [P] (reusing)
+        │   │   │       └── Rocky [PD]
+        │   │   └── Industrious [PD] *
+        │   │       ├── Unweary [PD] *
+        │   │       │   ├── Cultivated [PD] *
+        │   │       │   │   ├── Common [P] (reusing)
+        │   │       │   │   └── Meadows [PD]
+        │   │       │   └── Diligent [P] (reusing)
+        │   │       └── Diligent [PD] *
+        │   │           ├── Cultivated [PD] *
+        │   │           │   ├── Common [P] (reusing)
+        │   │           │   └── Meadows [PD]
+        │   │           └── Common [P] (reusing)
+        │   └── Meadows [PD]
+        └── Majestic [PD] *
+            ├── Cultivated [P] (reusing)
+            └── Noble [PD] *
+                ├── Common [P] (reusing)
+                └── Cultivated [PD] *
+                    ├── Common [PD] *
+                    │   ├── Forest [PD]
+                    │   └── Meadows [P] (reusing)
+                    └── Meadows [PD]

@@ -1,0 +1,70 @@
+=== Breeding Analysis for Freeky ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 19
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Valiant
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Forest princesses OR 3 Forest drones
+    5 Meadows princesses OR 5 Meadows drones
+    1 Monastic princess OR 1 Monastic drone
+    1 Valiant princess OR 1 Valiant drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 20
+  Total nodes: 39
+  Breeding nodes: 19
+  Reused nodes: 10
+  Primary breeders: 8
+  Duplicate species: 7 (19 duplicate instances)
+  Max depth: 12
+
+🌳 BREEDING TREE:
+└── Freeky [PD] *
+    ├── EMBee [PD] *
+    │   ├── Arcane [P] (reusing)
+    │   └── Ethereal [PD] *
+    │       ├── Arcane [PD] *
+    │       │   ├── Mysterious [PD] *
+    │       │   │   ├── Common [P] (reusing)
+    │       │   │   └── Forest [PD]
+    │       │   └── Esoteric [PD] *
+    │       │       ├── Eldritch [P] (reusing)
+    │       │       └── Cultivated [PD] *
+    │       │           ├── Common [P] (reusing)
+    │       │           └── Meadows [PD]
+    │       └── Supernatural [PD] *
+    │           ├── Charmed [P] (reusing)
+    │           └── Enchanted [PD] *
+    │               ├── Charmed [PD] *
+    │               │   ├── Eldritch [PD] *
+    │               │   │   ├── Cultivated [P] (reusing)
+    │               │   │   └── Mystical [PD] *
+    │               │   │       ├── Monastic [PD]
+    │               │   │       └── Noble [PD] *
+    │               │   │           ├── Common [P] (reusing)
+    │               │   │           └── Cultivated [PD] *
+    │               │   │               ├── Common [PD] *
+    │               │   │               │   ├── Forest [PD]
+    │               │   │               │   └── Meadows [PD]
+    │               │   │               └── Meadows [PD]
+    │               │   └── Cultivated [P] (reusing)
+    │               └── Eldritch [P] (reusing)
+    └── Sweetened [PD] *
+        ├── Diligent [PD] *
+        │   ├── Cultivated [PD] *
+        │   │   ├── Common [P] (reusing)
+        │   │   └── Meadows [PD]
+        │   └── Common [PD] *
+        │       ├── Forest [PD]
+        │       └── Meadows [PD]
+        └── Valiant [PD]

@@ -1,0 +1,160 @@
+=== Execution Analysis for Tinkerest ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 26
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 26
+  GUI calls: 52, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Tinkerest
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 47
+     Tree species: Tinkerest
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=694, progress=Completed Common, step_type=breeding, total_steps=47
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=695, progress=Completed Cultivated, step_type=breeding, total_steps=47
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  9. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  10. [GUI_CALL] current_species=Sinister, current_step=696, progress=Completed Sinister, step_type=breeding, total_steps=47
+     Progress: Completed Sinister
+  11. [GUI_CALL] current_species=Frugal, progress=Breeding: Modest + Sinister -> Frugal, step_type=breeding
+     Progress: Breeding: Modest + Sinister -> Frugal
+  12. [BREEDING] ✅ Modest + Sinister -> Frugal
+  13. [GUI_CALL] current_species=Frugal, current_step=697, progress=Completed Frugal, step_type=breeding, total_steps=47
+     Progress: Completed Frugal
+  14. [GUI_CALL] current_species=Austere, progress=Breeding: Modest + Frugal -> Austere, step_type=breeding
+     Progress: Breeding: Modest + Frugal -> Austere
+  15. [BREEDING] ✅ Modest + Frugal -> Austere
+  16. [GUI_CALL] current_species=Austere, current_step=698, progress=Completed Austere, step_type=breeding, total_steps=47
+     Progress: Completed Austere
+  17. [GUI_CALL] current_species=Secluded, progress=Breeding: Austere + Monastic -> Secluded, step_type=breeding
+     Progress: Breeding: Austere + Monastic -> Secluded
+  18. [BREEDING] ✅ Austere + Monastic -> Secluded
+  19. [GUI_CALL] current_species=Secluded, current_step=699, progress=Completed Secluded, step_type=breeding, total_steps=47
+     Progress: Completed Secluded
+  20. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  21. [BREEDING] ✅ Cultivated + Common -> Noble
+  22. [GUI_CALL] current_species=Noble, current_step=700, progress=Completed Noble, step_type=breeding, total_steps=47
+     Progress: Completed Noble
+  23. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  24. [BREEDING] ✅ Common + Cultivated -> Diligent
+  25. [GUI_CALL] current_species=Diligent, current_step=701, progress=Completed Diligent, step_type=breeding, total_steps=47
+     Progress: Completed Diligent
+  26. [GUI_CALL] current_species=Ancient, progress=Breeding: Noble + Diligent -> Ancient, step_type=breeding
+     Progress: Breeding: Noble + Diligent -> Ancient
+  27. [BREEDING] ✅ Noble + Diligent -> Ancient
+  28. [GUI_CALL] current_species=Ancient, current_step=702, progress=Completed Ancient, step_type=breeding, total_steps=47
+     Progress: Completed Ancient
+  29. [GUI_CALL] current_species=Primeval, progress=Breeding: Secluded + Ancient -> Primeval, step_type=breeding
+     Progress: Breeding: Secluded + Ancient -> Primeval
+  30. [BREEDING] ✅ Secluded + Ancient -> Primeval
+  31. [GUI_CALL] current_species=Primeval, current_step=703, progress=Completed Primeval, step_type=breeding, total_steps=47
+     Progress: Completed Primeval
+  32. [GUI_CALL] current_species=Prehistoric, progress=Breeding: Primeval + Ancient -> Prehistoric, step_type=breeding
+     Progress: Breeding: Primeval + Ancient -> Prehistoric
+  33. [BREEDING] ✅ Primeval + Ancient -> Prehistoric
+  34. [GUI_CALL] current_species=Prehistoric, current_step=704, progress=Completed Prehistoric, step_type=breeding, total_steps=47
+     Progress: Completed Prehistoric
+  35. [GUI_CALL] current_species=Unweary, progress=Breeding: Diligent + Cultivated -> Unweary, step_type=breeding
+     Progress: Breeding: Diligent + Cultivated -> Unweary
+  36. [BREEDING] ✅ Diligent + Cultivated -> Unweary
+  37. [GUI_CALL] current_species=Unweary, current_step=705, progress=Completed Unweary, step_type=breeding, total_steps=47
+     Progress: Completed Unweary
+  38. [GUI_CALL] current_species=Industrious, progress=Breeding: Diligent + Unweary -> Industrious, step_type=breeding
+     Progress: Breeding: Diligent + Unweary -> Industrious
+  39. [BREEDING] ✅ Diligent + Unweary -> Industrious
+  40. [GUI_CALL] current_species=Industrious, current_step=706, progress=Completed Industrious, step_type=breeding, total_steps=47
+     Progress: Completed Industrious
+  41. [GUI_CALL] current_species=Tolerant, progress=Breeding: Rocky + Diligent -> Tolerant, step_type=breeding
+     Progress: Breeding: Rocky + Diligent -> Tolerant
+  42. [BREEDING] ✅ Rocky + Diligent -> Tolerant
+  43. [GUI_CALL] current_species=Tolerant, current_step=707, progress=Completed Tolerant, step_type=breeding, total_steps=47
+     Progress: Completed Tolerant
+  44. [GUI_CALL] current_species=Robust, progress=Breeding: Tolerant + Unweary -> Robust, step_type=breeding
+     Progress: Breeding: Tolerant + Unweary -> Robust
+  45. [BREEDING] ✅ Tolerant + Unweary -> Robust
+  46. [GUI_CALL] current_species=Robust, current_step=708, progress=Completed Robust, step_type=breeding, total_steps=47
+     Progress: Completed Robust
+  47. [GUI_CALL] current_species=Resilient, progress=Breeding: Industrious + Robust -> Resilient, step_type=breeding
+     Progress: Breeding: Industrious + Robust -> Resilient
+  48. [BREEDING] ✅ Industrious + Robust -> Resilient
+  49. [GUI_CALL] current_species=Resilient, current_step=709, progress=Completed Resilient, step_type=breeding, total_steps=47
+     Progress: Completed Resilient
+  50. [GUI_CALL] current_species=Unstable, progress=Breeding: Prehistoric + Resilient -> Unstable, step_type=breeding
+     Progress: Breeding: Prehistoric + Resilient -> Unstable
+  51. [BREEDING] ✅ Prehistoric + Resilient -> Unstable
+  52. [GUI_CALL] current_species=Unstable, current_step=710, progress=Completed Unstable, step_type=breeding, total_steps=47
+     Progress: Completed Unstable
+  53. [GUI_CALL] current_species=Rusty, progress=Breeding: Meadows + Resilient -> Rusty, step_type=breeding
+     Progress: Breeding: Meadows + Resilient -> Rusty
+  54. [BREEDING] ✅ Meadows + Resilient -> Rusty
+  55. [GUI_CALL] current_species=Rusty, current_step=711, progress=Completed Rusty, step_type=breeding, total_steps=47
+     Progress: Completed Rusty
+  56. [GUI_CALL] current_species=Nuclear, progress=Breeding: Unstable + Rusty -> Nuclear, step_type=breeding
+     Progress: Breeding: Unstable + Rusty -> Nuclear
+  57. [BREEDING] ✅ Unstable + Rusty -> Nuclear
+  58. [GUI_CALL] current_species=Nuclear, current_step=712, progress=Completed Nuclear, step_type=breeding, total_steps=47
+     Progress: Completed Nuclear
+  59. [GUI_CALL] current_species=Yellorium, progress=Breeding: Frugal + Nuclear -> Yellorium, step_type=breeding
+     Progress: Breeding: Frugal + Nuclear -> Yellorium
+  60. [BREEDING] ✅ Frugal + Nuclear -> Yellorium
+  61. [GUI_CALL] current_species=Yellorium, current_step=713, progress=Completed Yellorium, step_type=breeding, total_steps=47
+     Progress: Completed Yellorium
+  62. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Student
+  63. [BREEDING] ✅ Common + Cultivated -> Student
+  64. [GUI_CALL] current_species=Student, current_step=714, progress=Completed Student, step_type=breeding, total_steps=47
+     Progress: Completed Student
+  65. [GUI_CALL] current_species=Cyanite, progress=Breeding: Nuclear + Yellorium -> Cyanite, step_type=breeding
+     Progress: Breeding: Nuclear + Yellorium -> Cyanite
+  66. [BREEDING] ✅ Nuclear + Yellorium -> Cyanite
+  67. [GUI_CALL] current_species=Cyanite, current_step=715, progress=Completed Cyanite, step_type=breeding, total_steps=47
+     Progress: Completed Cyanite
+  68. [GUI_CALL] current_species=Blutonium, progress=Breeding: Cyanite + Yellorium -> Blutonium, step_type=breeding
+     Progress: Breeding: Cyanite + Yellorium -> Blutonium
+  69. [BREEDING] ✅ Cyanite + Yellorium -> Blutonium
+  70. [GUI_CALL] current_species=Blutonium, current_step=716, progress=Completed Blutonium, step_type=breeding, total_steps=47
+     Progress: Completed Blutonium
+  71. [GUI_CALL] current_species=Graduate, progress=Breeding: Common + Student -> Graduate, step_type=breeding
+     Progress: Breeding: Common + Student -> Graduate
+  72. [BREEDING] ✅ Common + Student -> Graduate
+  73. [GUI_CALL] current_species=Graduate, current_step=717, progress=Completed Graduate, step_type=breeding, total_steps=47
+     Progress: Completed Graduate
+  74. [GUI_CALL] current_species=PHD, progress=Breeding: Graduate + Student -> PHD, step_type=breeding
+     Progress: Breeding: Graduate + Student -> PHD
+  75. [BREEDING] ✅ Graduate + Student -> PHD
+  76. [GUI_CALL] current_species=PHD, current_step=718, progress=Completed PHD, step_type=breeding, total_steps=47
+     Progress: Completed PHD
+  77. [GUI_CALL] current_species=Tinkerest, progress=Breeding: Blutonium + PHD -> Tinkerest, step_type=breeding
+     Progress: Breeding: Blutonium + PHD -> Tinkerest
+  78. [BREEDING] ✅ Blutonium + PHD -> Tinkerest
+  79. [GUI_CALL] current_species=Tinkerest, current_step=719, progress=Completed Tinkerest, step_type=breeding, total_steps=47
+     Progress: Completed Tinkerest
+  80. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Tinkerest, TreeExists=true, Steps=47
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 52
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

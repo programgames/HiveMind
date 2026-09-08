@@ -1,0 +1,35 @@
+=== Execution Analysis for Heroic ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 1
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 1
+  GUI calls: 2, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Heroic
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 1
+     Tree species: Heroic
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Heroic, progress=Breeding: Valiant + Steadfast -> Heroic, step_type=breeding
+     Progress: Breeding: Valiant + Steadfast -> Heroic
+  3. [BREEDING] ✅ Valiant + Steadfast -> Heroic
+  4. [GUI_CALL] current_species=Heroic, current_step=65, progress=Completed Heroic, step_type=breeding, total_steps=1
+     Progress: Completed Heroic
+  5. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Heroic, TreeExists=true, Steps=1
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 2
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

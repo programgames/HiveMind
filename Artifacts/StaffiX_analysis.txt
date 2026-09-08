@@ -1,0 +1,58 @@
+=== Breeding Analysis for StaffiX ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 12
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+  4. Monastic
+  5. Water
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    2 Meadows princesses OR 2 Meadows drones
+    3 Modest princesses OR 2 Modest drones
+    1 Monastic princess OR 1 Monastic drone
+    1 Water princess OR 1 Water drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 17
+  Total nodes: 25
+  Breeding nodes: 12
+  Reused nodes: 6
+  Primary breeders: 6
+  Duplicate species: 5 (8 duplicate instances)
+  Max depth: 8
+
+🌳 BREEDING TREE:
+└── StaffiX [PD] *
+    ├── Prehistoric [PD] *
+    │   ├── Ancient [P] (reusing)
+    │   └── Primeval [PD] *
+    │       ├── Ancient [PD] *
+    │       │   ├── Diligent [PD] *
+    │       │   │   ├── Cultivated [PD] *
+    │       │   │   │   ├── Common [P] (reusing)
+    │       │   │   │   └── Meadows [PD]
+    │       │   │   └── Common [P] (reusing)
+    │       │   └── Noble [PD] *
+    │       │       ├── Common [PD] *
+    │       │       │   ├── Forest [PD]
+    │       │       │   └── Meadows [PD]
+    │       │       └── Cultivated [P] (reusing)
+    │       └── Secluded [PD] *
+    │           ├── Monastic [PD]
+    │           └── Austere [PD] *
+    │               ├── Frugal [PD] *
+    │               │   ├── Sinister [PD] *
+    │               │   │   ├── Cultivated [P] (reusing)
+    │               │   │   └── Modest [PD]
+    │               │   └── Modest [P] (reusing)
+    │               └── Modest [PD]
+    └── Water [PD]

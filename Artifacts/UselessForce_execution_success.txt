@@ -1,0 +1,65 @@
+=== Execution Analysis for UselessForce ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 7
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 7
+  GUI calls: 14, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: UselessForce
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 8
+     Tree species: UselessForce
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=720, progress=Completed Common, step_type=breeding, total_steps=8
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=721, progress=Completed Cultivated, step_type=breeding, total_steps=8
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  9. [BREEDING] ✅ Common + Cultivated -> Diligent
+  10. [GUI_CALL] current_species=Diligent, current_step=722, progress=Completed Diligent, step_type=breeding, total_steps=8
+     Progress: Completed Diligent
+  11. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  12. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  13. [GUI_CALL] current_species=Sinister, current_step=723, progress=Completed Sinister, step_type=breeding, total_steps=8
+     Progress: Completed Sinister
+  14. [GUI_CALL] current_species=Fiendish, progress=Breeding: Sinister + Cultivated -> Fiendish, step_type=breeding
+     Progress: Breeding: Sinister + Cultivated -> Fiendish
+  15. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
+  16. [GUI_CALL] current_species=Fiendish, current_step=724, progress=Completed Fiendish, step_type=breeding, total_steps=8
+     Progress: Completed Fiendish
+  17. [GUI_CALL] current_species=Red, progress=Breeding: Common + Diligent -> Red, step_type=breeding
+     Progress: Breeding: Common + Diligent -> Red
+  18. [BREEDING] ✅ Common + Diligent -> Red
+  19. [GUI_CALL] current_species=Red, current_step=725, progress=Completed Red, step_type=breeding, total_steps=8
+     Progress: Completed Red
+  20. [GUI_CALL] current_species=UselessForce, progress=Breeding: Red + Fiendish -> UselessForce, step_type=breeding
+     Progress: Breeding: Red + Fiendish -> UselessForce
+  21. [BREEDING] ✅ Red + Fiendish -> UselessForce
+  22. [GUI_CALL] current_species=UselessForce, current_step=726, progress=Completed UselessForce, step_type=breeding, total_steps=8
+     Progress: Completed UselessForce
+  23. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=UselessForce, TreeExists=true, Steps=8
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 14
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

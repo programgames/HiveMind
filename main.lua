@@ -49,39 +49,136 @@ end
 
 local inv_controller = component.inventory_controller
 
--- Try to find Gendustry APIs through adapter blocks
-local gendustry = {}
-local adapters = {}
+-- Forward declarations for the shared state tables.
+--
+-- Lua resolves a name in a function body against the locals visible where the body is written,
+-- so a `local` declared further down the file is invisible to every function above it: the body
+-- reads a global instead, and gets nil. waitForBeebeeGun and loadMutatron did exactly that with
+-- control_state and raised on their first call. Declaring the three here, and assigning them at
+-- their original sites, keeps them in scope for the whole file.
+local gui_state
+local control_state
+local status_colors
 
---- Scan for Gendustry components via adapters
---- @return boolean hasComponents True if any Gendustry components were found
-local function scanGendustryComponents()
-    print("Scanning for Gendustry components...")
+-- config is declared here for the same reason: refreshGendustrySlots, just below, reads
+-- config.slot_offset. Written above `local config`, it would resolve a nil global and silently
+-- fall back to an offset of 1, ignoring whatever check_slots.lua found.
+local config
 
-    -- Check for direct component names (if Gendustry provides them)
-    local possible_names = {
-        "gendustry_mutatron", "mutatron", "advanced_mutatron",
-        "gendustry_imprinter", "imprinter", "genetic_imprinter",
-        "gendustry_sampler", "sampler", "genetic_sampler",
-        "gendustry_transposer", "transposer", "genetic_transposer"
-    }
+-- Gendustry drivers, as exposed by The-Apiarist-Terminal.
+--
+-- Two machines have a hand-written driver and are the only ones this program talks to:
+-- "advmutatron" and "industrial_apiary". The old heuristic sweep over component.list() guessed
+-- names that no mod ever registers, so it never found anything.
+--
+-- Shared contract for the rest of the file:
+--   gendustry.available      boolean, true when at least one driver answered
+--   gendustry.adv            address of the "advmutatron" component, or nil
+--   gendustry.apiary         address of the "industrial_apiary" component, or nil
+--   gendustry.slots.mutatron listSlots() of the mutatron, already shifted to controller indices
+--   gendustry.slots.apiary   listSlots() of the apiary, already shifted to controller indices
+--   advCall(method, ...)     call the mutatron; returns its values, or nil plus a reason
+--   apiaryCall(method, ...)  call the apiary; returns its values, or nil plus a reason
+--   config.slot_offset       driver index -> inventory_controller index (see check_slots.lua)
+--
+-- Every new capability tests gendustry.available (or gendustry.adv / gendustry.apiary for a
+-- single machine) and falls back on the existing redstone + inventory_controller path when it
+-- is false. Without the mod the program behaves exactly as it does today.
+local GENDUSTRY_MUTATRON_KIND = "advmutatron"
+local GENDUSTRY_APIARY_KIND = "industrial_apiary"
 
-    for _, name in ipairs(possible_names) do
-        if component.isAvailable(name) then
-            gendustry[name] = component.getPrimary(name)
-            print("Found Gendustry component: " .. name)
+local gendustry = {
+    available = false,
+    adv = nil,
+    apiary = nil,
+    slots = {mutatron = nil, apiary = nil}
+}
+
+--- Address of the first component of a kind, or nil when none is on the network.
+--- Addresses rather than component.<name>: OpenOS caches a proxy per address in a Lua state
+--- that survives a world reload, so a proxy built before a mod update keeps answering with the
+--- old method list and a new callback looks like it does not exist.
+--- @param kind string Exact component type name
+--- @return string|nil address
+local function gendustryAddress(kind)
+    local ok, iterator = pcall(component.list, kind, true)
+    if not ok or type(iterator) ~= "function" then return nil end
+
+    return iterator()
+ end
+
+--- Invoke a callback on a component address without ever raising.
+--- @param address string|nil Component address
+--- @param method string Callback name
+--- @return any ... The callback's return values, or nil plus a textual reason
+local function driverCall(address, method, ...)
+    if not address then return nil, "component not present" end
+
+    local result = table.pack(pcall(component.invoke, address, method, ...))
+    if result[1] then return table.unpack(result, 2, result.n) end
+
+    return nil, tostring(result[2] or "call failed with no message")
+end
+
+--- Call the Advanced Mutatron driver.
+--- @return any ... The callback's return values, or nil plus a reason
+function advCall(method, ...)
+    return driverCall(gendustry.adv, method, ...)
+end
+
+--- Call the Industrial Apiary driver.
+--- @return any ... The callback's return values, or nil plus a reason
+function apiaryCall(method, ...)
+    return driverCall(gendustry.apiary, method, ...)
+end
+
+--- Translate a driver slot map into inventory_controller indices.
+--- The drivers report raw tile indices; inventory_controller numbers the same slots from one.
+--- "size" is a count, not an index, so it is copied through untouched.
+--- @param slots table|nil Result of listSlots()
+--- @param offset number config.slot_offset
+--- @return table|nil shifted
+local function shiftDriverSlots(slots, offset)
+    if type(slots) ~= "table" then return nil end
+
+    local shifted = {}
+    for key, value in pairs(slots) do
+        if key == "size" or type(value) ~= "number" and type(value) ~= "table" then
+            shifted[key] = value
+        elseif type(value) == "number" then
+            shifted[key] = value + offset
+        else
+            local list = {}
+            for index, entry in pairs(value) do
+                list[index] = type(entry) == "number" and (entry + offset) or entry
+            end
+            shifted[key] = list
         end
     end
 
-    -- Scan all available components for potential Gendustry machines
-    for address, componentType in component.list() do
-        if componentType:find("gendustry") or componentType:find("mutatron") or componentType:find("imprinter") then
-            print("Found potential Gendustry component: " .. componentType .. " at " .. address:sub(1,8))
-            gendustry[componentType] = component.proxy(address)
-        end
-    end
+    return shifted
+end
 
-    return next(gendustry) ~= nil
+--- Resolve the drivers and read their slot maps. Called once after config exists, and again by
+--- checkGendustryAPI so an Adapter placed while the program runs is still picked up.
+--- @return boolean available True when at least one driver answered
+function refreshGendustrySlots()
+    gendustry.adv = gendustryAddress(GENDUSTRY_MUTATRON_KIND)
+    gendustry.apiary = gendustryAddress(GENDUSTRY_APIARY_KIND)
+
+    local offset = config and config.slot_offset or 1
+
+    gendustry.slots.mutatron = shiftDriverSlots(advCall("listSlots"), offset)
+    gendustry.slots.apiary = shiftDriverSlots(apiaryCall("listSlots"), offset)
+
+    -- A component that does not answer listSlots is a ghost: the Adapter has been removed, or
+    -- the driver failed to attach. Treat it as absent rather than half usable.
+    if not gendustry.slots.mutatron then gendustry.adv = nil end
+    if not gendustry.slots.apiary then gendustry.apiary = nil end
+
+    gendustry.available = (gendustry.adv ~= nil) or (gendustry.apiary ~= nil)
+
+    return gendustry.available
 end
 
 -- Get component methods for debugging
@@ -425,7 +522,7 @@ end
 local mutations = loadBeeDatabase()
 
 -- System configuration
-local config = {
+config = {
     -- General settings
     mech_user_side = sides.right,     -- Side where Mechanical User is connected
     pulse_duration = 1,               -- Duration of redstone pulse in seconds
@@ -447,12 +544,45 @@ local config = {
     mech_user_inventory_side = sides.right, -- Mechanical User's inventory (same as redstone side)
 
     -- Slot configurations
-    mutatron_input_slots = {1, 2},    -- Princess, drone slots in mutatron
-    mutatron_output_slot = 3,         -- Queen output slot
-    apiary_input_slot = 1,            -- Queen input slot in apiary
-    apiary_output_slots = {2, 3, 4, 5, 6},  -- Product output slots
-    beebee_gun_slot = 1               -- Slot where beebee gun should be in Mechanical User
+    -- These literals are fallbacks for the degraded mode only (no drivers on the network).
+    -- When the drivers answer, applyDriverSlots() overwrites them with listSlots() corrected by
+    -- config.slot_offset. BLOCKED BY Q3: the offset itself is decided in game by check_slots.lua,
+    -- so no index below may be trusted as an absolute value.
+    mutatron_input_slots = {1, 2},    -- Princess, drone slots in mutatron (driver in1 = 0, in2 = 1)
+    mutatron_output_slot = 3,         -- Queen output slot (driver output = 2)
+    mutatron_labware_slot = 4,        -- Labware slot in mutatron (driver labware = 3)
+    apiary_input_slot = 1,            -- Queen input slot in apiary (driver queen = 0)
+    apiary_output_slots = {2, 3, 4, 5, 6},  -- Product output slots (driver outputs = 6..14)
+    beebee_gun_slot = 1,              -- Slot where beebee gun should be in Mechanical User
+
+    -- Gendustry drivers (The-Apiarist-Terminal)
+    -- The drivers report raw tile slot indices, inventory_controller numbers them from one:
+    -- controller_slot = driver_slot + slot_offset. Run check_slots.lua in game to confirm the
+    -- value below; the two OFFSET verdicts it prints are what belongs here.
+    slot_offset = 1,                  -- Applied to every slot index reported by a driver
+    report_path = "/home/hivemind_report.txt",  -- Diagnostic report written by checkGendustryAPI
+
+    -- Mutagen management (task 10)
+    mutagen_reserve_mb = 1000,        -- Millibuckets the tank must hold before a cycle is started
+    mutagen_wait_timeout = 120,       -- Seconds to wait for the tank to refill before giving up
+
+    -- Species registry, genetics and hive display (tasks 26, 27, 29)
+    species_audit_max_lines = 12,     -- Lines printed per direction by the startup audit
+    dominance_weighting = false,      -- Weight a cross by the dominance of its species allele
+    recessive_step_weight = 2,        -- Cost of a cross whose species allele is recessive
+    hive_conditions_refresh = 5,      -- Seconds between two readings of the hive modifiers
+
+    -- Driver driven timings (used only when the Gendustry drivers are reachable)
+    mutatron_timeout = 180,           -- Max wait for "advmutatron_finished" (seconds)
+    apiary_cycle_timeout = 600,       -- Max wait for "apiary_finished" (seconds)
+    apiary_mating_timeout = 60,       -- Max wait for a princess to be mated (seconds)
+    beebee_gun_retries = 3,           -- Shots allowed before declaring the gun empty
+    signal_interval_ticks = 20        -- Output scan rate; _started/_finished are never throttled
 }
+
+-- Resolve the Gendustry drivers now that config.slot_offset is known. The socle above is
+-- declared before config, so slot translation cannot happen there.
+refreshGendustrySlots()
 
 -- Generate dynamic bee list from mutations database
 local function generateBeeList(modlist)
@@ -621,13 +751,26 @@ function getSideName(side)
 end
 
 -- Extract species name from item name
+--
+-- Keeps the longest match rather than the first. available_bees is sorted alphabetically, so
+-- returning the first hit made "Uncommon Queen" resolve to "Common": every species whose name is
+-- a substring of a longer one was shadowing it. Plain find, because a species name is data and
+-- must not be read as a pattern.
 function extractSpecies(itemName)
+    local best = nil
+
+    -- Whole word, through the same test the mutatron output validation uses: a substring match
+    -- reads "Common" out of "Uncommon Princess". The longest match still wins, so a two-word
+    -- species is preferred over the one-word species contained in it.
     for _, species in ipairs(available_bees) do
-        if itemName:lower():find(species:lower()) then
-            return species
+        if speciesMatchesItem(itemName, species) then
+            if not best or #species > #best then
+                best = species
+            end
         end
     end
-    return nil
+
+    return best
 end
 
 -- New tree-based breeding path calculation
@@ -672,6 +815,11 @@ function calculateBreedingPath(target)
     for species, count in pairs(base_princesses_needed) do
         table.insert(starting_princesses, species)
     end
+
+    -- pairs() has no defined order and Lua randomises string hashing per process, so the same
+    -- plan listed its starting species differently on every run. Sort, so the plan reads the
+    -- same twice and a diff between two runs means something.
+    table.sort(starting_princesses)
 
     -- Check if plan can be executed (no missing base species)
     local can_execute = true
@@ -894,7 +1042,9 @@ function strategicReuseOptimization(tree, species_info)
                 if not n then return 0 end
                 local v = memo[n]
                 if v ~= nil then return v end
-                local c = countTreeSteps(n)
+                -- Dominance-weighted cost; identical to countTreeSteps while
+                -- config.dominance_weighting is off (task 27)
+                local c = countTreeCost(n)
                 memo[n] = c
                 return c
             end
@@ -1049,7 +1199,8 @@ function strategicReuseOptimization(tree, species_info)
                 for _, n in ipairs(nodes) do
                     if not n.reusing_drone then
                         local d = n._distance_from_root or 0
-                        local c = countTreeSteps(n)
+                        -- Weighted subtree cost as tie-breaker (task 27)
+                        local c = countTreeCost(n)
                         local od = n._original_depth or 0
                         if (d < best_depth) or (d == best_depth and c < best_cost) or (d == best_depth and c == best_cost and od < best_orig_depth) then
                             best = n
@@ -1148,7 +1299,9 @@ function strategicReuseOptimization(tree, species_info)
             local primary = primaries[sp]
             for _, n in ipairs(data.nodes) do
                 if n ~= primary and not n.reusing_drone then
-                    local savings = countTreeSteps(n)
+                    -- Savings in weighted cost: dropping a recessive subtree
+                    -- saves more than dropping a dominant one (task 27)
+                    local savings = countTreeCost(n)
                     local local_src, allow_rev = findLocalSource(n, tree)
                     table.insert(candidates, {node=n, species=sp, savings=savings, source=(local_src or primary), allow_reverse=allow_rev})
                 end
@@ -1248,7 +1401,7 @@ function strategicReuseOptimization(tree, species_info)
             local best, best_depth, best_cost, best_orig = nil, math.huge, math.huge, math.huge
             for _, inst in ipairs(instances) do
                 local d = inst._distance_from_root or 0
-                local c = countTreeSteps(inst)
+                local c = countTreeCost(inst)
                 local od = inst._original_depth or 0
                 if (d < best_depth) or (d == best_depth and c < best_cost) or (d == best_depth and c == best_cost and od < best_orig) then
                     best, best_depth, best_cost, best_orig = inst, d, c, od
@@ -2622,7 +2775,10 @@ function loadMutatron(parent1, parent2)
         if control_state.abort_requested then return false, "Aborted" end
     end
 
-    -- Move items to mutatron
+    -- Move items to mutatron. Ask the drivers for the real slot indices first: without them the
+    -- literals from config are used, which is the degraded mode.
+    applyDriverSlots()
+
     local success1 = moveItem(princess_side, princess_slot, config.mutatron_side, config.mutatron_input_slots[1], 1)
     local success2 = moveItem(drone_side, drone_slot, config.mutatron_side, config.mutatron_input_slots[2], 1)
 
@@ -2631,36 +2787,105 @@ function loadMutatron(parent1, parent2)
         if control_state.abort_requested then return false, "Aborted" end
     end
 
+    -- The mutatron consumes one labware per cycle and refuses to start without it. Nothing fed
+    -- that slot before, so a chained sequence of crosses stalled on the second one.
+    local labware_ok, labware_msg = ensureLabware()
+    if not labware_ok then
+        handleError(labware_msg, validateLabware)
+        local should_continue, abort_msg = checkContinue()
+        if not should_continue then
+
+            return false, abort_msg
+        end
+    end
+
     return true, "Successfully loaded mutatron"
 end
 
 -- Extract queen from mutatron and move to apiary
+--- Wait until the mutatron has something in its output slot
+---
+--- Split out of moveQueenToApiary so the product can be identified before it is moved: once the
+--- queen is in the apiary, rejecting her costs a full apiary cycle. Returns immediately when the
+--- output is already there, so calling it twice is free.
+--- @return boolean ready True if the mutatron output slot holds a bee
+function waitForMutatronOutput()
+    if gendustry and gendustry.available and gendustry.adv then
+        local output = advCall("getOutput")
+
+        if not output then
+            local received, reason = waitForMachineSignal("advmutatron_finished", config.mutatron_timeout)
+
+            if not received then
+                if reason == "aborted" then
+
+                    return false
+                end
+
+                -- Timeout: tell a long cycle apart from a machine that stopped
+                local working = advCall("isWorking")
+                if working then
+                    drawGUI({progress = "Mutatron still working",
+                             errors = "Cycle longer than config.mutatron_timeout - still waiting",
+                             status = "Warning"})
+                else
+                    drawGUI({progress = "Mutatron stalled",
+                             errors = "Mutatron is not working and produced nothing - check mutagen, labware and power",
+                             status = "Error"})
+
+                    return false
+                end
+            end
+
+            output = advCall("getOutput")
+        end
+
+        if not output then
+            print("ERROR: No queen produced by mutatron!")
+
+            return false
+        end
+    else
+        -- Degraded mode: poll the output slot as before
+        os.sleep(2)
+
+        local queen_stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+        if not queen_stack then
+            print("Waiting for mutatron to produce queen...")
+            for i = 1, 10 do
+                os.sleep(1)
+                queen_stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+                if queen_stack then break end
+            end
+
+            if not queen_stack then
+                print("ERROR: No queen produced by mutatron!")
+
+                return false
+            end
+        end
+    end
+
+    return true
+end
+
+--- Move the queen from the mutatron to the apiary
+--- @return boolean success True if the queen reached the apiary
 function moveQueenToApiary()
     print("Moving queen from mutatron to apiary...")
 
-    -- Wait a moment for mutatron to finish
-    os.sleep(2)
+    if not waitForMutatronOutput() then
 
-    -- Check if queen is ready
-    local queen_stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
-    if not queen_stack then
-        print("Waiting for mutatron to produce queen...")
-        for i = 1, 10 do
-            os.sleep(1)
-            queen_stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
-            if queen_stack then break end
-        end
-
-        if not queen_stack then
-            print("ERROR: No queen produced by mutatron!")
-            return false
-        end
+        return false
     end
 
     print("Queen ready! Moving to apiary...")
 
-    -- Move queen to apiary
+    -- Move queen to apiary with the apiary held still, so the insertion cannot race
+    -- a cycle that is already running (task 20)
+    local previous_mode = freezeApiary()
     local success = moveItem(config.mutatron_side, config.mutatron_output_slot, config.apiary_side, config.apiary_input_slot, 1)
+    unfreezeApiary(previous_mode)
 
     if success then
         print("Queen successfully placed in apiary!")
@@ -2678,14 +2903,50 @@ function collectApiaryProducts()
     local collected_items = {}
     local total_collected = 0
 
-    for _, slot in ipairs(config.apiary_output_slots) do
-        local stack = inv_controller.getStackInSlot(config.apiary_side, slot)
-        if stack and stack.size > 0 then
+    -- Build the list of occupied output slots. listOutputs() reports the driver's own
+    -- slot numbering and a "count" field, where the inventory controller uses 1-based
+    -- slots and "size"; both are normalised here.
+    -- BLOCKED BY Q3: config.slot_offset must be verified by check_slots.lua before the
+    -- driver path can be trusted (apiary_output_slots = {2..6} vs driver outputs = 6..14).
+    local outputs = nil
+
+    if gendustry.available and gendustry.apiary then
+        local list, reason = apiaryCall("listOutputs")
+        if list then
+            outputs = {}
+            for _, item in ipairs(list) do
+                table.insert(outputs, {
+                    slot = item.slot + (config.slot_offset or 0),
+                    count = item.count or 0,
+                    name = item.label or item.name
+                })
+            end
+        else
+            print("listOutputs failed (" .. tostring(reason) .. ") - falling back to configured slots")
+        end
+    end
+
+    if not outputs then
+        outputs = {}
+        for _, slot in ipairs(config.apiary_output_slots) do
+            local stack = inv_controller.getStackInSlot(config.apiary_side, slot)
+            if stack then
+                table.insert(outputs, {
+                    slot = slot,
+                    count = stack.size or 0,
+                    name = stack.label or stack.name
+                })
+            end
+        end
+    end
+
+    for _, item in ipairs(outputs) do
+        if item.count and item.count > 0 then
             -- Try to move to output chest
-            local moved = inv_controller.transferItem(config.apiary_side, config.output_chest_side, stack.size, slot)
-            if moved > 0 then
+            local moved = inv_controller.transferItem(config.apiary_side, config.output_chest_side, item.count, item.slot)
+            if moved and moved > 0 then
                 total_collected = total_collected + moved
-                local item_name = stack.name or "unknown"
+                local item_name = item.name or "unknown"
                 collected_items[item_name] = (collected_items[item_name] or 0) + moved
 
                 print("  Collected " .. moved .. "x " .. item_name)
@@ -2696,16 +2957,18 @@ function collectApiaryProducts()
     if total_collected > 0 then
         print("Total items collected: " .. total_collected)
 
-        -- Update inventory tracking for queens and drones
+        -- Update inventory tracking. A finished cycle yields a PRINCESS, so the same
+        -- three types scanInventory recognises are recognised here, case-insensitively.
         for item_name, count in pairs(collected_items) do
-            if item_name:find("queen") then
+            local lowered = item_name:lower()
+            if lowered:find("princess") or lowered:find("queen") then
                 local species = extractSpecies(item_name)
                 if species then
                     for i = 1, count do
                         table.insert(inventory.princesses, species)
                     end
                 end
-            elseif item_name:find("drone") then
+            elseif lowered:find("drone") then
                 local species = extractSpecies(item_name)
                 if species then
                     for i = 1, count do
@@ -2718,67 +2981,770 @@ function collectApiaryProducts()
         return true
     else
         print("No items collected from apiary!")
+
         return false
     end
 end
 
--- Check if Gendustry APIs are available
+-- Check if the Gendustry drivers are available and write a diagnostic report to a file.
+--
+-- Modelled on the mod's survey.lua: a report is far longer than a screen, and an installation
+-- is usually diagnosed by someone who is not standing in front of it. Read it in game with
+-- `edit /home/hivemind_report.txt`.
+--- @return boolean available True if at least one Gendustry driver answered
 function checkGendustryAPI()
-    local hasGendustry = scanGendustryComponents()
+    refreshGendustrySlots()
 
-    if hasGendustry then
-        print("Gendustry components detected:")
+    local path = config.report_path or "/home/hivemind_report.txt"
+    local out = io.open(path, "w")
 
-        for name, comp in pairs(gendustry) do
-            print("  " .. name)
-            local methods = getComponentMethods(comp)
-            if #methods > 0 then
-                print("    Available methods: " .. table.concat(methods, ", "))
+    local function w(line)
+        if out then out:write((line or "") .. "\n") end
+    end
+
+    local function rule()
+        w(string.rep("=", 72))
+    end
+
+    -- Which callbacks a component actually offers. A short list here means a driver problem.
+    local function callbacksOf(address)
+        if not address then return "component absent" end
+
+        local ok, methods = pcall(component.methods, address)
+        if not ok or type(methods) ~= "table" then
+            return "NONE -- ghost component or driver failure"
+        end
+
+        local names = {}
+        for name in pairs(methods) do names[#names + 1] = name end
+        table.sort(names)
+
+        return string.format("(%d) %s", #names, table.concat(names, " "))
+    end
+
+    local function writeSlots(slots)
+        if type(slots) ~= "table" then
+            w("  not answered")
+
+            return
+        end
+
+        local keys = {}
+        for key in pairs(slots) do keys[#keys + 1] = tostring(key) end
+        table.sort(keys)
+
+        for _, key in ipairs(keys) do
+            local value = slots[key]
+            if type(value) == "table" then
+                local parts = {}
+                for _, index in pairs(value) do parts[#parts + 1] = index end
+                table.sort(parts, function(a, b)
+                    if type(a) == "number" and type(b) == "number" then return a < b end
+
+                    return tostring(a) < tostring(b)
+                end)
+                for i, index in ipairs(parts) do parts[i] = tostring(index) end
+                w(string.format("  %-12s [%s]", key, table.concat(parts, ",")))
+            else
+                w(string.format("  %-12s %s", key, tostring(value)))
+            end
+        end
+    end
+
+    local function writeEnergy(caller)
+        local energy = caller("getEnergy")
+        if type(energy) == "table" then
+            w(string.format("energy: %s / %s", tostring(energy.stored), tostring(energy.capacity)))
+        else
+            w("energy: not answered")
+        end
+    end
+
+    local function describeStack(stack)
+        if type(stack) ~= "table" then return "empty" end
+
+        return string.format("%s x%s", tostring(stack.label or stack.name),
+            tostring(stack.count or stack.size))
+    end
+
+    local offset = config.slot_offset or 1
+
+    -- 1. Header ------------------------------------------------------------
+    rule()
+    w("HIVEMIND -- GENDUSTRY DRIVER REPORT")
+    rule()
+    w(string.format("uptime %.0fs, memory %d/%d bytes free",
+        computer.uptime(), computer.freeMemory(), computer.totalMemory()))
+    w(string.format("config.slot_offset = %+d  (controller_slot = driver_slot %+d)", offset, offset))
+    w(string.format("mutatron side %s, apiary side %s, output chest side %s",
+        tostring(config.mutatron_side), tostring(config.apiary_side),
+        tostring(config.output_chest_side)))
+    w("")
+    w(string.format("advmutatron:       %s", tostring(gendustry.adv or "absent")))
+    w(string.format("industrial_apiary: %s", tostring(gendustry.apiary or "absent")))
+
+    -- 2. Advanced Mutatron -------------------------------------------------
+    w("")
+    rule()
+    w("ADVANCED MUTATRON (advmutatron)")
+    rule()
+    if gendustry.adv then
+        w("callbacks: " .. callbacksOf(gendustry.adv))
+        w(string.format("working: %s   progress: %s",
+            tostring(advCall("isWorking")), tostring(advCall("getProgress"))))
+        writeEnergy(advCall)
+
+        local can, canWhy = advCall("canStart")
+        w("canStart: " .. tostring(can) .. (canWhy and ("  -- " .. tostring(canWhy)) or ""))
+
+        local tank = advCall("getTank")
+        if type(tank) == "table" then
+            w(string.format("mutagen: %s / %s  %s", tostring(tank.amount),
+                tostring(tank.capacity), tostring(tank.fluid or "(empty)")))
+        else
+            w("mutagen: not answered")
+        end
+
+        w("slots as the driver reports them:")
+        writeSlots(advCall("listSlots"))
+        w("slots after config.slot_offset:")
+        writeSlots(gendustry.slots.mutatron)
+
+        w("output slot: " .. describeStack(advCall("getOutput")))
+
+        local offered = advCall("listMutations")
+        if type(offered) == "table" then
+            local count = 0
+            for _, entry in pairs(offered) do
+                if type(entry) == "table" then
+                    count = count + 1
+                    w(string.format("  mutation %s: %s", tostring(entry.index),
+                        tostring(entry.label or entry.name)))
+                end
+            end
+            if count == 0 then
+                w("  no mutation offered -- load two parents and a labware, then run again")
+            end
+        else
+            w("listMutations: not answered")
+        end
+    else
+        w("absent -- no Adapter against the Advanced Mutatron, or no cable back to this computer")
+    end
+
+    -- 3. Industrial Apiary -------------------------------------------------
+    w("")
+    rule()
+    w("INDUSTRIAL APIARY (industrial_apiary)")
+    rule()
+    if gendustry.apiary then
+        w("callbacks: " .. callbacksOf(gendustry.apiary))
+        w(string.format("working: %s   progress: %s",
+            tostring(apiaryCall("isWorking")), tostring(apiaryCall("getProgress"))))
+        writeEnergy(apiaryCall)
+
+        w("slots as the driver reports them:")
+        writeSlots(apiaryCall("listSlots"))
+        w("slots after config.slot_offset:")
+        writeSlots(gendustry.slots.apiary)
+
+        local environment = apiaryCall("getEnvironment")
+        if type(environment) == "table" then
+            w(string.format("environment: temperature %s, humidity %s",
+                tostring(environment.temperature), tostring(environment.humidity)))
+        end
+
+        local modifiers = apiaryCall("getModifiers")
+        if type(modifiers) == "table" then
+            local keys = {}
+            for key in pairs(modifiers) do keys[#keys + 1] = tostring(key) end
+            table.sort(keys)
+            w("modifiers:")
+            for _, key in ipairs(keys) do
+                w(string.format("  %-20s %s", key, tostring(modifiers[key])))
             end
         end
 
-        return true
+        local redstone_mode = apiaryCall("getRedstoneMode")
+        if type(redstone_mode) == "table" then
+            w(string.format("redstone mode: %s (canWork %s)",
+                tostring(redstone_mode.mode), tostring(redstone_mode.canWork)))
+        end
+
+        local status = apiaryCall("getPrincessStatus")
+        if type(status) == "table" then
+            w(string.format("queen slot: occupied %s, type %s, freed %s, automated %s%s",
+                tostring(status.occupied), tostring(status.type), tostring(status.freed),
+                tostring(status.automated),
+                status.error and (", error " .. tostring(status.error)) or ""))
+            if status.automated then
+                w("  !! the Automation upgrade reinserts the princess and starts a new cycle,")
+                w("     which takes away the parent this program needs. Remove it.")
+            end
+        end
+
+        local errors = apiaryCall("getErrors")
+        if type(errors) == "table" then
+            if errors.hasErrors and type(errors.errors) == "table" then
+                w("Forestry errors:")
+                for _, message in pairs(errors.errors) do
+                    w("  " .. tostring(message))
+                end
+            else
+                w("Forestry errors: none")
+            end
+        end
+
+        local upgrades = apiaryCall("listUpgrades")
+        if type(upgrades) == "table" then
+            local count = 0
+            for _, item in pairs(upgrades) do
+                if type(item) == "table" then
+                    count = count + 1
+                    w(string.format("  upgrade slot %s: %s", tostring(item.slot), describeStack(item)))
+                end
+            end
+            if count == 0 then w("upgrades: none installed") end
+        end
+
+        local outputs = apiaryCall("listOutputs")
+        if type(outputs) == "table" then
+            local count = 0
+            for _, item in pairs(outputs) do
+                if type(item) == "table" then
+                    count = count + 1
+                    w(string.format("  output driver slot %s (controller %s): %s",
+                        tostring(item.slot),
+                        type(item.slot) == "number" and tostring(item.slot + offset) or "?",
+                        describeStack(item)))
+                end
+            end
+            if count == 0 then w("outputs: all empty") end
+        end
     else
-        print("No Gendustry components found")
-        print("Make sure Gendustry machines are connected via adapter blocks")
+        w("absent -- no Adapter against the Industrial Apiary, or no cable back to this computer")
+    end
+
+    -- 4. The same inventories through inventory_controller -----------------
+    -- Printed side by side with the driver indices above so a wrong config.slot_offset shows up
+    -- as two lists that do not line up.
+    w("")
+    rule()
+    w("INVENTORY CONTROLLER VIEW (1-based)")
+    rule()
+
+    local function safeInv(method, ...)
+        local result = table.pack(pcall(inv_controller[method], ...))
+        if result[1] then return table.unpack(result, 2, result.n) end
+
+        return nil
+    end
+
+    local views = {
+        {name = "mutatron", side = config.mutatron_side},
+        {name = "apiary", side = config.apiary_side},
+        {name = "input chest", side = config.input_chest_side},
+        {name = "output chest", side = config.output_chest_side}
+    }
+
+    for _, view in ipairs(views) do
+        local size = safeInv("getInventorySize", view.side)
+        w(string.format("%s on side %s: %s slots",
+            view.name, tostring(view.side), tostring(size or "nothing readable")))
+        if type(size) == "number" then
+            for slot = 1, size do
+                local stack = safeInv("getStackInSlot", view.side, slot)
+                if type(stack) == "table" then
+                    w(string.format("  controller[%d] (driver %d) %s",
+                        slot, slot - offset, describeStack(stack)))
+                end
+            end
+        end
+    end
+
+    -- 5. Verdict -----------------------------------------------------------
+    w("")
+    rule()
+    w(string.format("drivers available: %s  (mutatron %s, apiary %s)",
+        tostring(gendustry.available),
+        gendustry.adv and "yes" or "no",
+        gendustry.apiary and "yes" or "no"))
+    if not gendustry.available then
+        w("Falling back to redstone control and inventory_controller, as before the migration.")
+    end
+
+    if out then out:close() end
+
+    if gendustry.available then
+        print("Gendustry drivers available (mutatron: " .. (gendustry.adv and "yes" or "no") ..
+              ", apiary: " .. (gendustry.apiary and "yes" or "no") .. ")")
+    else
+        print("No Gendustry driver found -- put an Adapter against the Advanced Mutatron")
+        print("and the Industrial Apiary, and cable them to this computer.")
         print("Using manual redstone control for Mechanical User")
+    end
+
+    if out then
+        print("Diagnostic report written to " .. path)
+        print("Read it with:  edit " .. path)
+    else
+        print("Could not write the diagnostic report to " .. path)
+    end
+
+    return gendustry.available
+end
+
+-- Driver-reported slot indices -------------------------------------------------------------
+-- listSlots() answers in the driver's own numbering (mutatron in1 = 0, apiary queen = 0), while
+-- inventory_controller counts from 1. config.slot_offset bridges the two. Q3 IS NOT SETTLED: the
+-- value is decided in game by check_slots.lua, so nothing below writes a literal index.
+local driver_slots_applied = false
+
+--- Convert one driver slot index to an inventory_controller slot index
+--- @param index number|nil Slot index as reported by listSlots()
+--- @return number|nil converted Index usable with inventory_controller, or nil
+local function toControllerSlot(index)
+    if type(index) ~= "number" then
+
+        return nil
+    end
+
+    return index + (config.slot_offset or 0)
+end
+
+--- Overwrite the literal slot configuration with what the drivers report
+--- Idempotent: the first successful call wins, later calls are free.
+--- @return boolean applied True if at least one machine answered with usable slots
+function applyDriverSlots()
+    if driver_slots_applied then
+
+        return true
+    end
+
+    if not (gendustry and gendustry.available) then
 
         return false
     end
-end
 
--- Try to use Gendustry API for breeding
-function useGendustryAPI(parent1, parent2, target)
-    for name, comp in pairs(gendustry) do
-        if name:find("mutatron") then
-            print("Attempting to use " .. name .. " for breeding...")
+    local applied = false
+    local mutatron_slots = gendustry.slots and gendustry.slots.mutatron
 
-            -- Try common method names that might exist
-            local methods = getComponentMethods(comp)
+    if type(mutatron_slots) == "table" then
+        local in1 = toControllerSlot(mutatron_slots.in1)
+        local in2 = toControllerSlot(mutatron_slots.in2)
 
-            -- Look for likely method names
-            for _, method in ipairs(methods) do
-                if method:find("breed") or method:find("mutate") or method:find("process") then
-                    print("Found potential breeding method: " .. method)
+        if in1 and in2 then
+            config.mutatron_input_slots = {in1, in2}
+            applied = true
+        end
+
+        local output = toControllerSlot(mutatron_slots.output)
+        if output then
+            config.mutatron_output_slot = output
+            applied = true
+        end
+
+        local labware = toControllerSlot(mutatron_slots.labware)
+        if labware then
+            config.mutatron_labware_slot = labware
+            applied = true
+        end
+    end
+
+    local apiary_slots = gendustry.slots and gendustry.slots.apiary
+
+    if type(apiary_slots) == "table" then
+        local queen = toControllerSlot(apiary_slots.queen)
+        if queen then
+            config.apiary_input_slot = queen
+            applied = true
+        end
+
+        if type(apiary_slots.outputs) == "table" then
+            local outputs = {}
+
+            for _, slot in ipairs(apiary_slots.outputs) do
+                local index = toControllerSlot(slot)
+                if index then
+                    table.insert(outputs, index)
                 end
             end
 
-            -- Attempt basic operations (these would need to be adjusted based on actual API)
-            if comp.getWorkProgress then
-                local progress = comp.getWorkProgress()
-                print("Mutatron work progress: " .. progress .. "%")
+            if #outputs > 0 then
+                config.apiary_output_slots = outputs
+                applied = true
             end
-
-            if comp.isWorking then
-                local working = comp.isWorking()
-                print("Mutatron working: " .. tostring(working))
-            end
-
-            return true
         end
     end
 
+    driver_slots_applied = applied
+
+    return applied
+end
+
+-- Labware --------------------------------------------------------------------------------------
+
+--- Make sure the mutatron holds labware; it consumes one per cycle and will not start without
+--- @return boolean success True if labware sits in the mutatron labware slot
+--- @return string message Explanation of what was done or what is missing
+function ensureLabware()
+    applyDriverSlots()
+
+    local slot = config.mutatron_labware_slot
+    if not slot then
+
+        return false, "Labware slot unknown - the mutatron did not answer listSlots()"
+    end
+
+    local present = inv_controller.getStackInSlot(config.mutatron_side, slot)
+    if present and (present.size or 0) > 0 then
+
+        return true, "Labware already loaded"
+    end
+
+    local labware_side, labware_slot = findItemAnyInventory("labware")
+    if not labware_slot then
+
+        return false, "Could not find labware in any inventory - the mutatron cannot start without it"
+    end
+
+    if not moveItem(labware_side, labware_slot, config.mutatron_side, slot, 1) then
+
+        return false, "Failed to move labware into mutatron slot " .. tostring(slot)
+    end
+
+    return true, "Labware loaded"
+end
+
+--- Validation callback for handleError: has the operator supplied labware?
+--- @return boolean success
+--- @return string|nil errorMessage
+function validateLabware()
+    local ok, message = ensureLabware()
+    if ok then
+
+        return true, nil
+    end
+
+    return false, message
+end
+
+-- Mutagen --------------------------------------------------------------------------------------
+
+--- Read the mutatron mutagen tank
+--- @return table|nil tank { amount, capacity, fluid }, or nil plus a reason
+--- @return string|nil reason
+function readMutagenTank()
+    if not (gendustry and gendustry.available) then
+
+        return nil, "Gendustry drivers unavailable"
+    end
+
+    local tank, reason = advCall("getTank")
+    if type(tank) ~= "table" then
+
+        return nil, reason or "The mutatron did not answer getTank()"
+    end
+
+    return tank
+end
+
+--- Validation callback for handleError: has the tank been refilled?
+--- @return boolean success
+--- @return string|nil errorMessage
+function validateMutagen()
+    local tank = readMutagenTank()
+    if not tank then
+        -- An unreadable tank must not hold the operator hostage.
+
+        return true, nil
+    end
+
+    local needed = config.mutagen_reserve_mb or 0
+    if (tank.amount or 0) >= needed then
+
+        return true, nil
+    end
+
+    return false, string.format("Mutagen still at %d mB, %d mB needed", tank.amount or 0, needed)
+end
+
+--- Validation callback for handleError: has the output slot been cleared?
+--- @return boolean success
+--- @return string|nil errorMessage
+function validateMutatronOutputCleared()
+    local stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+    if stack then
+
+        return false, "Mutatron output slot " .. tostring(config.mutatron_output_slot) .. " is still occupied"
+    end
+
+    return true, nil
+end
+
+--- Wait until the tank can pay for a cycle, showing the level instead of starting a doomed run
+--- @return boolean ready True if a cycle may be started
+--- @return string message Level reached, or why the wait was given up
+function waitForMutagen()
+    if not (gendustry and gendustry.available) then
+
+        return true, "Mutagen unchecked - no drivers"
+    end
+
+    local needed = config.mutagen_reserve_mb or 0
+    local deadline = computer.uptime() + (config.mutagen_wait_timeout or 120)
+
+    while true do
+        local tank, reason = readMutagenTank()
+        if not tank then
+            -- Cannot read it, so do not block on it: the driver refusal will name it anyway.
+
+            return true, reason or "Mutagen unchecked"
+        end
+
+        local amount = tank.amount or 0
+        local capacity = tank.capacity or 0
+
+        if amount >= needed then
+
+            return true, string.format("Mutagen %d/%d mB", amount, capacity)
+        end
+
+        local level = string.format("Mutagen %d/%d mB - %d mB needed", amount, capacity, needed)
+        drawGUI({step_type = "Waiting", progress = "Waiting for mutagen", errors = level, status = "Warning"})
+
+        if computer.uptime() >= deadline then
+
+            return false, "Not enough mutagen: " .. level
+        end
+
+        local should_continue, abort_msg = checkContinue()
+        if not should_continue then
+
+            return false, abort_msg or "Operation aborted by user"
+        end
+
+        os.sleep(1)
+    end
+end
+
+-- Mutation selection ---------------------------------------------------------------------------
+
+--- Human-readable list of what the loaded pair really offers
+--- @param list table Entries from listMutations()
+--- @return string names Comma separated names, sorted
+function describeMutations(list)
+    local names = {}
+
+    if type(list) == "table" then
+        for _, entry in pairs(list) do
+            if type(entry) == "table" then
+                table.insert(names, tostring(entry.label or entry.name or "?"))
+            end
+        end
+    end
+
+    if #names == 0 then
+
+        return "no mutation at all"
+    end
+
+    table.sort(names)
+
+    return table.concat(names, ", ")
+end
+
+--- Find the mutation the driver offers for a target species
+--- Exact name wins over a partial one, so "Gray" never steals "Light Gray".
+--- @param list table Entries from listMutations()
+--- @param target string Species name we are aiming for
+--- @return number|nil index Index to hand to selectAndProduce
+--- @return string|nil name Name the driver gave it
+function findMutationIndex(list, target)
+    if type(list) ~= "table" or type(target) ~= "string" then
+
+        return nil
+    end
+
+    local wanted = target:lower()
+    local partial_index, partial_name
+
+    for index, entry in pairs(list) do
+        if type(entry) == "table" then
+            local name = tostring(entry.label or entry.name or "")
+            local lowered = name:lower()
+
+            if lowered == wanted then
+
+                return index, name
+            end
+
+            if not partial_index and lowered:find(wanted, 1, true) then
+                partial_index, partial_name = index, name
+            end
+        end
+    end
+
+    return partial_index, partial_name
+end
+
+--- Compare the a priori plan from the hard-coded database with what the machine really offers
+--- The pack is the truth; the database only planned the route. A divergence is named, not swallowed.
+--- @param parent1 string Species loaded as princess/queen
+--- @param parent2 string Species loaded as drone
+--- @param target string Species we want out of the mutatron
+--- @param offered table Entries from listMutations()
+--- @return boolean agrees True if plan and machine say the same thing
+function verifyPlannedMutation(parent1, parent2, target, offered)
+    local planned = mutations[target]
+    local planned_text = "nothing"
+
+    if planned and planned.parents then
+        planned_text = tostring(planned.parents[1]) .. " + " .. tostring(planned.parents[2])
+    end
+
+    local pair_matches = false
+    if planned and planned.parents then
+        pair_matches = (planned.parents[1] == parent1 and planned.parents[2] == parent2)
+            or (planned.parents[1] == parent2 and planned.parents[2] == parent1)
+    end
+
+    local machine_offers = findMutationIndex(offered, target) ~= nil
+
+    if pair_matches and machine_offers then
+
+        return true
+    end
+
+    local message = string.format(
+        "Plan differs from machine: database breeds %s from %s, mutatron loaded with %s + %s offers %s",
+        target, planned_text, parent1, parent2, describeMutations(offered))
+
+    print("WARNING: " .. message)
+    drawGUI({errors = message, status = "Warning"})
+
     return false
+end
+
+--- Turn a driver refusal into something the operator can act on
+--- @param reason string|nil Raw reason returned by selectAndProduce
+--- @return string message
+function explainDriverRefusal(reason)
+    local raw = tostring(reason or "unknown reason")
+    local lowered = raw:lower()
+
+    if lowered:find("missing parent 1", 1, true) then
+
+        return "Mutatron refused: missing parent 1 - no princess/queen in slot " .. tostring(config.mutatron_input_slots[1])
+    end
+
+    if lowered:find("missing parent 2", 1, true) then
+
+        return "Mutatron refused: missing parent 2 - no drone in slot " .. tostring(config.mutatron_input_slots[2])
+    end
+
+    if lowered:find("missing labware", 1, true) then
+
+        return "Mutatron refused: missing labware - put labware in slot " .. tostring(config.mutatron_labware_slot)
+    end
+
+    if lowered:find("output full", 1, true) then
+
+        return "Mutatron refused: output full - clear slot " .. tostring(config.mutatron_output_slot)
+    end
+
+    local have, want = raw:match("not enough mutagen:%s*(%d+)%s*of%s*(%d+)")
+    if have then
+
+        return string.format("Mutatron refused: mutagen at %s mB of %s mB needed - refill the tank", have, want)
+    end
+
+    return "Mutatron refused: " .. raw
+end
+
+--- Pick the validation callback that matches a refusal, so [R]esume can actually check the fix
+--- @param reason string|nil Raw reason returned by selectAndProduce
+--- @return function|nil validator
+function refusalValidator(reason)
+    local lowered = tostring(reason or ""):lower()
+
+    if lowered:find("labware", 1, true) then
+
+        return validateLabware
+    end
+
+    if lowered:find("mutagen", 1, true) then
+
+        return validateMutagen
+    end
+
+    if lowered:find("output full", 1, true) then
+
+        return validateMutatronOutputCleared
+    end
+
+    return nil
+end
+
+--- Select and start the mutation that leads to the target species
+--- Replaces the old stub, which read none of its three parameters and always returned true.
+--- @param parent1 string Species loaded as princess/queen
+--- @param parent2 string Species loaded as drone
+--- @param target string Species we want out of the mutatron
+--- @return boolean success True if the mutatron accepted and started the mutation
+--- @return string message Chosen mutation on success, reason on failure
+function useGendustryAPI(parent1, parent2, target)
+    if not (gendustry and gendustry.available and gendustry.adv) then
+
+        return false, "Gendustry drivers unavailable"
+    end
+
+    applyDriverSlots()
+
+    -- Never start a cycle the tank cannot pay for: the signal would never come.
+    local mutagen_ok, mutagen_msg = waitForMutagen()
+    if not mutagen_ok then
+        handleError(mutagen_msg, validateMutagen)
+
+        local should_continue, abort_msg = checkContinue()
+        if not should_continue then
+
+            return false, abort_msg or "Aborted"
+        end
+    end
+
+    local list, reason = advCall("listMutations")
+    if type(list) ~= "table" then
+        local message = "The mutatron did not answer listMutations(): " .. tostring(reason or "no table returned")
+        drawGUI({errors = message, status = "Error"})
+
+        return false, message
+    end
+
+    -- The hard-coded database is only a plan; listMutations() is the ground truth.
+    verifyPlannedMutation(parent1, parent2, target, list)
+
+    local index, name = findMutationIndex(list, target)
+    if not index then
+        local message = string.format("%s + %s cannot produce %s. This pair offers: %s",
+            parent1, parent2, target, describeMutations(list))
+        print(message)
+        handleError(message, nil)
+
+        return false, message
+    end
+
+    drawGUI({step_type = "Breeding", progress = "Selecting mutation: " .. (name or target), status = "Working"})
+
+    local started, refused = advCall("selectAndProduce", index)
+    if not started then
+        local message = explainDriverRefusal(refused)
+        handleError(message, refusalValidator(refused))
+
+        return false, message
+    end
+
+    return true, "Mutation started: " .. (name or target)
 end
 
 -- Display comprehensive breeding plan with tree structure
@@ -3029,8 +3995,8 @@ function selectTarget()
     end
 end
 
--- GUI state variables
-local gui_state = {
+-- GUI state variables (declared at the top of the file)
+gui_state = {
     target = "",
     current_species = "",
     step_type = "", -- "breeding", "accumulation", "complete"
@@ -3042,13 +4008,15 @@ local gui_state = {
     progress = ""
 }
 
--- Error handling and control state
-local control_state = {
+-- Error handling and control state (declared at the top of the file)
+control_state = {
     paused = false,
     error_state = false,
     last_error = "",
     abort_requested = false,
-    validation_required = false
+    validation_required = false,
+    signal_queue = {},              -- Machine signals pulled while waiting for another one
+    automation_warned = false       -- The Automation upgrade warning is only worth saying once
 }
 
 --- Helper function for concise GUI updates
@@ -3095,8 +4063,15 @@ function waitForUserAction(validation_func)
     drawGUI({progress = "PAUSED - Press [R]esume, [A]bort, or [Q]uit", status = "Paused"})
 
     while control_state.error_state or control_state.paused do
-        -- Check for keyboard input (non-blocking)
-        local eventType, address, char, code = event.pull(0.1, "key_down")
+        -- Check for keyboard input without swallowing machine signals (task 14).
+        -- A pause can outlast a whole apiary cycle; a filtered pull here would eat
+        -- the apiary_finished the caller is waiting for.
+        local eventType, address, char, code = event.pull(0.1)
+
+        if eventType and eventType ~= "key_down" then
+            queueMachineSignal(eventType)
+            eventType = nil
+        end
 
         if eventType then
             local key = string.char(char):lower()
@@ -3172,16 +4147,21 @@ function checkContinue()
         return false, "Operation aborted by user"
     end
 
-    -- Check for manual pause/abort keypress (non-blocking)
-    local eventType, address, char, code = event.pull(0, "key_down")
-    if eventType then
-        local key = string.char(char):lower()
-        if key == 'p' then
-            control_state.paused = true
-            waitForUserAction()
-        elseif key == 'a' or key == 'q' then
-            control_state.abort_requested = true
-            return false, "Operation aborted by user"
+    -- Drain the event queue without dropping anything (task 14). A pull filtered on
+    -- "key_down" throws away every machine signal queued in front of it, and a pull
+    -- filtered on a machine signal throws away the key presses that pause and abort
+    -- rely on. So pull unfiltered and dispatch by hand.
+    for _ = 1, 16 do
+        local event_name, address, char = event.pull(0)
+        if not event_name then break end
+
+        if event_name == "key_down" then
+            if processKeyEvent(char) then
+
+                return false, "Operation aborted by user"
+            end
+        else
+            queueMachineSignal(event_name)
         end
     end
 
@@ -3190,6 +4170,382 @@ function checkContinue()
     end
 
     return not control_state.abort_requested, nil
+end
+
+-- Machine signals worth remembering when they arrive out of turn. The _output
+-- signals are deliberately absent: they are frequent and carry no state we need.
+local buffered_signals = {
+    advmutatron_started = true,
+    advmutatron_finished = true,
+    apiary_started = true,
+    apiary_finished = true
+}
+
+--- Act on a single key press taken from the event queue
+--- @param char number|nil Character code from a key_down signal
+--- @return boolean abort True if the user asked to abort
+function processKeyEvent(char)
+    if type(char) ~= "number" or char < 32 or char > 255 then
+
+        return false
+    end
+
+    local key = string.char(char):lower()
+
+    if key == 'p' then
+        control_state.paused = true
+        waitForUserAction()
+    elseif key == 'a' or key == 'q' then
+        control_state.abort_requested = true
+
+        return true
+    end
+
+    return false
+end
+
+--- Remember a machine signal pulled while waiting for something else (task 14)
+--- @param event_name string Name of the signal
+function queueMachineSignal(event_name)
+    if buffered_signals[event_name] then
+        control_state.signal_queue[event_name] = true
+    end
+end
+
+--- Consume a machine signal that had already arrived
+--- @param event_name string Name of the signal
+--- @return boolean seen True if the signal was buffered
+function takeQueuedSignal(event_name)
+    if control_state.signal_queue[event_name] then
+        control_state.signal_queue[event_name] = nil
+
+        return true
+    end
+
+    return false
+end
+
+--- Wait for a machine signal while keeping pause and abort responsive (task 14)
+--- @param signal_name string Signal to wait for, e.g. "apiary_finished"
+--- @param timeout number Maximum wait in seconds
+--- @param on_tick function|nil Called about once a second with the elapsed seconds
+--- @return boolean received True if the signal arrived
+--- @return string|nil reason "timeout" or "aborted" when it did not
+function waitForMachineSignal(signal_name, timeout, on_tick)
+    if takeQueuedSignal(signal_name) then
+
+        return true
+    end
+
+    local started = computer.uptime()
+    local last_tick = started
+
+    while computer.uptime() - started < timeout do
+        -- Short and UNFILTERED, for the reason spelled out in checkContinue
+        local event_name, address, char = event.pull(0.25)
+
+        if event_name == "key_down" then
+            if processKeyEvent(char) then
+
+                return false, "aborted"
+            end
+        elseif event_name == signal_name then
+
+            return true
+        elseif event_name then
+            queueMachineSignal(event_name)
+        end
+
+        if control_state.abort_requested then
+
+            return false, "aborted"
+        end
+
+        if on_tick and computer.uptime() - last_tick >= 1 then
+            last_tick = computer.uptime()
+            on_tick(computer.uptime() - started)
+        end
+    end
+
+    return false, "timeout"
+end
+
+--- Read the apiary queen slot
+--- @return table|nil status { occupied, type, freed, automated, error }, nil without drivers
+--- @return string|nil reason Why the read failed
+function getApiaryPrincessStatus()
+    if not (gendustry and gendustry.available and gendustry.apiary) then
+
+        return nil, "no drivers"
+    end
+
+    local status, reason = apiaryCall("getPrincessStatus")
+    if type(status) ~= "table" then
+
+        return nil, reason or "getPrincessStatus returned nothing"
+    end
+
+    return status
+end
+
+--- Read the Forestry error states of the apiary (task 19)
+--- @return string description Human readable cause, or a fallback text
+function describeApiaryErrors()
+    if not (gendustry and gendustry.available and gendustry.apiary) then
+
+        return "No products collected"
+    end
+
+    local errors, reason = apiaryCall("getErrors")
+    if type(errors) ~= "table" then
+
+        return "No products collected - could not read apiary errors: " .. tostring(reason)
+    end
+
+    if not errors.hasErrors or not errors.errors or #errors.errors == 0 then
+
+        return "No products collected - the apiary reports no error"
+    end
+
+    return "Apiary errors: " .. table.concat(errors.errors, ", ")
+end
+
+--- Stop the apiary so an inventory transfer cannot race a running cycle (task 20)
+--- @return string|nil previous_mode Mode to hand back to unfreezeApiary, nil if nothing changed
+function freezeApiary()
+    if not (gendustry and gendustry.available and gendustry.apiary) then
+
+        return nil
+    end
+
+    local current = apiaryCall("getRedstoneMode")
+    local previous = type(current) == "table" and current.mode or nil
+
+    -- ALWAYS/NEVER rather than RS_ON/RS_OFF: the apiary must not follow the wire
+    -- the Mechanical User sits on
+    local ok = apiaryCall("setRedstoneMode", "NEVER")
+    if not ok then
+
+        return nil
+    end
+
+    return previous or "ALWAYS"
+end
+
+--- Give the apiary back the mode saved by freezeApiary (task 20)
+--- @param previous_mode string|nil Mode returned by freezeApiary
+function unfreezeApiary(previous_mode)
+    if not previous_mode then
+
+        return
+    end
+
+    if not (gendustry and gendustry.available and gendustry.apiary) then
+
+        return
+    end
+
+    local mode = previous_mode
+    if mode == "RS_ON" or mode == "RS_OFF" then
+        -- Never hand the apiary back to the Mechanical User's signal
+        mode = "ALWAYS"
+    end
+
+    apiaryCall("setRedstoneMode", mode)
+end
+
+--- Tune signal rates and warn about a misconfigured apiary (tasks 15, 18)
+function prepareApiaryForRun()
+    if not (gendustry and gendustry.available) then
+
+        return
+    end
+
+    -- Task 15: only the output scan is throttled. _started and _finished are never
+    -- coalesced by the driver, so slowing this down cannot lose a cycle boundary.
+    if gendustry.apiary then
+        apiaryCall("setEventsEnabled", true)
+        apiaryCall("setSignalInterval", config.signal_interval_ticks)
+    end
+
+    if gendustry.adv then
+        advCall("setEventsEnabled", true)
+        advCall("setSignalInterval", config.signal_interval_ticks)
+    end
+
+    -- Task 18: with an Automation upgrade the queen slot empties itself, so "freed"
+    -- no longer means "cycle finished". Decision D3: the upgrade must not be there.
+    local status = getApiaryPrincessStatus()
+    if status and status.automated and not control_state.automation_warned then
+        control_state.automation_warned = true
+        print("WARNING: Automation upgrade installed on the apiary - remove it (MIGRATION.md D3)")
+        drawGUI({progress = "WARNING: Automation upgrade on the apiary",
+                 errors = "Remove the Automation upgrade: it empties the queen slot and breaks cycle detection",
+                 status = "Warning"})
+        computer.beep(500, 0.4)
+    end
+end
+
+--- Wait until the queen slot holds a mated queen (task 16a)
+--- @param timeout number Seconds to allow for mating
+--- @return boolean ready True if a queen is in the slot, or if we cannot tell
+--- @return string|nil errorMessage Why the wait failed
+function waitForMatedQueen(timeout)
+    local status = getApiaryPrincessStatus()
+    if not status then
+        -- Degraded mode: nothing to read, keep the previous behaviour
+
+        return true, nil
+    end
+
+    local started = computer.uptime()
+
+    while status and status.type == "princess" and computer.uptime() - started < timeout do
+        drawGUI({step_type = "Processing", progress = "Waiting for the princess to be mated", status = "Working"})
+
+        local should_continue, abort_msg = checkContinue()
+        if not should_continue then
+
+            return false, abort_msg
+        end
+
+        os.sleep(1)
+        status = getApiaryPrincessStatus()
+    end
+
+    if status and status.type == "princess" then
+
+        return false, "Princess still unmated after " .. timeout .. "s - is a drone loaded?"
+    end
+
+    return true, nil
+end
+
+--- Fire the BeeBee Gun, but only at a confirmed queen (tasks 16a, 17)
+--- @return boolean fired True if the queen slot was freed by the shot
+--- @return string|nil reason Why nothing was fired, or why the shot did not carry
+function killQueenWithBeebeeGun()
+    local status = getApiaryPrincessStatus()
+
+    if not status then
+        -- Degraded mode: we cannot tell a princess from a queen, so behave as before
+        activateMechanicalUser()
+
+        return true, nil
+    end
+
+    if status.automated then
+
+        return false, "Automation upgrade installed - the queen slot empties itself (D3)"
+    end
+
+    if status.freed or status.type == "none" then
+
+        return false, "Queen slot already empty - the cycle is over"
+    end
+
+    if status.type == "princess" then
+        -- Shooting here would cost the whole line, silently
+
+        return false, "Unmated princess in the apiary - refusing to shoot"
+    end
+
+    if status.type ~= "queen" then
+
+        return false, "Unexpected queen slot content: " .. tostring(status.type)
+    end
+
+    for attempt = 1, config.beebee_gun_retries do
+        activateMechanicalUser()
+
+        if control_state.abort_requested then
+
+            return false, "Operation aborted by user"
+        end
+
+        -- Let the Mechanical User swing before reading the slot back
+        os.sleep(1)
+
+        local after = getApiaryPrincessStatus()
+        if not after or after.freed or after.type ~= "queen" then
+
+            return true, nil
+        end
+
+        drawGUI({step_type = "Processing",
+                 progress = "Shot " .. attempt .. " did not free the queen slot",
+                 status = "Working"})
+    end
+
+    return false, "BeeBee Gun fired " .. config.beebee_gun_retries ..
+                  " times without freeing the queen slot - check the ammunition"
+end
+
+--- Wait for the apiary cycle to end and time it (tasks 13, 21)
+--- @return boolean success True if the cycle ended
+--- @return number|string elapsed Measured duration in seconds, or an error message
+function waitForApiaryCycle()
+    local started = computer.uptime()
+
+    if not (gendustry and gendustry.available and gendustry.apiary) then
+        -- Degraded mode: the fixed timer is all we have
+        for t = 1, config.apiary_wait_time do
+            if t % 10 == 0 then
+                drawGUI({step_type = "Processing",
+                         progress = (config.apiary_wait_time - t) .. " seconds remaining",
+                         status = "Working"})
+
+                local should_continue, abort_msg = checkContinue()
+                if not should_continue then
+
+                    return false, abort_msg
+                end
+            end
+            os.sleep(1)
+        end
+
+        return true, computer.uptime() - started
+    end
+
+    local status = getApiaryPrincessStatus()
+    if status and (status.freed or status.type == "none") then
+        -- The BeeBee Gun already ended it; no signal is coming
+
+        return true, computer.uptime() - started
+    end
+
+    local function tick(elapsed)
+        drawGUI({step_type = "Processing",
+                 progress = string.format("Apiary cycle: %ds elapsed", math.floor(elapsed)),
+                 status = "Working"})
+    end
+
+    local received, reason = waitForMachineSignal("apiary_finished", config.apiary_cycle_timeout, tick)
+    local elapsed = computer.uptime() - started
+
+    if not received then
+        if reason == "aborted" then
+
+            return false, "Operation aborted by user"
+        end
+
+        -- Timeout: a long cycle is not a stalled machine
+        local working = apiaryCall("isWorking")
+        if working then
+
+            return false, string.format("Apiary still working after %ds - raise config.apiary_cycle_timeout",
+                                        math.floor(elapsed))
+        end
+
+        return false, "Apiary stopped without finishing - " .. describeApiaryErrors()
+    end
+
+    -- Task 21: a measured duration is what should replace apiary_wait_time
+    local modifiers = apiaryCall("getModifiers")
+    local lifespan = type(modifiers) == "table" and modifiers.lifespan or "?"
+    print(string.format("Apiary cycle took %.1fs (lifespan modifier %s)", elapsed, tostring(lifespan)))
+
+    return true, elapsed
 end
 
 --- Validate that beebee gun is available
@@ -3218,17 +4574,86 @@ function validateBeeAvailability(species, bee_type)
     end
 end
 
-function validateMutatronOutput()
-    local stack = inventory_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
-    if stack then
-        return true, nil
-    else
-        return false, "No queen produced by mutatron - check power and materials"
+--- Test whether an item name designates a given species, as a whole word
+--- Guards against "Common" matching "Uncommon", which a plain find() does not
+--- @param item_name string|nil Item label or item id
+--- @param species string|nil Species name to look for
+--- @return boolean matched True if the species appears as a whole word
+function speciesMatchesItem(item_name, species)
+    if not item_name or not species then
+
+        return false
     end
+
+    local haystack = item_name:lower()
+    local needle = (species:lower():gsub("(%W)", "%%%1"))
+
+    return haystack:find("%f[%a]" .. needle .. "%f[%A]") ~= nil
+end
+
+--- Read the mutatron output stack, preferring the driver over the inventory controller
+--- @return table|nil stack Normalised stack { name, label, count } or nil when empty
+--- @return string|nil reason Reason the output could not be read
+function readMutatronOutput()
+    if gendustry.available and gendustry.adv then
+        local out, reason = advCall("getOutput")
+        if out == nil then
+
+            return nil, reason
+        end
+
+        return {name = out.name, label = out.label, count = out.count or 1}, nil
+    end
+
+    -- Degraded mode: read the configured output slot through the inventory controller
+    local stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+    if not stack then
+
+        return nil, nil
+    end
+
+    return {name = stack.name, label = stack.label, count = stack.size or 1}, nil
+end
+
+--- Validate the mutatron output, and the species it holds when a target is given
+--- @param target_species string|nil Expected species, or nil to only check presence
+--- @return boolean success True if the output holds the expected bee
+--- @return string|nil errorMessage Error message if validation failed
+function validateMutatronOutput(target_species)
+    local stack, reason = readMutatronOutput()
+    if not stack then
+
+        return false, reason or "No queen produced by mutatron - check power and materials"
+    end
+
+    if not target_species then
+
+        return true, nil
+    end
+
+    -- The species reads from the display label; the item id carries only the bee type
+    local item_name = stack.label or stack.name or ""
+    if speciesMatchesItem(item_name, target_species) then
+
+        return true, nil
+    end
+
+    -- Reject only when another species is positively identified. An unreadable name
+    -- must not cost a cycle, so it is reported and accepted.
+    local produced = extractSpecies(item_name)
+    if produced then
+
+        return false, "Mutatron produced " .. produced .. " instead of " .. target_species
+    end
+
+    drawGUI({errors = "Unidentified mutatron output '" .. item_name .. "' - assuming " .. target_species,
+             status = "Warning"})
+
+    return true, nil
 end
 
 function validateApiarySpace()
-    local stack = inventory_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
+    local stack = inv_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
     if not stack then
         return true, nil
     else
@@ -3260,8 +4685,8 @@ function sendChatNotification(message, player)
     end
 end
 
--- Status indicator color scheme
-local status_colors = {
+-- Status indicator color scheme (declared at the top of the file)
+status_colors = {
     idle = 0xFFFFFF,      -- White - idle/ready
     working = 0x00FF00,   -- Green - working normally
     waiting = 0xFFFF00,   -- Yellow - waiting for resources
@@ -3429,6 +4854,36 @@ function drawGUI(args)
         end
         gpu.setForeground(0xFFFFFF)
     end
+
+    -- Redraw the controls line: the content clear above wipes row 19, which is
+    -- only painted once by drawGUIFrame
+    gpu.set(3, 19, "Controls: [P]ause [R]esume [A]bort [Q]uit")
+
+    -- Draw hive conditions, mutation first: it multiplies the cross chance (task 29)
+    local conditions = getApiaryConditions()
+    if conditions then
+        local mutation_color = 0xFFFFFF
+        if type(conditions.mutation) == "number" then
+            if conditions.mutation > 1 then
+                mutation_color = 0x00FF00 -- Green: the cross is helped
+            elseif conditions.mutation < 1 then
+                mutation_color = 0xFF0000 -- Red: the cross is penalized
+            end
+        end
+
+        gpu.set(3, 20, "Hive:")
+        gpu.setForeground(mutation_color)
+        gpu.set(9, 20, string.sub(conditions.mutation_text, 1, 16))
+        gpu.setForeground(0xFFFFFF)
+        gpu.set(26, 20, string.sub(conditions.detail, 1, 52))
+        gpu.set(9, 21, string.sub(conditions.climate, 1, 70))
+
+        if conditions.automated then
+            gpu.setForeground(0xFFFF00)
+            gpu.set(3, 22, "Automation upgrade installed: it reinserts the princess by itself")
+            gpu.setForeground(0xFFFFFF)
+        end
+    end
 end
 
 -- Helper function to wrap text to specified width
@@ -3487,6 +4942,10 @@ function executeBreeding(target, breeding_plan)
     })
 
     local hasAPI = checkGendustryAPI()
+
+    -- Tune the signal rates and warn about an Automation upgrade before the first
+    -- cycle rather than after it (tasks 15, 18)
+    prepareApiaryForRun()
 
     -- Execute the breeding tree
     gui_state.current_step = 0
@@ -3687,26 +5146,49 @@ function executeSingleBreedingNode(node, drone_requirements, hasAPI, total_steps
     local drone_req = drone_requirements[drone_parent]
     if drone_req and drone_req.needed and drone_req.available and drone_req.needed > drone_req.available then
         local shortage = drone_req.needed - drone_req.available
-        local total_needed = shortage + (config.add_drone_count or 1)
+        -- The counter is now only a floor: it says how many drones are missing.
+        -- The species purity says when the trait is fixed and further cycles add nothing.
+        local base_cycles = shortage + (config.add_drone_count or 1)
+        local max_cycles = base_cycles + 5
+        local cycle = 0
+        local pure = nil
 
-        for cycle = 1, total_needed do
+        while true do
+            cycle = cycle + 1
             drawGUI({
                 current_species = drone_parent,
                 step_type = "accumulation",
-                progress = "Accumulation cycle " .. cycle .. "/" .. total_needed .. " for " .. drone_parent
+                progress = "Accumulation cycle " .. cycle .. " (min " .. base_cycles ..
+                           ", max " .. max_cycles .. ") for " .. drone_parent
             })
 
-            local success = executeAccumulationCycle(drone_parent)
+            local success, cycle_error
+            success, cycle_error, pure = executeAccumulationCycle(drone_parent)
             if not success then
                 drawGUI({
-                    errors = "Accumulation cycle failed for " .. drone_parent
+                    errors = "Accumulation cycle failed for " .. drone_parent ..
+                             (cycle_error and (": " .. cycle_error) or "")
                 })
+
                 return false
             end
 
             -- Update available count
             if drone_req.available then
                 drone_req.available = drone_req.available + 1
+            end
+
+            -- pure == nil means the genome could not be read: the counter decides alone
+            if cycle >= base_cycles and pure ~= false then
+                break
+            end
+
+            if cycle >= max_cycles then
+                drawGUI({
+                    errors = "Accumulation stopped after " .. cycle .. " cycles: " ..
+                             drone_parent .. " species chromosome still not pure"
+                })
+                break
             end
         end
     end
@@ -3791,7 +5273,19 @@ function executeBreedingTree(tree, drone_requirements, hasAPI, total_steps)
     end
 
     -- For species with no primary breeding nodes, designate the first collected instance as primary
-    for species, instances in pairs(species_found) do
+    --
+    -- Walked in sorted order: the fallback primaries are appended to primary_breeding_nodes here,
+    -- and topologicalSortByDependencies preserves input order between nodes it cannot order by
+    -- dependency. Iterating pairs() therefore made the execution order of independent subtrees
+    -- change from one run to the next, for the same plan.
+    local species_in_order = {}
+    for species in pairs(species_found) do
+        table.insert(species_in_order, species)
+    end
+    table.sort(species_in_order)
+
+    for _, species in ipairs(species_in_order) do
+        local instances = species_found[species]
         local has_primary = false
         for _, instance in ipairs(instances) do
             if instance.is_primary_breeding_node then
@@ -3884,14 +5378,52 @@ function executeSingleBreedingStep(princess_species, drone_species, target_speci
         return false, load_msg
     end
 
-    -- Phase 2: Activate Mutatron
-    if hasAPI then
-        local api_success = useGendustryAPI(princess_species, drone_species, target_species)
+    -- Phase 2: Start the Mutatron
+    -- With the drivers present the machine is driven, not clicked: a refusal is a real failure and
+    -- is reported, never papered over by a redstone pulse aimed at the apiary.
+    if hasAPI and gendustry.available then
+        local api_success, api_reason = useGendustryAPI(princess_species, drone_species, target_species)
         if not api_success then
-            activateMechanicalUser()
+            local message = api_reason or "Mutation selection failed"
+            drawGUI({step_type = "Breeding", progress = "Mutatron refused", errors = message, status = "Error"})
+
+            return false, message
         end
+
+        drawGUI({step_type = "Breeding", progress = api_reason or "Mutation started", status = "Working"})
     else
-        activateMechanicalUser()
+        -- Degraded mode: nothing to start. There is a single Mechanical User and it is aimed at
+        -- the Industrial Apiary (README, Wiring 2), so the pulse that used to sit here fired the
+        -- BeeBee Gun at whatever was in the queen slot instead of starting the Mutatron, killing
+        -- an unmated princess and losing the line without a word. The Mutatron starts on its own
+        -- through the bdlib server tick (decision D2), with or without the drivers.
+        drawGUI({step_type = "Breeding", progress = "Waiting for the mutatron (no driver)",
+                 status = "Working"})
+    end
+
+    -- Phase 2b: check what the mutatron actually produced, BEFORE the queen leaves it.
+    -- Once she is in the apiary, rejecting her costs a full apiary cycle.
+    if not waitForMutatronOutput() then
+
+        return false, "Mutatron produced nothing"
+    end
+
+    local output_ok, output_msg = validateMutatronOutput(target_species)
+    if not output_ok then
+        drawGUI({step_type = "Validating", progress = "Unexpected mutatron output",
+                 errors = output_msg, status = "Error"})
+        handleError(output_msg, function() return validateMutatronOutput(target_species) end)
+        if control_state.abort_requested then
+
+            return false, "Aborted"
+        end
+
+        -- Re-read after the user's intervention; give up if the output is still wrong
+        output_ok, output_msg = validateMutatronOutput(target_species)
+        if not output_ok then
+
+            return false, output_msg
+        end
     end
 
     -- Phase 3: Move Queen to Apiary
@@ -3902,23 +5434,43 @@ function executeSingleBreedingStep(princess_species, drone_species, target_speci
     end
 
     -- Phase 4: Process in Apiary
-    activateMechanicalUser()
-    for t = 1, config.apiary_wait_time do
-        -- Check for user input every 10 seconds
-        if t % 10 == 0 then
-            drawGUI({step_type = "Processing", progress = (config.apiary_wait_time - t) .. " seconds remaining", status = "Working"})
-            local should_continue, abort_msg = checkContinue()
-            if not should_continue then
-                return false, abort_msg
-            end
-        end
-        os.sleep(1)
+    prepareApiaryForRun()
+
+    local mated_ok, mated_msg = waitForMatedQueen(config.apiary_mating_timeout)
+    if not mated_ok then
+        drawGUI({step_type = "Processing", progress = "Apiary cycle failed", errors = mated_msg, status = "Error"})
+
+        return false, mated_msg
     end
 
-    -- Phase 5: Collect Products
+    -- Only a confirmed queen is shot: an unmated princess would cost the line (task 16a),
+    -- and an empty slot would waste a round and read as an error (tasks 16a, 17)
+    local fired, fire_reason = killQueenWithBeebeeGun()
+    if control_state.abort_requested then
+
+        return false, "Operation aborted by user"
+    end
+
+    if not fired and fire_reason then
+        drawGUI({step_type = "Processing", progress = "BeeBee Gun: " .. fire_reason, status = "Working"})
+    end
+
+    local cycle_ok, cycle_info = waitForApiaryCycle()
+    if not cycle_ok then
+        drawGUI({step_type = "Processing", progress = "Apiary cycle failed", errors = tostring(cycle_info), status = "Error"})
+
+        return false, tostring(cycle_info)
+    end
+
+    -- Phase 5: Collect Products, with the apiary frozen so the inventory does not
+    -- move under the transfer (task 20)
+    local previous_mode = freezeApiary()
     local collect_success = collectApiaryProducts()
+    unfreezeApiary(previous_mode)
+
     if not collect_success then
-        drawGUI({step_type = "Collecting", progress = "Collection warning", errors = "No products collected", status = "Warning"})
+        -- Say why nothing came out instead of "No products collected" (task 19)
+        drawGUI({step_type = "Collecting", progress = "Collection warning", errors = describeApiaryErrors(), status = "Warning"})
     end
 
     drawGUI({step_type = "Complete", progress = "Breeding step complete", status = "Completed"})
@@ -3933,6 +5485,32 @@ end
 --- @param species string The species to accumulate drones for
 --- @return boolean success True if accumulation cycle completed successfully
 --- @return string|nil errorMessage Error message if cycle failed
+--- Read whether the species chromosome of a bee in the apiary is pure
+--- @param slot string "queen" or "drone"
+--- @return boolean|nil pure True/false when the genome could be read, nil when it could not
+--- @return string|nil reason Driver reason when the genome is unavailable
+function getSpeciesPurity(slot)
+    if not (gendustry.available and gendustry.apiary) then
+
+        return nil, "no industrial_apiary driver"
+    end
+
+    -- getGenome answers false plus a reason when requireAnalyzedBees is on
+    local genome, reason = apiaryCall("getGenome", slot or "queen")
+    if genome == nil or genome == false then
+
+        return nil, reason or "genome unavailable"
+    end
+
+    local chromosomes = genome.chromosomes
+    if not (chromosomes and chromosomes.species) then
+
+        return nil, "genome carries no species chromosome"
+    end
+
+    return chromosomes.species.pure == true, nil
+end
+
 function executeAccumulationCycle(species)
     drawGUI({current_species = species, step_type = "Accumulation", progress = "Running accumulation cycle", status = "Working"})
 
@@ -3943,30 +5521,463 @@ function executeAccumulationCycle(species)
         return false
     end
 
-    -- Move queen to apiary
+    -- Move queen to apiary, apiary held still during the transfer (task 20)
+    local insert_mode = freezeApiary()
     local success = moveItem(queen_side, queen_slot, config.apiary_side, config.apiary_input_slot, 1)
+    unfreezeApiary(insert_mode)
+
     if not success then
         drawGUI({progress = "Move failed", errors = "Failed to move queen to apiary", status = "Error"})
+
         return false
     end
 
-    -- Activate apiary
-    activateMechanicalUser()
+    -- Run the apiary cycle on signals rather than on a fixed timer (task 13)
+    prepareApiaryForRun()
 
-    -- Wait for processing
-    os.sleep(config.apiary_wait_time)
+    local mated_ok, mated_msg = waitForMatedQueen(config.apiary_mating_timeout)
+    if not mated_ok then
+        drawGUI({progress = "Accumulation failed", errors = mated_msg, status = "Error"})
 
-    -- Collect products
-    collectApiaryProducts()
+        return false
+    end
+
+    -- Read the queen's genome before the cycle runs: the drones she leaves behind inherit from
+    -- her, so a pure species chromosome means the trait is already fixed (tasks 23, 24)
+    local pure, purity_reason = getSpeciesPurity("queen")
+    if pure == nil and purity_reason then
+        -- Clean degradation: show the driver's own words and fall back to item names
+        drawGUI({current_species = species, step_type = "Accumulation",
+                 progress = "Genome unavailable - falling back to item names",
+                 errors = purity_reason, status = "Warning"})
+    end
+
+    -- Only a confirmed queen is shot (tasks 16a, 17)
+    local fired, fire_reason = killQueenWithBeebeeGun()
+    if control_state.abort_requested then
+
+        return false
+    end
+
+    if not fired and fire_reason then
+        drawGUI({progress = "BeeBee Gun: " .. fire_reason, status = "Working"})
+    end
+
+    local cycle_ok, cycle_info = waitForApiaryCycle()
+    if not cycle_ok then
+        drawGUI({progress = "Accumulation failed", errors = tostring(cycle_info), status = "Error"})
+
+        return false
+    end
+
+    -- Collect products with the apiary frozen (task 20)
+    local previous_mode = freezeApiary()
+    local collected = collectApiaryProducts()
+    unfreezeApiary(previous_mode)
+
+    if not collected then
+        -- Task 19: name the Forestry cause instead of staying silent
+        drawGUI({progress = "Collection warning", errors = describeApiaryErrors(), status = "Warning"})
+    end
 
     drawGUI({progress = "Accumulation cycle complete", status = "Completed"})
 
+    return true, nil, pure
+end
+
+-- ---------------------------------------------------------------------------
+-- Species registry, genetics and hive conditions (tasks 26, 27, 29)
+-- ---------------------------------------------------------------------------
+
+-- The Forestry allele registry as reported by listSpeciesTemplates(). Species
+-- from other mods carry their own prefix, so a uid can never be rebuilt by
+-- gluing "forestry.species" in front of a name: every entry comes from the
+-- driver, and the hard-coded database is matched against it, never the reverse.
+local species_registry = {
+    loaded = false,
+    entries = {},        -- array of { uid, name, dominant, hasTemplate }
+    by_key = {},         -- normalized name / uid / uid tail -> entry
+    report = nil         -- last audit report
+}
+
+-- Default genomes, keyed by database species name. getSpeciesTemplate is a
+-- server round trip, so each species is asked for once and remembered.
+local species_template_cache = {}
+
+--- Normalize a species name so "Light Gray", "lightgray" and "LIGHT_GRAY" match
+--- @param name string|nil Raw name, uid or uid tail
+--- @return string|nil key Normalized key, or nil when nothing usable is left
+local function normalizeSpeciesKey(name)
+    if type(name) ~= "string" then
+
+        return nil
+    end
+
+    local key = name:lower():gsub("[^%a%d]", "")
+    if key == "" then
+
+        return nil
+    end
+
+    return key
+end
+
+--- Index one registry entry under every key it can be recognized by
+--- @param entry table Registry entry { uid, name, dominant, hasTemplate }
+local function indexRegistryEntry(entry)
+    local keys = {}
+
+    local function addKey(value)
+        local key = normalizeSpeciesKey(value)
+        if key then
+            table.insert(keys, key)
+        end
+    end
+
+    addKey(entry.name)
+    addKey(entry.uid)
+
+    -- "forestry.speciesForest" is "Forest" in the hard-coded database
+    if type(entry.uid) == "string" then
+        local tail = entry.uid:match("[^%.]+$")
+        if tail then
+            addKey(tail)
+            addKey((tail:gsub("^[Ss]pecies", "")))
+        end
+    end
+
+    for _, key in ipairs(keys) do
+        if not species_registry.by_key[key] then
+            species_registry.by_key[key] = entry
+        end
+    end
+end
+
+--- Load the Forestry allele registry once (task 26)
+--- @param force boolean|nil Reload even when already loaded
+--- @return boolean loaded True when the registry is usable
+function loadSpeciesRegistry(force)
+    if species_registry.loaded and not force then
+
+        return true
+    end
+
+    if not (gendustry.available and gendustry.apiary) then
+
+        return false
+    end
+
+    local list, reason = apiaryCall("listSpeciesTemplates")
+    if type(list) ~= "table" then
+        print("Species registry unavailable: " .. tostring(reason or "no answer from the apiary"))
+
+        return false
+    end
+
+    species_registry.entries = {}
+    species_registry.by_key = {}
+
+    for _, entry in ipairs(list) do
+        if type(entry) == "table" and entry.uid then
+            table.insert(species_registry.entries, entry)
+            indexRegistryEntry(entry)
+        end
+    end
+
+    species_registry.loaded = true
+
     return true
+end
+
+--- Find the registry entry matching a database species name
+--- @param species string Database species name, uid or display name
+--- @return table|nil entry Registry entry, or nil when the pack does not have it
+function findRegistrySpecies(species)
+    if not species_registry.loaded then
+
+        return nil
+    end
+
+    local key = normalizeSpeciesKey(species)
+    if not key then
+
+        return nil
+    end
+
+    return species_registry.by_key[key]
+end
+
+--- Every species the hard-coded database mentions: results and their parents
+--- @return table<string, string> species Species name -> mod that declares it
+local function collectDatabaseSpecies()
+    local names = {}
+
+    for species, data in pairs(mutations) do
+        names[species] = data.mod or "unknown"
+        for _, parent in ipairs(data.parents or {}) do
+            if not names[parent] then
+                names[parent] = (mutations[parent] and mutations[parent].mod) or "base species"
+            end
+        end
+    end
+
+    return names
+end
+
+--- Print the audit, capped so a large pack does not scroll the screen away
+--- @param report table Report produced by auditSpeciesDatabase
+local function printSpeciesAudit(report)
+    local max_lines = config.species_audit_max_lines or 12
+
+    print(string.format("Species audit: %d in the database, %d registered by the pack, %d matched",
+        report.database_total, report.registry_total, #report.matched))
+
+    if #report.missing > 0 then
+        print("  In the database but not registered here (planning will fail on them):")
+        for i, item in ipairs(report.missing) do
+            if i > max_lines then
+                print(string.format("    ... and %d more", #report.missing - i + 1))
+                break
+            end
+            print(string.format("    %-22s (%s)", item.species, item.mod))
+        end
+    end
+
+    if #report.unmatched > 0 then
+        print(string.format("  Registered here but unknown to the database: %d species", #report.unmatched))
+        for i, entry in ipairs(report.unmatched) do
+            if i > max_lines then
+                print("    ... see the diagnostic report for the full list")
+                break
+            end
+            print(string.format("    %-30s %s", tostring(entry.uid), tostring(entry.name)))
+        end
+    end
+
+    if #report.missing == 0 and #report.unmatched == 0 then
+        print("  Database and pack agree")
+    end
+end
+
+--- Confront the hard-coded database with the species the pack registers (task 26)
+--- Reports both directions: a species we plan with that the pack does not have,
+--- and a species the pack offers that the database ignores.
+--- @return table|nil report { matched, missing, unmatched, totals }
+function auditSpeciesDatabase()
+    if not loadSpeciesRegistry() then
+        species_registry.report = nil
+
+        return nil
+    end
+
+    local db_species = collectDatabaseSpecies()
+    local report = {
+        matched = {},
+        missing = {},         -- known to the database, absent from the registry
+        unmatched = {},       -- registered by the pack, absent from the database
+        registry_total = #species_registry.entries,
+        database_total = 0
+    }
+
+    local seen_uid = {}
+
+    for species, mod in pairs(db_species) do
+        report.database_total = report.database_total + 1
+        local entry = findRegistrySpecies(species)
+        if entry then
+            seen_uid[entry.uid] = true
+            table.insert(report.matched, species)
+        else
+            table.insert(report.missing, {species = species, mod = mod})
+        end
+    end
+
+    for _, entry in ipairs(species_registry.entries) do
+        if not seen_uid[entry.uid] then
+            table.insert(report.unmatched, entry)
+        end
+    end
+
+    table.sort(report.matched)
+    table.sort(report.missing, function(a, b) return a.species < b.species end)
+    table.sort(report.unmatched, function(a, b) return tostring(a.uid) < tostring(b.uid) end)
+
+    species_registry.report = report
+    printSpeciesAudit(report)
+
+    return report
+end
+
+--- Last audit report, for the diagnostic report and the tests
+--- @return table|nil report
+function getSpeciesAuditReport()
+
+    return species_registry.report
+end
+
+--- Default genome of a species, cached (task 27)
+--- @param species string Database species name
+--- @return table|nil chromosomes, string|nil reason
+function getSpeciesTemplateFor(species)
+    local cached = species_template_cache[species]
+    if cached then
+
+        return cached.template, cached.reason
+    end
+
+    local template, reason = nil, nil
+
+    if gendustry.available and gendustry.apiary then
+        local entry = findRegistrySpecies(species)
+        local answer, why = apiaryCall("getSpeciesTemplate", entry and entry.uid or species)
+        if type(answer) == "table" then
+            template = answer
+        else
+            reason = why or "species unknown to the registry"
+        end
+    else
+        reason = "drivers unavailable"
+    end
+
+    species_template_cache[species] = {template = template, reason = reason}
+
+    return template, reason
+end
+
+--- Inject a species template, for tests and for offline experiments (task 27)
+--- @param species string Database species name
+--- @param template table|nil Chromosome map, or nil to drop the cached answer
+function setSpeciesTemplateOverride(species, template)
+    if template == nil then
+        species_template_cache[species] = nil
+
+        return
+    end
+
+    species_template_cache[species] = {template = template, reason = nil}
+end
+
+--- Cost, in breeding steps, of obtaining one bee of this species (task 27)
+--- A dominant species allele carries over in a single cross. A recessive one is
+--- expressed only when both parents hold it, which costs at least one extra
+--- generation of accumulation. Anything the driver cannot answer weighs 1, so a
+--- weighted plan is never worse informed than an unweighted one.
+--- @param species string Database species name
+--- @return number weight
+function getSpeciesStepWeight(species)
+    if not config.dominance_weighting then
+
+        return 1
+    end
+
+    local template = getSpeciesTemplateFor(species)
+    local allele = template and template.species
+    if type(allele) ~= "table" or allele.dominant == nil then
+
+        return 1
+    end
+
+    if allele.dominant then
+
+        return 1
+    end
+
+    return config.recessive_step_weight or 2
+end
+
+--- Weighted equivalent of countTreeSteps, used by the optimizer to compare
+--- alternative trees. With config.dominance_weighting off it returns exactly
+--- countTreeSteps, so the planner keeps its current behaviour and the existing
+--- test baselines hold. countTreeSteps stays the reported step count.
+--- @param tree table|nil Breeding tree node
+--- @return number cost
+function countTreeCost(tree)
+    if not tree then return 0 end
+
+    local cost = 0
+
+    -- A node with parents is a cross to perform
+    if tree.left_parent or tree.right_parent then
+        cost = cost + getSpeciesStepWeight(tree.species)
+    end
+
+    cost = cost + countTreeCost(tree.left_parent)
+    cost = cost + countTreeCost(tree.right_parent)
+
+    return cost
+end
+
+-- Cached view of what the hive offers. drawGUI runs on every step, while
+-- getModifiers is a server round trip, so the reading is held for a few seconds.
+local hive_conditions = {time = -1, data = nil}
+
+--- Read environment and modifiers from the apiary for display (task 29)
+--- @param force boolean|nil Ignore the cache
+--- @return table|nil conditions { mutation, automated, mutation_text, detail, climate }
+function getApiaryConditions(force)
+    if not (gendustry.available and gendustry.apiary) then
+
+        return nil
+    end
+
+    local now = computer.uptime()
+    if not force and hive_conditions.data and (now - hive_conditions.time) < (config.hive_conditions_refresh or 5) then
+
+        return hive_conditions.data
+    end
+
+    local mods = apiaryCall("getModifiers")
+    local env = apiaryCall("getEnvironment")
+
+    hive_conditions.time = now
+
+    if type(mods) ~= "table" and type(env) ~= "table" then
+        hive_conditions.data = nil
+
+        return nil
+    end
+
+    mods = type(mods) == "table" and mods or {}
+    env = type(env) == "table" and env or {}
+
+    local function factor(value)
+        if type(value) ~= "number" then
+
+            return "n/a"
+        end
+
+        return string.format("x%.2f", value)
+    end
+
+    local flags = {}
+    if mods.isSealed then table.insert(flags, "sealed") end
+    if mods.isSelfLighted then table.insert(flags, "lit") end
+    if mods.isSunlightSimulated then table.insert(flags, "sun") end
+    if mods.isCollectingPollen then table.insert(flags, "pollen") end
+    if mods.isAutomated then table.insert(flags, "AUTOMATED") end
+
+    hive_conditions.data = {
+        mutation = mods.mutation,
+        automated = mods.isAutomated and true or false,
+        -- Mutation comes first: it multiplies the cross chance directly
+        mutation_text = "Mutation " .. factor(mods.mutation),
+        detail = string.format("Prod %s  Life %s  Flower %s  Terr %s",
+            factor(mods.production), factor(mods.lifespan), factor(mods.flowering), factor(mods.territory)),
+        climate = string.format("Climate %s / %s%s",
+            tostring(env.temperature or mods.temperature or "?"),
+            tostring(env.humidity or mods.humidity or "?"),
+            #flags > 0 and ("  [" .. table.concat(flags, " ") .. "]") or "")
+    }
+
+    return hive_conditions.data
 end
 
 -- Main program loop
 function main()
     setupDisplay()
+
+    -- Confront the hard-coded database with what the pack registers (task 26)
+    auditSpeciesDatabase()
 
     while true do
         scanInventory()
@@ -4040,6 +6051,20 @@ return {
     -- Status functions (for integration tests)
     updateStatusIndicators = updateStatusIndicators,
     checkBeebeeGun = checkBeebeeGun,
+
+    -- Genetics and species registry (tasks 26, 27)
+    auditSpeciesDatabase = auditSpeciesDatabase,
+    getSpeciesAuditReport = getSpeciesAuditReport,
+    loadSpeciesRegistry = loadSpeciesRegistry,
+    findRegistrySpecies = findRegistrySpecies,
+    getSpeciesTemplateFor = getSpeciesTemplateFor,
+    setSpeciesTemplateOverride = setSpeciesTemplateOverride,
+    getSpeciesStepWeight = getSpeciesStepWeight,
+    countTreeCost = countTreeCost,
+    countTreeSteps = countTreeSteps,
+
+    -- Interface
+    getApiaryConditions = getApiaryConditions,
 
     -- Data
     mutations = mutations,

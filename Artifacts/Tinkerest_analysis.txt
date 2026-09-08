@@ -1,0 +1,134 @@
+=== Breeding Analysis for Tinkerest ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 47
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+  4. Monastic
+  5. Rocky
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    8 Forest princesses OR 8 Forest drones
+    16 Meadows princesses OR 16 Meadows drones
+    3 Modest princesses OR 3 Modest drones
+    1 Monastic princess OR 1 Monastic drone
+    2 Rocky princesses OR 2 Rocky drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Industrious: 2 occurrences, 0 reused, could reuse 1 more
+    → Resilient: 2 occurrences, 0 reused, could reuse 1 more
+    → Robust: 2 occurrences, 0 reused, could reuse 1 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 31
+  Total nodes: 95
+  Breeding nodes: 47
+  Reused nodes: 18
+  Primary breeders: 6
+  Duplicate species: 17 (64 duplicate instances)
+  Max depth: 15
+
+🌳 BREEDING TREE:
+└── Tinkerest [PD] *
+    ├── PHD [PD] *
+    │   ├── Student [P] (reusing)
+    │   └── Graduate [PD] *
+    │       ├── Student [PD] *
+    │       │   ├── Cultivated [PD] *
+    │       │   │   ├── Common [PD] *
+    │       │   │   │   ├── Forest [PD]
+    │       │   │   │   └── Meadows [PD]
+    │       │   │   └── Meadows [PD]
+    │       │   └── Common [P] (reusing)
+    │       └── Common [P] (reusing)
+    └── Blutonium [PD] *
+        ├── Yellorium [P] (reusing)
+        └── Cyanite [PD] *
+            ├── Yellorium [PD] *
+            │   ├── Nuclear [PD] *
+            │   │   ├── Rusty [PD] *
+            │   │   │   ├── Resilient [PD] * ← COULD REUSE
+            │   │   │   │   ├── Robust [PD] *
+            │   │   │   │   │   ├── Unweary [P] (reusing)
+            │   │   │   │   │   └── Tolerant [PD] *
+            │   │   │   │   │       ├── Diligent [PD] *
+            │   │   │   │   │       │   ├── Cultivated [PD] *
+            │   │   │   │   │       │   │   ├── Common [PD] *
+            │   │   │   │   │       │   │   │   ├── Forest [PD]
+            │   │   │   │   │       │   │   │   └── Meadows [PD]
+            │   │   │   │   │       │   │   └── Meadows [PD]
+            │   │   │   │   │       │   └── Common [P] (reusing)
+            │   │   │   │   │       └── Rocky [PD]
+            │   │   │   │   └── Industrious [PD] * ← COULD REUSE
+            │   │   │   │       ├── Unweary [PD] *
+            │   │   │   │       │   ├── Cultivated [PD] *
+            │   │   │   │       │   │   ├── Common [PD] *
+            │   │   │   │       │   │   │   ├── Forest [PD]
+            │   │   │   │       │   │   │   └── Meadows [PD]
+            │   │   │   │       │   │   └── Meadows [PD]
+            │   │   │   │       │   └── Diligent [P] (reusing)
+            │   │   │   │       └── Diligent [PD] *
+            │   │   │   │           ├── Cultivated [PD] *
+            │   │   │   │           │   ├── Common [P] (reusing)
+            │   │   │   │           │   └── Meadows [PD]
+            │   │   │   │           └── Common [PD] *
+            │   │   │   │               ├── Forest [PD]
+            │   │   │   │               └── Meadows [PD]
+            │   │   │   └── Meadows [PD]
+            │   │   └── Unstable [PD] *
+            │   │       ├── Resilient [PD] * ← COULD REUSE
+            │   │       │   ├── Robust [PD] *
+            │   │       │   │   ├── Unweary [P] (reusing)
+            │   │       │   │   └── Tolerant [PD] *
+            │   │       │   │       ├── Diligent [P] (reusing)
+            │   │       │   │       └── Rocky [PD]
+            │   │       │   └── Industrious [PD] *
+            │   │       │       ├── Unweary [PD] *
+            │   │       │       │   ├── Cultivated [P] (reusing)
+            │   │       │       │   └── Diligent [PD] *
+            │   │       │       │       ├── Cultivated [PD] *
+            │   │       │       │       │   ├── Common [PD] *
+            │   │       │       │       │   │   ├── Forest [PD]
+            │   │       │       │       │   │   └── Meadows [PD]
+            │   │       │       │       │   └── Meadows [PD]
+            │   │       │       │       └── Common [P] (reusing)
+            │   │       │       └── Diligent [P] (reusing)
+            │   │       └── Prehistoric [PD] *
+            │   │           ├── Ancient [P] (reusing)
+            │   │           └── Primeval [PD] *
+            │   │               ├── Ancient [PD] *
+            │   │               │   ├── Diligent [PD] *
+            │   │               │   │   ├── Cultivated [PD] *
+            │   │               │   │   │   ├── Common [PD] *
+            │   │               │   │   │   │   ├── Forest [PD]
+            │   │               │   │   │   │   └── Meadows [PD]
+            │   │               │   │   │   └── Meadows [PD]
+            │   │               │   │   └── Common [P] (reusing)
+            │   │               │   └── Noble [PD] *
+            │   │               │       ├── Common [PD] *
+            │   │               │       │   ├── Forest [PD]
+            │   │               │       │   └── Meadows [PD]
+            │   │               │       └── Cultivated [P] (reusing)
+            │   │               └── Secluded [PD] *
+            │   │                   ├── Monastic [PD]
+            │   │                   └── Austere [PD] *
+            │   │                       ├── Frugal [PD] *
+            │   │                       │   ├── Sinister [PD] *
+            │   │                       │   │   ├── Cultivated [PD] *
+            │   │                       │   │   │   ├── Common [PD] *
+            │   │                       │   │   │   │   ├── Forest [PD]
+            │   │                       │   │   │   │   └── Meadows [PD]
+            │   │                       │   │   │   └── Meadows [PD]
+            │   │                       │   │   └── Modest [PD]
+            │   │                       │   └── Modest [PD]
+            │   │                       └── Modest [PD]
+            │   └── Frugal [P] (reusing)
+            └── Nuclear [P] (reusing)

@@ -1,0 +1,58 @@
+=== Breeding Analysis for Fios ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 11
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Marble
+  3. Meadows
+  4. Steadfast
+  5. Valiant
+  6. Wintry
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Forest princesses OR 1 Forest drone
+    2 Marble princesses OR 1 Marble drone
+    2 Meadows princesses OR 2 Meadows drones
+    1 Steadfast princess OR 1 Steadfast drone
+    1 Valiant princess OR 1 Valiant drone
+    1 Wintry princess OR 1 Wintry drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 17
+  Total nodes: 23
+  Breeding nodes: 11
+  Reused nodes: 5
+  Primary breeders: 6
+  Duplicate species: 6 (6 duplicate instances)
+  Max depth: 6
+
+🌳 BREEDING TREE:
+└── Fios [PD] *
+    ├── Classical [PD] *
+    │   ├── Roman [P] (reusing)
+    │   └── Greek [PD] *
+    │       ├── Marble [PD]
+    │       └── Roman [PD] *
+    │           ├── Heroic [PD] *
+    │           │   ├── Steadfast [PD]
+    │           │   └── Valiant [PD]
+    │           └── Marble [P] (reusing)
+    └── Light Blue [PD] *
+        ├── White [PD] *
+        │   ├── Diligent [P] (reusing)
+        │   └── Wintry [PD]
+        └── Blue [PD] *
+            ├── Diligent [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [P] (reusing)
+            │   │   └── Meadows [PD]
+            │   └── Common [PD] *
+            │       ├── Forest [P] (reusing)
+            │       └── Meadows [PD]
+            └── Forest [PD]

@@ -1,0 +1,60 @@
+=== Breeding Analysis for Formic ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 13
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Modest
+  4. Tropical
+  5. Water
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    3 Meadows princesses OR 3 Meadows drones
+    3 Modest princesses OR 3 Modest drones
+    2 Tropical princesses OR 2 Tropical drones
+    1 Water princess OR 1 Water drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 18
+  Total nodes: 27
+  Breeding nodes: 13
+  Reused nodes: 4
+  Primary breeders: 6
+  Duplicate species: 6 (9 duplicate instances)
+  Max depth: 8
+
+🌳 BREEDING TREE:
+└── Formic [PD] *
+    ├── Acidic [PD] *
+    │   ├── Caustic [PD] *
+    │   │   ├── Corrosive [P] (reusing)
+    │   │   └── Fiendish [PD] *
+    │   │       ├── Cultivated [P] (reusing)
+    │   │       └── Sinister [PD] *
+    │   │           ├── Cultivated [PD] *
+    │   │           │   ├── Common [PD] *
+    │   │           │   │   ├── Forest [PD]
+    │   │           │   │   └── Meadows [PD]
+    │   │           │   └── Meadows [PD]
+    │   │           └── Modest [PD]
+    │   └── Corrosive [PD] *
+    │       ├── Viscous [PD] *
+    │       │   ├── Exotic [PD] *
+    │       │   │   ├── Tropical [PD]
+    │       │   │   └── Austere [PD] *
+    │       │   │       ├── Frugal [PD] *
+    │       │   │       │   ├── Sinister [P] (reusing)
+    │       │   │       │   └── Modest [PD]
+    │       │   │       └── Modest [PD]
+    │       │   └── Water [PD]
+    │       └── Malicious [PD] *
+    │           ├── Sinister [P] (reusing)
+    │           └── Tropical [PD]
+    └── Meadows [PD]

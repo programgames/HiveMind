@@ -1,0 +1,74 @@
+=== Breeding Analysis for Sandman366 ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 21
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Wintry
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Forest princesses OR 2 Forest drones
+    4 Meadows princesses OR 4 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
+    1 Wintry princess OR 1 Wintry drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 21
+  Total nodes: 43
+  Breeding nodes: 21
+  Reused nodes: 13
+  Primary breeders: 11
+  Duplicate species: 11 (22 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── Sandman366 [PD] *
+    ├── Firey [PD] *
+    │   ├── Ethereal [PD] *
+    │   │   ├── Arcane [PD] *
+    │   │   │   ├── Mysterious [PD] *
+    │   │   │   │   ├── Common [P] (reusing)
+    │   │   │   │   └── Forest [PD]
+    │   │   │   └── Esoteric [PD] *
+    │   │   │       ├── Eldritch [PD] *
+    │   │   │       │   ├── Cultivated [P] (reusing)
+    │   │   │       │   └── Mystical [PD] *
+    │   │   │       │       ├── Monastic [PD]
+    │   │   │       │       └── Noble [P] (reusing)
+    │   │   │       └── Cultivated [P] (reusing)
+    │   │   └── Supernatural [P] (reusing)
+    │   └── Supernatural [PD] *
+    │       ├── Charmed [P] (reusing)
+    │       └── Enchanted [PD] *
+    │           ├── Charmed [PD] *
+    │           │   ├── Eldritch [P] (reusing)
+    │           │   └── Cultivated [PD] *
+    │           │       ├── Common [P] (reusing)
+    │           │       └── Meadows [PD]
+    │           └── Eldritch [PD] *
+    │               ├── Cultivated [P] (reusing)
+    │               └── Mystical [PD] *
+    │                   ├── Monastic [PD]
+    │                   └── Noble [PD] *
+    │                       ├── Common [P] (reusing)
+    │                       └── Cultivated [PD] *
+    │                           ├── Common [P] (reusing)
+    │                           └── Meadows [PD]
+    └── Black [PD] *
+        ├── Diligent [P] (reusing)
+        └── White [PD] *
+            ├── Diligent [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [P] (reusing)
+            │   │   └── Meadows [PD]
+            │   └── Common [PD] *
+            │       ├── Forest [PD]
+            │       └── Meadows [PD]
+            └── Wintry [PD]

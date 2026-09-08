@@ -1,0 +1,95 @@
+=== Execution Analysis for Shadow46x2 ===
+Test Type: success
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 13
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 13
+  GUI calls: 26, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Shadow46x2
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 14
+     Tree species: Shadow46x2
+     Drone req count: 0
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] current_species=Common, current_step=617, progress=Completed Common, step_type=breeding, total_steps=14
+     Progress: Completed Common
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] current_species=Cultivated, current_step=618, progress=Completed Cultivated, step_type=breeding, total_steps=14
+     Progress: Completed Cultivated
+  8. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  9. [BREEDING] ✅ Common + Cultivated -> Diligent
+  10. [GUI_CALL] current_species=Diligent, current_step=619, progress=Completed Diligent, step_type=breeding, total_steps=14
+     Progress: Completed Diligent
+  11. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  12. [BREEDING] ✅ Cultivated + Common -> Noble
+  13. [GUI_CALL] current_species=Noble, current_step=620, progress=Completed Noble, step_type=breeding, total_steps=14
+     Progress: Completed Noble
+  14. [GUI_CALL] current_species=Mystical, progress=Breeding: Noble + Monastic -> Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  15. [BREEDING] ✅ Noble + Monastic -> Mystical
+  16. [GUI_CALL] current_species=Mystical, current_step=621, progress=Completed Mystical, step_type=breeding, total_steps=14
+     Progress: Completed Mystical
+  17. [GUI_CALL] current_species=Eldritch, progress=Breeding: Mystical + Cultivated -> Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  18. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  19. [GUI_CALL] current_species=Eldritch, current_step=622, progress=Completed Eldritch, step_type=breeding, total_steps=14
+     Progress: Completed Eldritch
+  20. [GUI_CALL] current_species=Rural, progress=Breeding: Meadows + Diligent -> Rural, step_type=breeding
+     Progress: Breeding: Meadows + Diligent -> Rural
+  21. [BREEDING] ✅ Meadows + Diligent -> Rural
+  22. [GUI_CALL] current_species=Rural, current_step=623, progress=Completed Rural, step_type=breeding, total_steps=14
+     Progress: Completed Rural
+  23. [GUI_CALL] current_species=Unweary, progress=Breeding: Diligent + Cultivated -> Unweary, step_type=breeding
+     Progress: Breeding: Diligent + Cultivated -> Unweary
+  24. [BREEDING] ✅ Diligent + Cultivated -> Unweary
+  25. [GUI_CALL] current_species=Unweary, current_step=624, progress=Completed Unweary, step_type=breeding, total_steps=14
+     Progress: Completed Unweary
+  26. [GUI_CALL] current_species=Farmerly, progress=Breeding: Rural + Unweary -> Farmerly, step_type=breeding
+     Progress: Breeding: Rural + Unweary -> Farmerly
+  27. [BREEDING] ✅ Rural + Unweary -> Farmerly
+  28. [GUI_CALL] current_species=Farmerly, current_step=625, progress=Completed Farmerly, step_type=breeding, total_steps=14
+     Progress: Completed Farmerly
+  29. [GUI_CALL] current_species=Fermented, progress=Breeding: Farmerly + Meadows -> Fermented, step_type=breeding
+     Progress: Breeding: Farmerly + Meadows -> Fermented
+  30. [BREEDING] ✅ Farmerly + Meadows -> Fermented
+  31. [GUI_CALL] current_species=Fermented, current_step=626, progress=Completed Fermented, step_type=breeding, total_steps=14
+     Progress: Completed Fermented
+  32. [GUI_CALL] current_species=Mutable, progress=Breeding: Unusual + Eldritch -> Mutable, step_type=breeding
+     Progress: Breeding: Unusual + Eldritch -> Mutable
+  33. [BREEDING] ✅ Unusual + Eldritch -> Mutable
+  34. [GUI_CALL] current_species=Mutable, current_step=627, progress=Completed Mutable, step_type=breeding, total_steps=14
+     Progress: Completed Mutable
+  35. [GUI_CALL] current_species=Transmuting, progress=Breeding: Unusual + Mutable -> Transmuting, step_type=breeding
+     Progress: Breeding: Unusual + Mutable -> Transmuting
+  36. [BREEDING] ✅ Unusual + Mutable -> Transmuting
+  37. [GUI_CALL] current_species=Transmuting, current_step=628, progress=Completed Transmuting, step_type=breeding, total_steps=14
+     Progress: Completed Transmuting
+  38. [GUI_CALL] current_species=Shadow46x2, progress=Breeding: Fermented + Transmuting -> Shadow46x2, step_type=breeding
+     Progress: Breeding: Fermented + Transmuting -> Shadow46x2
+  39. [BREEDING] ✅ Fermented + Transmuting -> Shadow46x2
+  40. [GUI_CALL] current_species=Shadow46x2, current_step=629, progress=Completed Shadow46x2, step_type=breeding, total_steps=14
+     Progress: Completed Shadow46x2
+  41. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Shadow46x2, TreeExists=true, Steps=14
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 26
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

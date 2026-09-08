@@ -1,0 +1,44 @@
+=== Breeding Analysis for Hyperventilating ===
+
+✅ BREEDING PLAN SUCCESS
+Total steps: 8
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    3 Meadows princesses OR 3 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 9
+  Total nodes: 17
+  Breeding nodes: 8
+  Reused nodes: 5
+  Primary breeders: 6
+  Duplicate species: 4 (8 duplicate instances)
+  Max depth: 5
+
+🌳 BREEDING TREE:
+└── Hyperventilating [PD] *
+    ├── Student [PD] *
+    │   ├── Cultivated [P] (reusing)
+    │   └── Common [PD] *
+    │       ├── Forest [PD]
+    │       └── Meadows [PD]
+    └── Imperial [PD] *
+        ├── Majestic [PD] *
+        │   ├── Cultivated [PD] *
+        │   │   ├── Common [P] (reusing)
+        │   │   └── Meadows [PD]
+        │   └── Noble [P] (reusing)
+        └── Noble [PD] *
+            ├── Common [P] (reusing)
+            └── Cultivated [PD] *
+                ├── Common [P] (reusing)
+                └── Meadows [PD]
