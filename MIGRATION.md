@@ -68,36 +68,36 @@ d'upgrades au lieu des sorties.
 
 | ID | Lot | Tâche | Dép. | Risque | Statut |
 |---|---|---|---|---|---|
-| 01 | L1 | Corriger les noms de composants | — | faible | À faire |
-| 02 | L1 | Résolution par adresse + `component.invoke` | 01 | faible | À faire |
-| 03 | L1 | Wrapper d'appel `pcall` uniforme | 02 | faible | À faire |
-| 04 | L1 | Mode dégradé si drivers absents | 03 | moyen | À faire |
-| 28 | L1 | Rapport de diagnostic en fichier | 03 | faible | À faire |
-| 05 | L2 | Réécrire `useGendustryAPI` sur `listMutations` | 03 | élevé | À faire |
-| 06 | L2 | Supprimer le `return true` et le fallback sauté | 05 | élevé | À faire |
-| 07 | L2 | Remonter les raisons textuelles du driver | 05 | faible | À faire |
-| 08 | L2 | Base en dur = plan a priori, `listMutations` = vérité | 05 | moyen | À faire |
-| 09 | L2 | Gérer le labware | 11 | élevé | À faire |
-| 10 | L2 | Surveiller le mutagène via `getTank` | 03 | moyen | À faire |
-| 11 | L2 | Index de slots via `listSlots()` | Q3 | élevé | **Bloqué** |
-| 30 | L3 | Supprimer les impulsions de la phase 2 | — | élevé | À faire |
-| 12 | L3 | Attente sur `advmutatron_finished` | 14 | moyen | À faire |
-| 13 | L3 | Attente sur `apiary_finished` | 14 | moyen | À faire |
-| 14 | L3 | Multiplexer signaux machine et `key_down` | — | élevé | À faire |
-| 15 | L3 | `setEventsEnabled` / `setSignalInterval` | 12 | faible | À faire |
-| 16a | L3 | Ne tirer que sur `type == "queen"` | 13 | élevé | À faire |
-| 17 | L3 | Vérifier `freed` après le tir, réessayer | 16a | moyen | À faire |
-| 18 | L3 | Détecter `automated` et avertir | 13 | faible | À faire |
-| 19 | L3 | Afficher `getErrors()` | 03 | faible | À faire |
-| 20 | L3 | `setRedstoneMode` pendant les transferts | 03 | moyen | À faire |
-| 21 | L3 | Chronométrer `started` → `finished` | 13 | faible | À faire |
-| 22 | L4 | Valider l'espèce produite via `getOutput` | 05 | élevé | À faire |
-| 23 | L4 | Accumulation pilotée par `pure` | 22 | moyen | À faire |
-| 24 | L4 | Gérer le refus `requireAnalyzedBees` | 23 | faible | À faire |
-| 25 | L4 | Récolte via `listOutputs()` | Q3, 11 | élevé | **Bloqué** |
-| 26 | L5 | Confronter la base à `listSpeciesTemplates` | 03 | moyen | À faire |
-| 27 | L5 | Pondérer le coût par dominance | 26 | élevé | À faire |
-| 29 | L5 | Exposer environnement et modificateurs | 03 | faible | À faire |
+| 01 | L1 | Corriger les noms de composants | — | faible | Appliqué |
+| 02 | L1 | Résolution par adresse + `component.invoke` | 01 | faible | Appliqué |
+| 03 | L1 | Wrapper d'appel `pcall` uniforme | 02 | faible | Appliqué |
+| 04 | L1 | Mode dégradé si drivers absents | 03 | moyen | Appliqué |
+| 28 | L1 | Rapport de diagnostic en fichier | 03 | faible | Appliqué |
+| 05 | L2 | Réécrire `useGendustryAPI` sur `listMutations` | 03 | élevé | Appliqué |
+| 06 | L2 | Supprimer le `return true` et le fallback sauté | 05 | élevé | Appliqué |
+| 07 | L2 | Remonter les raisons textuelles du driver | 05 | faible | Appliqué |
+| 08 | L2 | Base en dur = plan a priori, `listMutations` = vérité | 05 | moyen | Appliqué |
+| 09 | L2 | Gérer le labware | 11 | élevé | Appliqué |
+| 10 | L2 | Surveiller le mutagène via `getTank` | 03 | moyen | Appliqué |
+| 11 | L2 | Index de slots via `listSlots()` | Q3 | élevé | Appliqué, Q3 |
+| 30 | L3 | Supprimer les impulsions de la phase 2 | — | élevé | Appliqué |
+| 12 | L3 | Attente sur `advmutatron_finished` | 14 | moyen | Appliqué |
+| 13 | L3 | Attente sur `apiary_finished` | 14 | moyen | Appliqué |
+| 14 | L3 | Multiplexer signaux machine et `key_down` | — | élevé | Appliqué |
+| 15 | L3 | `setEventsEnabled` / `setSignalInterval` | 12 | faible | Appliqué |
+| 16a | L3 | Ne tirer que sur `type == "queen"` | 13 | élevé | Appliqué |
+| 17 | L3 | Vérifier `freed` après le tir, réessayer | 16a | moyen | Appliqué |
+| 18 | L3 | Détecter `automated` et avertir | 13 | faible | Appliqué |
+| 19 | L3 | Afficher `getErrors()` | 03 | faible | Appliqué |
+| 20 | L3 | `setRedstoneMode` pendant les transferts | 03 | moyen | Appliqué |
+| 21 | L3 | Chronométrer `started` → `finished` | 13 | faible | Appliqué |
+| 22 | L4 | Valider l'espèce produite via `getOutput` | 05 | élevé | Appliqué |
+| 23 | L4 | Accumulation pilotée par `pure` | 22 | moyen | Appliqué |
+| 24 | L4 | Gérer le refus `requireAnalyzedBees` | 23 | faible | Appliqué |
+| 25 | L4 | Récolte via `listOutputs()` | Q3, 11 | élevé | Appliqué, Q3 |
+| 26 | L5 | Confronter la base à `listSpeciesTemplates` | 03 | moyen | Appliqué |
+| 27 | L5 | Pondérer le coût par dominance | 26 | élevé | Appliqué |
+| 29 | L5 | Exposer environnement et modificateurs | 03 | faible | Appliqué |
 
 **Lots** : L1 socle · L2 mutation et ressources · L3 événements et Mechanical User · L4 validation
 et récolte · L5 génétique et interface.
@@ -355,7 +355,7 @@ migration et la précèdent en priorité.
 |---|---|---|---|
 | B1 | `control_state` est déclaré `local` en `main.lua:3046`, mais utilisé en `main.lua:2499`, `2616`, `2622` et `2631`. En Lua, un `local` de portée fichier n'est pas visible des fonctions définies plus haut : ces quatre sites lisent un global `nil` et `control_state.abort_requested` lève. | `grep -n control_state` : quatre usages avant la déclaration | **Critique** |
 | B2 | `validateMutatronOutput` (`main.lua:3222`) et `validateApiarySpace` (`main.lua:3231`) appellent `inventory_controller`, qui n'existe pas. Le local s'appelle `inv_controller` (`main.lua:50`). Les deux fonctions lèvent à coup sûr. | `grep -n "inventory_controller\."` : deux occurrences, aucune déclaration | **Critique** |
-| B3 | `status_colors` est déclaré `local` en `main.lua:3264` et inutilisable depuis les fonctions définies plus haut. Même mécanisme que B1. | déclaration en 3264 | Moyen |
+| B3 | `status_colors` et `gui_state` sont déclarés `local` tardivement. **Vérifié : aucun usage antérieur, donc pas un bug existant** — seulement une contrainte pour le code neuf. Déclarés en tête par précaution. | `grep` : zéro usage avant déclaration | Sans objet |
 | B4 | `extractSpecies` (`main.lua:624`) parcourt `available_bees` trié alphabétiquement et renvoie la **première** espèce dont le nom apparaît dans la chaîne. « Uncommon Queen » renvoie donc « Common ». Il faut retenir la correspondance la plus longue. | lecture de la fonction | Élevé |
 | B5 | `collectApiaryProducts` (`main.lua:2700`) teste `item_name:find("queen")` sans passer en minuscules, alors que `scanInventory` (`main.lua:541`) le fait. | comparaison des deux sites | Moyen |
 
@@ -414,3 +414,79 @@ les verra `nil`. C'est exactement le mécanisme de B1.
 
 **Règle à diffuser** : plus aucun `event.pull` filtré dans le fichier, ni sur `key_down` ni sur un
 signal machine. Tout passe par `checkContinue` ou `waitForMachineSignal`.
+
+## 11. Vérification de l'application
+
+### Résultat
+
+24 patchs sur 31 se sont appliqués sur ancre. Les 7 échecs étaient tous prévus par l'analyse de
+conflits des agents et ont été repris à la main : quatre visaient la même fin de table `config`
+(fusionnés en un bloc), deux avaient leur ancre invalidée par les correctifs B1 et B2, un était
+couvert par un patch appliqué plus tôt.
+
+### Deux défauts d'intégration trouvés à l'assemblage
+
+| Défaut | Correction |
+|---|---|
+| La validation d'espèce (L4-22b) s'insérait **avant** l'attente de fin de cycle, qui vivait dans `moveQueenToApiary` (L3-06). `selectAndProduce` rend la main immédiatement, donc la validation lisait une sortie vide et échouait à tous les coups. | L'attente est extraite en `waitForMutatronOutput()`, appelée avant la validation puis réutilisée par `moveQueenToApiary`. Elle rend la main tout de suite si la sortie est déjà là. |
+| Le socle L1 lit `config.slot_offset` alors que `refreshGendustrySlots` est écrit **au-dessus** de `local config`. Même mécanisme que B1 : `config` y était un global `nil`, l'offset retombait silencieusement à 1 et toute valeur configurée était ignorée. | `config` est déclaré en tête du fichier, avec `gui_state`, `control_state` et `status_colors`. |
+
+### La suite de tests est non déterministe
+
+`test_planning.lua` produit des artefacts qui diffèrent **entre deux exécutions du même code** :
+87 fichiers sur 97 en comparaison brute, 64 sur 97 après tri. La cause est l'ordre d'itération de
+`pairs()`, qui décide quel chemin équivalent l'optimiseur retient.
+
+Conséquence : le garde-fou proposé pour la tâche 27 — « aucun artefact ne doit changer » — **est
+inapplicable en l'état**. Il aurait signalé une régression à chaque exécution.
+
+### L'invariant utilisé à la place
+
+Extrait de chaque `*_analysis.txt` : `Total steps`, `Can execute`, le verdict de plan, l'ensemble
+trié des princesses de départ et les lignes de besoins. Soit 578 lignes.
+
+| Comparaison | Résultat |
+|---|---|
+| Même code, deux exécutions | identique — l'invariant est fiable |
+| Référence avant migration vs après | **identique** — aucune régression de planification |
+
+C'est ce contrôle qu'il faut rejouer, et non la comparaison d'artefacts, le jour où
+`config.dominance_weighting` passera à `true`.
+
+### Contrôles complémentaires
+
+- `luac -p` : syntaxe valide après chaque étape.
+- `test_planning.lua` : vert avant, pendant et après.
+- 28 fonctions inter-lots vérifiées : chacune définie une fois et effectivement appelée.
+- Balayage des `local` de portée fichier : plus aucun usage antérieur à la déclaration.
+
+### Ce qui reste à valider en jeu
+
+Rien de tout ceci ne remplace un passage en jeu. Les hypothèses non vérifiées sont listées en §12.
+
+## 12. Hypothèses à valider en jeu
+
+Livrées dans le code, mais non vérifiées. Chacune est isolée à un endroit.
+
+| # | Hypothèse | Où | Comment trancher |
+|---|---|---|---|
+| H1 | `config.slot_offset = 1` (drivers 0-based, `inventory_controller` 1-based) | `config` | `check_slots.lua`, verdicts `OFFSET`. Le rapport de diagnostic imprime aussi les deux numérotations côte à côte. |
+| H2 | L'index passé à `selectAndProduce` est la clé de boucle de `pairs()`, comme dans `breed.lua`, et non `entry.index` | `findMutationIndex` | Un `print` de `listMutations()` avec deux parents chargés |
+| H3 | Le `label` d'une mutation est le nom de l'espèce résultante, pas une forme « A + B → C » | `findMutationIndex` | Même `print` |
+| H4 | `config.mutagen_reserve_mb = 1000` couvre un cycle | `waitForMutagen` | Lire le `Y` dans `not enough mutagen: X of Y mB` |
+| H5 | La ruche émet `apiary_finished` quand la reine est tuée au BeeBee Gun, pas seulement en fin de vie naturelle | `waitForApiaryCycle` | Un cycle observé ; le code couvre déjà les deux cas via `freed` |
+| H6 | `config.beebee_gun_retries = 3` à une seconde d'intervalle dépasse le temps de rechargement du Mechanical User | `killQueenWithBeebeeGun` | Observer un tir |
+| H7 | `listSpeciesTemplates().name` est le nom d'affichage anglais | registre d'espèces | L'audit au démarrage ; un écart massif signifie qu'il faut n'indexer que l'`uid` |
+| H8 | `config.recessive_step_weight = 2` reflète le vrai surcoût d'un trait récessif | pondération | Les mesures de la tâche 21 |
+| H9 | La reine sort du Mutatron déjà fécondée | `waitForMatedQueen` | Si non, `apiary_mating_timeout` absorbe le délai |
+
+## 13. Reste à faire
+
+- Exécuter `check_slots.lua` en jeu et reporter l'offset (H1).
+- Un test ciblé pour la pondération : `setSpeciesTemplateOverride` sur deux espèces, drapeau à
+  `true`, vérifier que `countTreeCost` rend 3 là où `countTreeSteps` rend 2, drapeau remis à `false`
+  au démontage.
+- Rendre `test_planning.lua` déterministe, ou remplacer sa comparaison d'artefacts par l'invariant
+  du §11. En l'état la suite ne peut pas détecter une régression de planification.
+- `extractSpecies` corrigé pour la correspondance la plus longue (B4), mais `scanInventory` et le
+  comptage de récolte gagneraient à passer par `speciesMatchesItem`, qui teste le mot entier.
