@@ -15,6 +15,10 @@
 --   find_redstone --hold=0.6   -- longer pulse, if the Mechanical User misses it
 --   find_redstone --gap=3      -- longer pause between sides
 --   find_redstone --side=right -- one named side only
+--   find_redstone --pause      -- wait for a key between sides, so nothing runs away
+--
+-- Safest of all: watch the redstone dust rather than the Mechanical User. The wire lights up on
+-- the right side just the same, and nothing is triggered.
 --
 -- Stand where you can see the Mechanical User. The side that makes it swing is the one to put in
 -- config.mech_user_side.
@@ -28,6 +32,7 @@ local _, options = shell.parse(...)
 -- Short by design. Three seconds of held signal is dozens of activations, not one.
 local HOLD = tonumber(options.hold) or 0.3
 local GAP = tonumber(options.gap) or 2
+local PAUSE = options.pause == true
 
 if not component.isAvailable("redstone") then
     print("No redstone component on the network.")
@@ -65,8 +70,26 @@ local function pulse(name)
     pcall(rs.setOutput, side, 0)
     print("done")
 
+    if PAUSE then
+        io.write("         press a key for the next side, or q to stop... ")
+        io.flush()
+
+        local event = require("event")
+        local _, _, char = event.pull("key_down")
+        print()
+
+        if char == 113 or char == 81 then
+
+            return false
+        end
+
+        return true
+    end
+
     -- The pause is the point: it separates one side's reaction from the next one's pulse.
     os.sleep(GAP)
+
+    return true
 end
 
 -- Clear everything first. A previous run that was interrupted can have left a side held high,
@@ -75,10 +98,11 @@ for _, name in ipairs(ORDER) do
     if sides[name] then pcall(rs.setOutput, sides[name], 0) end
 end
 
-print("find_redstone  version 2026-09-08e")
+print("find_redstone  version 2026-09-08f")
 print()
-print("Take the beebee gun OUT of the Mechanical User before running this.")
-print("Under a held signal it fires again and again, which will lag the game.")
+print("Watch the REDSTONE DUST, not the Mechanical User: the wire lights up just")
+print("the same and nothing is triggered. If you would rather watch the machine,")
+print("take the beebee gun out first -- under a signal it fires again and again.")
 print()
 print(string.format("Pulse %ss, then %ss to watch. Note the side that makes it swing.",
     tostring(HOLD), tostring(GAP)))
@@ -91,13 +115,13 @@ else
     -- ones repeat some of the same faces, which is the point -- config uses relative names.
     print("Absolute sides:")
     for _, name in ipairs({"down", "up", "north", "south", "west", "east"}) do
-        pulse(name)
+        if pulse(name) == false then return end
     end
 
     print()
     print("Relative sides (these are what config uses):")
     for _, name in ipairs({"front", "back", "left", "right"}) do
-        pulse(name)
+        if pulse(name) == false then return end
     end
 end
 
