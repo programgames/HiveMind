@@ -30,12 +30,64 @@ Type Definitions:
 @field validation_required boolean Whether error requires validation before resume
 --]]
 
+-- Captured before anything else: at chunk level `...` is what the shell passed.
+local script_args = {...}
+
 local component = require("component")
 local computer = require("computer")
 local term = require("term")
 local sides = require("sides")
 local event = require("event")
 local gpu = component.gpu
+
+-- Live trace of everything the program does.
+--
+-- The GUI owns the screen, so a run that goes wrong leaves one red line and no account of what
+-- led to it: which bee was picked up, which slot was tried, what each machine answered. Every
+-- such action is appended here and flushed at once, so the file survives a crash, a freeze or a
+-- computer that shuts down.
+--
+--   main.lua --trace          write /home/hivemind_trace.txt
+--   main.lua --trace=/path    somewhere else
+local TRACE_PATH = nil
+
+for _, argument in ipairs(script_args) do
+    if argument == "--trace" then
+        TRACE_PATH = "/home/hivemind_trace.txt"
+    elseif type(argument) == "string" and argument:sub(1, 8) == "--trace=" then
+        TRACE_PATH = argument:sub(9)
+    end
+end
+
+local trace_started = false
+
+--- Append one line to the trace, if tracing is on
+--- @param fmt string Format string
+function trace(fmt, ...)
+    if not TRACE_PATH then return end
+
+    local ok, line = pcall(string.format, fmt, ...)
+    if not ok then line = tostring(fmt) end
+
+    local handle = io.open(TRACE_PATH, trace_started and "a" or "w")
+    if not handle then return end
+
+    trace_started = true
+    handle:write(line .. "\n")
+    handle:close()
+end
+
+--- Is the trace on? Used to skip building strings that would be thrown away.
+--- @return boolean
+function tracing()
+    return TRACE_PATH ~= nil
+end
+
+--- Where the trace is being written, for the program to say so on screen
+--- @return string|nil
+function tracePath()
+    return TRACE_PATH
+end
 
 -- Unguarded, this threw a bare "attempt to index a nil value" when no Redstone Card was fitted,
 -- which says nothing about what is missing.
@@ -144,10 +196,43 @@ end
 --- @param address string|nil Component address
 --- @param method string Callback name
 --- @return any ... The callback's return values, or nil plus a textual reason
+--- Render a value compactly enough for one trace line
+local function brief(value)
+    if type(value) == "table" then
+        local parts = {}
+
+        for key, entry in pairs(value) do
+            if #parts >= 6 then
+                table.insert(parts, "...")
+                break
+            end
+
+            if type(entry) ~= "table" then
+                table.insert(parts, tostring(key) .. "=" .. tostring(entry))
+            end
+        end
+
+        return "{" .. table.concat(parts, " ") .. "}"
+    end
+
+    return tostring(value)
+end
+
 local function driverCall(address, method, ...)
     if not address then return nil, "component not present" end
 
     local result = table.pack(pcall(component.invoke, address, method, ...))
+
+    if tracing() then
+        local arguments = {}
+        for index = 1, select("#", ...) do
+            table.insert(arguments, brief((select(index, ...))))
+        end
+
+        trace("  driver %s(%s) -> %s", method, table.concat(arguments, ", "),
+            result[1] and brief(result[2]) or ("ERROR " .. tostring(result[2])))
+    end
+
     if result[1] then return table.unpack(result, 2, result.n) end
 
     return nil, tostring(result[2] or "call failed with no message")
@@ -723,6 +808,15 @@ function applyBestResolution()
     return width, height
 end
 
+--- Say on screen that a trace is being written, and where
+local function announceTrace()
+    if tracePath() then
+        print("Tracing every action to " .. tracePath())
+        print("Read it with: edit " .. tracePath())
+        print()
+    end
+end
+
 -- Clear screen and set up display
 function setupDisplay()
     -- Resolution first, then clear. Changing it afterwards redraws the old buffer at the new
@@ -734,6 +828,7 @@ function setupDisplay()
 
     print("=== HiveMind: Bee Breeding Automation ===")
     print()
+    announceTrace()
 
     -- Set initial status
     updateStatusIndicators("idle", "System started - Ready for commands")
@@ -2895,9 +2990,14 @@ end
 function activateMechanicalUser()
     waitForBeebeeGun()
 
+    trace("redstone %s HIGH for %ss", getSideName(config.mech_user_side),
+        tostring(config.pulse_duration))
+
     redstone.setOutput(config.mech_user_side, 15)
     os.sleep(config.pulse_duration)
     redstone.setOutput(config.mech_user_side, 0)
+
+    trace("redstone %s LOW", getSideName(config.mech_user_side))
 end
 
 --- Move items between inventories
@@ -2922,7 +3022,12 @@ function moveItem(from_side, from_slot, to_side, to_slot, count)
         return false
     end
 
+    trace("move %s slot %s -> %s slot %s  x%s", getSideName(from_side), tostring(from_slot),
+        getSideName(to_side), tostring(to_slot or "any"), tostring(count))
+
     local ok, moved = pcall(inv_controller.transferItem, from_side, to_side, count, from_slot, to_slot)
+
+    trace("  -> %s", ok and ("moved " .. tostring(moved)) or ("ERROR " .. tostring(moved)))
     if not ok then
         print("Transfer refused: " .. tostring(moved))
 
@@ -2978,6 +3083,7 @@ end
 
 -- Find item across all available inventories (input, output, and storage)
 function findItemAnyInventory(pattern)
+    trace("search '%s'", tostring(pattern))
     -- Priority search: output chest first (for produced bees), then input chest
     local search_order = {
         {side = config.output_chest_side, name = "output chest"},
@@ -2987,6 +3093,9 @@ function findItemAnyInventory(pattern)
     for _, location in ipairs(search_order) do
         local slot, stack = findItem(location.side, pattern)
         if slot then
+            trace("  found in %s slot %d: %s", location.name, slot,
+                tostring(stack and (stack.label or stack.name)))
+
             return location.side, slot, stack
         end
     end
@@ -3232,6 +3341,7 @@ end
 --- @return boolean success True if mutatron was loaded successfully
 --- @return string message Status message
 function loadMutatron(parent1, parent2)
+    trace("loadMutatron: princess=%s drone=%s", tostring(parent1), tostring(parent2))
     -- Check continue state
     local should_continue, abort_msg = checkContinue()
     if not should_continue then
@@ -4253,6 +4363,8 @@ end
 --- @return boolean success True if the mutatron accepted and started the mutation
 --- @return string message Chosen mutation on success, reason on failure
 function useGendustryAPI(parent1, parent2, target)
+    trace("useGendustryAPI: want %s from %s + %s", tostring(target), tostring(parent1),
+        tostring(parent2))
     if not (gendustry and gendustry.available and gendustry.adv) then
 
         return false, "Gendustry drivers unavailable"
@@ -6006,6 +6118,8 @@ end
 --- @return boolean success True if breeding step completed successfully
 --- @return string|nil errorMessage Error message if step failed
 function executeSingleBreedingStep(princess_species, drone_species, target_species, hasAPI)
+    trace("STEP %s + %s -> %s  (drivers: %s)", tostring(princess_species),
+        tostring(drone_species), tostring(target_species), tostring(hasAPI))
     -- Check if we should continue
     local should_continue, abort_msg = checkContinue()
     if not should_continue then
@@ -6727,6 +6841,7 @@ return {
     collectBlockingLeaves = collectBlockingLeaves,
     collectConsumedBaseSpecies = collectConsumedBaseSpecies,
     clearMutatron = clearMutatron,
+    trace = trace,
     describeLoadFailure = describeLoadFailure,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
