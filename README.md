@@ -79,9 +79,18 @@ Two keys, two reference blocks:
 - `mech_user_side` is the redstone output, counted **from the computer**
 - `mech_user_inventory_side` is where the beebee gun is read, counted **from the Adapter**
 
-They default to the same value, which is a coincidence rather than a rule. Redstone travels
-along a wire, so the Mechanical User need not touch the Adapter; if it does not, the program
-says once that it cannot verify the gun and carries on.
+Earlier versions gave both the same value and called them the same side. They cannot be: one is a
+face of the computer, the other a face of the Adapter, and no block is both. Nor can the Mechanical
+User touch the computer and the apiary at once -- it has to touch the apiary to click it, and two
+blocks already touching share no neighbour. So `mech_user_inventory_side` is `nil`: the gun cannot
+be verified, and the program says so once and carries on.
+
+`mech_user_side` is an **absolute** direction -- `north`, `south`, `east`, `west`, `up`, `down` --
+and not `front`/`back`/`left`/`right`. The relative names are resolved through the case's own
+facing, which cannot be read off the world, so finding the right one means raising a signal on each
+face in turn to see what happens; on one build that fed a redstone-controlled energy conduit and cut
+the computer's own power. Pick a compass direction, read it off F3, and lay the redstone wire on
+that face. The wire can run as far as you like from there.
 
 ### Wiring
 1. Connect Mechanical User to computer with redstone
