@@ -1,23 +1,21 @@
 === Breeding Analysis for Dentist ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 10
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Oxygen
-  2. Meadows
-  3. Forest
-  4. Deep Learner
+  1. Deep Learner
+  2. Forest
+  3. Meadows
+  4. Oxygen
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Oxygen princess OR 1 Oxygen drone
-    3 Meadows princesses OR 3 Meadows drones
-    1 Forest princess OR 1 Forest drone
     1 Deep Learner princess OR 1 Deep Learner drone
+    1 Forest princess OR 1 Forest drone
+    3 Meadows princesses OR 3 Meadows drones
+    1 Oxygen princess OR 1 Oxygen drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

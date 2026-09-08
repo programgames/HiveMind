@@ -1,23 +1,21 @@
 === Breeding Analysis for Serenading ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 11
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Radiant
-  2. Forest
-  3. Meadows
-  4. Monastic
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Radiant
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Radiant princess OR 1 Radiant drone
     4 Forest princesses OR 4 Forest drones
     4 Meadows princesses OR 3 Meadows drones
     1 Monastic princess OR 1 Monastic drone
+    1 Radiant princess OR 1 Radiant drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

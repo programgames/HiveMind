@@ -1,6 +1,5 @@
 === Execution Analysis for Experienced ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 1
@@ -18,10 +17,10 @@ Total accumulation cycles: 0
      Total steps planned: 1
      Tree species: Experienced
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Radiant + Armored -> Experienced, current_species=Experienced, step_type=breeding
+  2. [GUI_CALL] current_species=Experienced, progress=Breeding: Radiant + Armored -> Experienced, step_type=breeding
      Progress: Breeding: Radiant + Armored -> Experienced
   3. [BREEDING] ✅ Radiant + Armored -> Experienced
-  4. [GUI_CALL] progress=Completed Experienced, current_species=Experienced, step_type=breeding, total_steps=1, current_step=304
+  4. [GUI_CALL] current_species=Experienced, current_step=304, progress=Completed Experienced, step_type=breeding, total_steps=1
      Progress: Completed Experienced
   5. [EXECUTION_RESULT] ✅ Returned: true
 

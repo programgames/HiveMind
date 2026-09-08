@@ -1,6 +1,5 @@
 === Execution Analysis for Luctor ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 12
@@ -18,65 +17,65 @@ Total accumulation cycles: 0
      Total steps planned: 15
      Tree species: Luctor
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=15, current_step=423
+  4. [GUI_CALL] current_species=Common, current_step=423, progress=Completed Common, step_type=breeding, total_steps=15
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=15, current_step=424
+  7. [GUI_CALL] current_species=Cultivated, current_step=424, progress=Completed Cultivated, step_type=breeding, total_steps=15
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
+  8. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Student
   9. [BREEDING] ✅ Common + Cultivated -> Student
-  10. [GUI_CALL] progress=Completed Student, current_species=Student, step_type=breeding, total_steps=15, current_step=425
+  10. [GUI_CALL] current_species=Student, current_step=425, progress=Completed Student, step_type=breeding, total_steps=15
      Progress: Completed Student
-  11. [GUI_CALL] progress=Breeding: Common + Student -> Graduate, current_species=Graduate, step_type=breeding
+  11. [GUI_CALL] current_species=Graduate, progress=Breeding: Common + Student -> Graduate, step_type=breeding
      Progress: Breeding: Common + Student -> Graduate
   12. [BREEDING] ✅ Common + Student -> Graduate
-  13. [GUI_CALL] progress=Completed Graduate, current_species=Graduate, step_type=breeding, total_steps=15, current_step=426
+  13. [GUI_CALL] current_species=Graduate, current_step=426, progress=Completed Graduate, step_type=breeding, total_steps=15
      Progress: Completed Graduate
-  14. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+  14. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   15. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  16. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=15, current_step=427
+  16. [GUI_CALL] current_species=Sinister, current_step=427, progress=Completed Sinister, step_type=breeding, total_steps=15
      Progress: Completed Sinister
-  17. [GUI_CALL] progress=Breeding: Rocky + Sinister -> Shadowed, current_species=Shadowed, step_type=breeding
+  17. [GUI_CALL] current_species=Shadowed, progress=Breeding: Rocky + Sinister -> Shadowed, step_type=breeding
      Progress: Breeding: Rocky + Sinister -> Shadowed
   18. [BREEDING] ✅ Rocky + Sinister -> Shadowed
-  19. [GUI_CALL] progress=Completed Shadowed, current_species=Shadowed, step_type=breeding, total_steps=15, current_step=428
+  19. [GUI_CALL] current_species=Shadowed, current_step=428, progress=Completed Shadowed, step_type=breeding, total_steps=15
      Progress: Completed Shadowed
-  20. [GUI_CALL] progress=Breeding: Cultivated + Graduate -> Artistic, current_species=Artistic, step_type=breeding
-     Progress: Breeding: Cultivated + Graduate -> Artistic
-  21. [BREEDING] ✅ Cultivated + Graduate -> Artistic
-  22. [GUI_CALL] progress=Completed Artistic, current_species=Artistic, step_type=breeding, total_steps=15, current_step=429
-     Progress: Completed Artistic
-  23. [GUI_CALL] progress=Breeding: Graduate + Student -> PHD, current_species=PHD, step_type=breeding
-     Progress: Breeding: Graduate + Student -> PHD
-  24. [BREEDING] ✅ Graduate + Student -> PHD
-  25. [GUI_CALL] progress=Completed PHD, current_species=PHD, step_type=breeding, total_steps=15, current_step=430
-     Progress: Completed PHD
-  26. [GUI_CALL] progress=Breeding: Artistic + PHD -> Rainbow, current_species=Rainbow, step_type=breeding
-     Progress: Breeding: Artistic + PHD -> Rainbow
-  27. [BREEDING] ✅ Artistic + PHD -> Rainbow
-  28. [GUI_CALL] progress=Completed Rainbow, current_species=Rainbow, step_type=breeding, total_steps=15, current_step=431
-     Progress: Completed Rainbow
-  29. [GUI_CALL] progress=Breeding: Shadowed + Rocky -> Darkened, current_species=Darkened, step_type=breeding
+  20. [GUI_CALL] current_species=Darkened, progress=Breeding: Shadowed + Rocky -> Darkened, step_type=breeding
      Progress: Breeding: Shadowed + Rocky -> Darkened
-  30. [BREEDING] ✅ Shadowed + Rocky -> Darkened
-  31. [GUI_CALL] progress=Completed Darkened, current_species=Darkened, step_type=breeding, total_steps=15, current_step=432
+  21. [BREEDING] ✅ Shadowed + Rocky -> Darkened
+  22. [GUI_CALL] current_species=Darkened, current_step=429, progress=Completed Darkened, step_type=breeding, total_steps=15
      Progress: Completed Darkened
-  32. [GUI_CALL] progress=Breeding: Shadowed + Darkened -> Abyssal, current_species=Abyssal, step_type=breeding
+  23. [GUI_CALL] current_species=Abyssal, progress=Breeding: Shadowed + Darkened -> Abyssal, step_type=breeding
      Progress: Breeding: Shadowed + Darkened -> Abyssal
-  33. [BREEDING] ✅ Shadowed + Darkened -> Abyssal
-  34. [GUI_CALL] progress=Completed Abyssal, current_species=Abyssal, step_type=breeding, total_steps=15, current_step=433
+  24. [BREEDING] ✅ Shadowed + Darkened -> Abyssal
+  25. [GUI_CALL] current_species=Abyssal, current_step=430, progress=Completed Abyssal, step_type=breeding, total_steps=15
      Progress: Completed Abyssal
-  35. [GUI_CALL] progress=Breeding: Rainbow + Abyssal -> Luctor, current_species=Luctor, step_type=breeding
+  26. [GUI_CALL] current_species=Artistic, progress=Breeding: Cultivated + Graduate -> Artistic, step_type=breeding
+     Progress: Breeding: Cultivated + Graduate -> Artistic
+  27. [BREEDING] ✅ Cultivated + Graduate -> Artistic
+  28. [GUI_CALL] current_species=Artistic, current_step=431, progress=Completed Artistic, step_type=breeding, total_steps=15
+     Progress: Completed Artistic
+  29. [GUI_CALL] current_species=PHD, progress=Breeding: Graduate + Student -> PHD, step_type=breeding
+     Progress: Breeding: Graduate + Student -> PHD
+  30. [BREEDING] ✅ Graduate + Student -> PHD
+  31. [GUI_CALL] current_species=PHD, current_step=432, progress=Completed PHD, step_type=breeding, total_steps=15
+     Progress: Completed PHD
+  32. [GUI_CALL] current_species=Rainbow, progress=Breeding: Artistic + PHD -> Rainbow, step_type=breeding
+     Progress: Breeding: Artistic + PHD -> Rainbow
+  33. [BREEDING] ✅ Artistic + PHD -> Rainbow
+  34. [GUI_CALL] current_species=Rainbow, current_step=433, progress=Completed Rainbow, step_type=breeding, total_steps=15
+     Progress: Completed Rainbow
+  35. [GUI_CALL] current_species=Luctor, progress=Breeding: Rainbow + Abyssal -> Luctor, step_type=breeding
      Progress: Breeding: Rainbow + Abyssal -> Luctor
   36. [BREEDING] ✅ Rainbow + Abyssal -> Luctor
-  37. [GUI_CALL] progress=Completed Luctor, current_species=Luctor, step_type=breeding, total_steps=15, current_step=434
+  37. [GUI_CALL] current_species=Luctor, current_step=434, progress=Completed Luctor, step_type=breeding, total_steps=15
      Progress: Completed Luctor
   38. [EXECUTION_RESULT] ✅ Returned: true
 

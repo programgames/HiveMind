@@ -1,27 +1,25 @@
 === Breeding Analysis for Pyramid ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 32
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Forest
-  2. Monastic
-  3. Ender
+  1. Ender
+  2. Forest
+  3. Mad Scientist
   4. Meadows
-  5. Mad Scientist
-  6. Modest
+  5. Modest
+  6. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    3 Forest princesses OR 3 Forest drones
-    3 Monastic princesses OR 2 Monastic drones
     2 Ender princesses OR 2 Ender drones
-    6 Meadows princesses OR 6 Meadows drones
+    3 Forest princesses OR 3 Forest drones
     2 Mad Scientist princesses OR 2 Mad Scientist drones
+    6 Meadows princesses OR 6 Meadows drones
     3 Modest princesses OR 3 Modest drones
+    3 Monastic princesses OR 2 Monastic drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

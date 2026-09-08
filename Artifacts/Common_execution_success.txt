@@ -1,6 +1,5 @@
 === Execution Analysis for Common ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 1
@@ -18,10 +17,10 @@ Total accumulation cycles: 0
      Total steps planned: 1
      Tree species: Common
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=1, current_step=64
+  4. [GUI_CALL] current_species=Common, current_step=64, progress=Completed Common, step_type=breeding, total_steps=1
      Progress: Completed Common
   5. [EXECUTION_RESULT] ✅ Returned: true
 

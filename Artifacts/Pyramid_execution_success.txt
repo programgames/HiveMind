@@ -1,6 +1,5 @@
 === Execution Analysis for Pyramid ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 27
@@ -18,140 +17,140 @@ Total accumulation cycles: 0
      Total steps planned: 32
      Tree species: Pyramid
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=32, current_step=505
+  4. [GUI_CALL] current_species=Common, current_step=505, progress=Completed Common, step_type=breeding, total_steps=32
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=32, current_step=506
+  7. [GUI_CALL] current_species=Cultivated, current_step=506, progress=Completed Cultivated, step_type=breeding, total_steps=32
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   9. [BREEDING] ✅ Cultivated + Common -> Noble
-  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=32, current_step=507
+  10. [GUI_CALL] current_species=Noble, current_step=507, progress=Completed Noble, step_type=breeding, total_steps=32
      Progress: Completed Noble
-  11. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
+  11. [GUI_CALL] current_species=Majestic, progress=Breeding: Noble + Cultivated -> Majestic, step_type=breeding
      Progress: Breeding: Noble + Cultivated -> Majestic
   12. [BREEDING] ✅ Noble + Cultivated -> Majestic
-  13. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, step_type=breeding, total_steps=32, current_step=508
+  13. [GUI_CALL] current_species=Majestic, current_step=508, progress=Completed Majestic, step_type=breeding, total_steps=32
      Progress: Completed Majestic
-  14. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
+  14. [GUI_CALL] current_species=Imperial, progress=Breeding: Noble + Majestic -> Imperial, step_type=breeding
      Progress: Breeding: Noble + Majestic -> Imperial
   15. [BREEDING] ✅ Noble + Majestic -> Imperial
-  16. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, step_type=breeding, total_steps=32, current_step=509
+  16. [GUI_CALL] current_species=Imperial, current_step=509, progress=Completed Imperial, step_type=breeding, total_steps=32
      Progress: Completed Imperial
-  17. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
+  17. [GUI_CALL] current_species=Mystical, progress=Breeding: Noble + Monastic -> Mystical, step_type=breeding
      Progress: Breeding: Noble + Monastic -> Mystical
   18. [BREEDING] ✅ Noble + Monastic -> Mystical
-  19. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, step_type=breeding, total_steps=32, current_step=510
+  19. [GUI_CALL] current_species=Mystical, current_step=510, progress=Completed Mystical, step_type=breeding, total_steps=32
      Progress: Completed Mystical
-  20. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
+  20. [GUI_CALL] current_species=Eldritch, progress=Breeding: Mystical + Cultivated -> Eldritch, step_type=breeding
      Progress: Breeding: Mystical + Cultivated -> Eldritch
   21. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
-  22. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, step_type=breeding, total_steps=32, current_step=511
+  22. [GUI_CALL] current_species=Eldritch, current_step=511, progress=Completed Eldritch, step_type=breeding, total_steps=32
      Progress: Completed Eldritch
-  23. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Charmed, current_species=Charmed, step_type=breeding
+  23. [GUI_CALL] current_species=Charmed, progress=Breeding: Cultivated + Eldritch -> Charmed, step_type=breeding
      Progress: Breeding: Cultivated + Eldritch -> Charmed
   24. [BREEDING] ✅ Cultivated + Eldritch -> Charmed
-  25. [GUI_CALL] progress=Completed Charmed, current_species=Charmed, step_type=breeding, total_steps=32, current_step=512
+  25. [GUI_CALL] current_species=Charmed, current_step=512, progress=Completed Charmed, step_type=breeding, total_steps=32
      Progress: Completed Charmed
-  26. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+  26. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   27. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  28. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=32, current_step=513
+  28. [GUI_CALL] current_species=Sinister, current_step=513, progress=Completed Sinister, step_type=breeding, total_steps=32
      Progress: Completed Sinister
-  29. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
+  29. [GUI_CALL] current_species=Frugal, progress=Breeding: Modest + Sinister -> Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   30. [BREEDING] ✅ Modest + Sinister -> Frugal
-  31. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=32, current_step=514
+  31. [GUI_CALL] current_species=Frugal, current_step=514, progress=Completed Frugal, step_type=breeding, total_steps=32
      Progress: Completed Frugal
-  32. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
+  32. [GUI_CALL] current_species=Austere, progress=Breeding: Modest + Frugal -> Austere, step_type=breeding
      Progress: Breeding: Modest + Frugal -> Austere
   33. [BREEDING] ✅ Modest + Frugal -> Austere
-  34. [GUI_CALL] progress=Completed Austere, current_species=Austere, step_type=breeding, total_steps=32, current_step=515
+  34. [GUI_CALL] current_species=Austere, current_step=515, progress=Completed Austere, step_type=breeding, total_steps=32
      Progress: Completed Austere
-  35. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
+  35. [GUI_CALL] current_species=Secluded, progress=Breeding: Austere + Monastic -> Secluded, step_type=breeding
      Progress: Breeding: Austere + Monastic -> Secluded
   36. [BREEDING] ✅ Austere + Monastic -> Secluded
-  37. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, step_type=breeding, total_steps=32, current_step=516
+  37. [GUI_CALL] current_species=Secluded, current_step=516, progress=Completed Secluded, step_type=breeding, total_steps=32
      Progress: Completed Secluded
-  38. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
+  38. [GUI_CALL] current_species=Hermitic, progress=Breeding: Secluded + Monastic -> Hermitic, step_type=breeding
      Progress: Breeding: Secluded + Monastic -> Hermitic
   39. [BREEDING] ✅ Secluded + Monastic -> Hermitic
-  40. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, step_type=breeding, total_steps=32, current_step=517
+  40. [GUI_CALL] current_species=Hermitic, current_step=517, progress=Completed Hermitic, step_type=breeding, total_steps=32
      Progress: Completed Hermitic
-  41. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
+  41. [GUI_CALL] current_species=Spectral, progress=Breeding: Ender + Hermitic -> Spectral, step_type=breeding
      Progress: Breeding: Ender + Hermitic -> Spectral
   42. [BREEDING] ✅ Ender + Hermitic -> Spectral
-  43. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, step_type=breeding, total_steps=32, current_step=518
+  43. [GUI_CALL] current_species=Spectral, current_step=518, progress=Completed Spectral, step_type=breeding, total_steps=32
      Progress: Completed Spectral
-  44. [GUI_CALL] progress=Breeding: Ender + Spectral -> Phantasmal, current_species=Phantasmal, step_type=breeding
+  44. [GUI_CALL] current_species=Phantasmal, progress=Breeding: Ender + Spectral -> Phantasmal, step_type=breeding
      Progress: Breeding: Ender + Spectral -> Phantasmal
   45. [BREEDING] ✅ Ender + Spectral -> Phantasmal
-  46. [GUI_CALL] progress=Completed Phantasmal, current_species=Phantasmal, step_type=breeding, total_steps=32, current_step=519
+  46. [GUI_CALL] current_species=Phantasmal, current_step=519, progress=Completed Phantasmal, step_type=breeding, total_steps=32
      Progress: Completed Phantasmal
-  47. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
+  47. [GUI_CALL] current_species=Esoteric, progress=Breeding: Cultivated + Eldritch -> Esoteric, step_type=breeding
      Progress: Breeding: Cultivated + Eldritch -> Esoteric
   48. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
-  49. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, step_type=breeding, total_steps=32, current_step=520
+  49. [GUI_CALL] current_species=Esoteric, current_step=520, progress=Completed Esoteric, step_type=breeding, total_steps=32
      Progress: Completed Esoteric
-  50. [GUI_CALL] progress=Breeding: Eldritch + Charmed -> Enchanted, current_species=Enchanted, step_type=breeding
-     Progress: Breeding: Eldritch + Charmed -> Enchanted
-  51. [BREEDING] ✅ Eldritch + Charmed -> Enchanted
-  52. [GUI_CALL] progress=Completed Enchanted, current_species=Enchanted, step_type=breeding, total_steps=32, current_step=521
-     Progress: Completed Enchanted
-  53. [GUI_CALL] progress=Breeding: Enchanted + Charmed -> Supernatural, current_species=Supernatural, step_type=breeding
-     Progress: Breeding: Enchanted + Charmed -> Supernatural
-  54. [BREEDING] ✅ Enchanted + Charmed -> Supernatural
-  55. [GUI_CALL] progress=Completed Supernatural, current_species=Supernatural, step_type=breeding, total_steps=32, current_step=522
-     Progress: Completed Supernatural
-  56. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
+  50. [GUI_CALL] current_species=Mysterious, progress=Breeding: Forest + Common -> Mysterious, step_type=breeding
      Progress: Breeding: Forest + Common -> Mysterious
-  57. [BREEDING] ✅ Forest + Common -> Mysterious
-  58. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, step_type=breeding, total_steps=32, current_step=523
+  51. [BREEDING] ✅ Forest + Common -> Mysterious
+  52. [GUI_CALL] current_species=Mysterious, current_step=521, progress=Completed Mysterious, step_type=breeding, total_steps=32
      Progress: Completed Mysterious
-  59. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
+  53. [GUI_CALL] current_species=Arcane, progress=Breeding: Esoteric + Mysterious -> Arcane, step_type=breeding
      Progress: Breeding: Esoteric + Mysterious -> Arcane
-  60. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
-  61. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, step_type=breeding, total_steps=32, current_step=524
+  54. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  55. [GUI_CALL] current_species=Arcane, current_step=522, progress=Completed Arcane, step_type=breeding, total_steps=32
      Progress: Completed Arcane
-  62. [GUI_CALL] progress=Breeding: Supernatural + Arcane -> Ethereal, current_species=Ethereal, step_type=breeding
+  56. [GUI_CALL] current_species=Enchanted, progress=Breeding: Eldritch + Charmed -> Enchanted, step_type=breeding
+     Progress: Breeding: Eldritch + Charmed -> Enchanted
+  57. [BREEDING] ✅ Eldritch + Charmed -> Enchanted
+  58. [GUI_CALL] current_species=Enchanted, current_step=523, progress=Completed Enchanted, step_type=breeding, total_steps=32
+     Progress: Completed Enchanted
+  59. [GUI_CALL] current_species=Supernatural, progress=Breeding: Enchanted + Charmed -> Supernatural, step_type=breeding
+     Progress: Breeding: Enchanted + Charmed -> Supernatural
+  60. [BREEDING] ✅ Enchanted + Charmed -> Supernatural
+  61. [GUI_CALL] current_species=Supernatural, current_step=524, progress=Completed Supernatural, step_type=breeding, total_steps=32
+     Progress: Completed Supernatural
+  62. [GUI_CALL] current_species=Ethereal, progress=Breeding: Supernatural + Arcane -> Ethereal, step_type=breeding
      Progress: Breeding: Supernatural + Arcane -> Ethereal
   63. [BREEDING] ✅ Supernatural + Arcane -> Ethereal
-  64. [GUI_CALL] progress=Completed Ethereal, current_species=Ethereal, step_type=breeding, total_steps=32, current_step=525
+  64. [GUI_CALL] current_species=Ethereal, current_step=525, progress=Completed Ethereal, step_type=breeding, total_steps=32
      Progress: Completed Ethereal
-  65. [GUI_CALL] progress=Breeding: Imperial + Ethereal -> Timely, current_species=Timely, step_type=breeding
+  65. [GUI_CALL] current_species=Timely, progress=Breeding: Imperial + Ethereal -> Timely, step_type=breeding
      Progress: Breeding: Imperial + Ethereal -> Timely
   66. [BREEDING] ✅ Imperial + Ethereal -> Timely
-  67. [GUI_CALL] progress=Completed Timely, current_species=Timely, step_type=breeding, total_steps=32, current_step=526
+  67. [GUI_CALL] current_species=Timely, current_step=526, progress=Completed Timely, step_type=breeding, total_steps=32
      Progress: Completed Timely
-  68. [GUI_CALL] progress=Breeding: Imperial + Timely -> Lordly, current_species=Lordly, step_type=breeding
+  68. [GUI_CALL] current_species=Lordly, progress=Breeding: Imperial + Timely -> Lordly, step_type=breeding
      Progress: Breeding: Imperial + Timely -> Lordly
   69. [BREEDING] ✅ Imperial + Timely -> Lordly
-  70. [GUI_CALL] progress=Completed Lordly, current_species=Lordly, step_type=breeding, total_steps=32, current_step=527
+  70. [GUI_CALL] current_species=Lordly, current_step=527, progress=Completed Lordly, step_type=breeding, total_steps=32
      Progress: Completed Lordly
-  71. [GUI_CALL] progress=Breeding: Phantasmal + Mad Scientist -> Quantum Charming, current_species=Quantum Charming, step_type=breeding
+  71. [GUI_CALL] current_species=Quantum Charming, progress=Breeding: Phantasmal + Mad Scientist -> Quantum Charming, step_type=breeding
      Progress: Breeding: Phantasmal + Mad Scientist -> Quantum Charming
   72. [BREEDING] ✅ Phantasmal + Mad Scientist -> Quantum Charming
-  73. [GUI_CALL] progress=Completed Quantum Charming, current_species=Quantum Charming, step_type=breeding, total_steps=32, current_step=528
+  73. [GUI_CALL] current_species=Quantum Charming, current_step=528, progress=Completed Quantum Charming, step_type=breeding, total_steps=32
      Progress: Completed Quantum Charming
-  74. [GUI_CALL] progress=Breeding: Mad Scientist + Phantasmal -> Quantum Strange, current_species=Quantum Strange, step_type=breeding
+  74. [GUI_CALL] current_species=Quantum Strange, progress=Breeding: Mad Scientist + Phantasmal -> Quantum Strange, step_type=breeding
      Progress: Breeding: Mad Scientist + Phantasmal -> Quantum Strange
   75. [BREEDING] ✅ Mad Scientist + Phantasmal -> Quantum Strange
-  76. [GUI_CALL] progress=Completed Quantum Strange, current_species=Quantum Strange, step_type=breeding, total_steps=32, current_step=529
+  76. [GUI_CALL] current_species=Quantum Strange, current_step=529, progress=Completed Quantum Strange, step_type=breeding, total_steps=32
      Progress: Completed Quantum Strange
-  77. [GUI_CALL] progress=Breeding: Quantum Charming + Quantum Strange -> Temporal, current_species=Temporal, step_type=breeding
+  77. [GUI_CALL] current_species=Temporal, progress=Breeding: Quantum Charming + Quantum Strange -> Temporal, step_type=breeding
      Progress: Breeding: Quantum Charming + Quantum Strange -> Temporal
   78. [BREEDING] ✅ Quantum Charming + Quantum Strange -> Temporal
-  79. [GUI_CALL] progress=Completed Temporal, current_species=Temporal, step_type=breeding, total_steps=32, current_step=530
+  79. [GUI_CALL] current_species=Temporal, current_step=530, progress=Completed Temporal, step_type=breeding, total_steps=32
      Progress: Completed Temporal
-  80. [GUI_CALL] progress=Breeding: Lordly + Temporal -> Pyramid, current_species=Pyramid, step_type=breeding
+  80. [GUI_CALL] current_species=Pyramid, progress=Breeding: Lordly + Temporal -> Pyramid, step_type=breeding
      Progress: Breeding: Lordly + Temporal -> Pyramid
   81. [BREEDING] ✅ Lordly + Temporal -> Pyramid
-  82. [GUI_CALL] progress=Completed Pyramid, current_species=Pyramid, step_type=breeding, total_steps=32, current_step=531
+  82. [GUI_CALL] current_species=Pyramid, current_step=531, progress=Completed Pyramid, step_type=breeding, total_steps=32
      Progress: Completed Pyramid
   83. [EXECUTION_RESULT] ✅ Returned: true
 

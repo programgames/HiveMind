@@ -389,6 +389,10 @@ avant la première fonction qui les utilise (soit avant `main.lua:2499`), et ren
 | 2026-09-08 | Workflow 5 agents (un par lot) : 31 patchs conçus, 5 lots sur 5, 0 échec |
 | 2026-09-08 | Bugs préexistants B1 à B5 découverts et vérifiés ; B1 et B2 critiques, à corriger avant la migration |
 | 2026-09-08 | Ordre d'application arrêté à partir des conflits déclarés (§10) |
+| 2026-09-08 | 31 patchs appliqués ; deux défauts d'intégration corrigés (§11) |
+| 2026-09-08 | Suite de tests rendue déterministe : 97/97 artefacts stables (§14) |
+| 2026-09-08 | Pondération par dominance couverte par 10 vérifications (§15) |
+| 2026-09-08 | `extractSpecies` sur mot entier (§16). Seul Q3/H1 reste ouvert. |
 
 ## 10. Ordre d'application
 
@@ -482,11 +486,51 @@ Livrées dans le code, mais non vérifiées. Chacune est isolée à un endroit.
 
 ## 13. Reste à faire
 
-- Exécuter `check_slots.lua` en jeu et reporter l'offset (H1).
-- Un test ciblé pour la pondération : `setSpeciesTemplateOverride` sur deux espèces, drapeau à
-  `true`, vérifier que `countTreeCost` rend 3 là où `countTreeSteps` rend 2, drapeau remis à `false`
-  au démontage.
-- Rendre `test_planning.lua` déterministe, ou remplacer sa comparaison d'artefacts par l'invariant
-  du §11. En l'état la suite ne peut pas détecter une régression de planification.
-- `extractSpecies` corrigé pour la correspondance la plus longue (B4), mais `scanInventory` et le
-  comptage de récolte gagneraient à passer par `speciesMatchesItem`, qui teste le mot entier.
+- **Exécuter `check_slots.lua` en jeu et reporter l'offset (H1).** C'est le seul point ouvert.
+
+Les trois chantiers de code sont terminés — voir §14.
+
+## 14. Déterminisme de la suite de tests
+
+`test_planning.lua` produisait des artefacts différents à chaque exécution, ce qui la rendait
+incapable de détecter une régression. Cinq sources, toutes dues à `pairs()` dont l'ordre n'est pas
+défini et dont le hachage des chaînes est réamorcé à chaque processus Lua.
+
+| Source | Effet | Correction |
+|---|---|---|
+| `starting_princesses` construit par `pairs()` (`main.lua`) | l'ordre des espèces de départ changeait | tri après construction |
+| Fallback des nœuds primaires par `pairs(species_found)` (`executeBreedingTree`) | **l'ordre d'exécution des sous-arbres indépendants changeait** — le tri topologique conserve l'ordre d'entrée entre nœuds qu'il ne peut pas départager | parcours en ordre trié |
+| Liste des besoins d'exécution (`test_planning.lua`) | lignes réordonnées | tri des clés |
+| Arguments de `drawGUI` dans le journal | clés réordonnées | tri avant concaténation |
+| Liste des réutilisations manquées | lignes réordonnées | tri des clés |
+
+Deux valeurs volatiles ont par ailleurs été sorties des fichiers vers la console : la durée de
+planification et l'horodatage `Generated:`. Les artefacts étant versionnés, l'horodatage faisait
+apparaître 97 fichiers modifiés à chaque exécution et noyait le seul qui comptait.
+
+**Résultat** : 97 artefacts sur 97 identiques octet à octet entre deux exécutions. Un simple
+`diff -r` sur `Artifacts/` est désormais un contrôle de régression valide, et l'invariant du §11
+n'est plus nécessaire au quotidien.
+
+L'invariant reste identique à la référence d'avant migration : ces tris n'ont rien changé aux plans
+calculés, seulement à leur présentation et à l'ordre d'exécution de sous-arbres indépendants.
+
+## 15. Couverture de la pondération par dominance
+
+`testDominanceWeighting` dans `test_planning.lua`, 10 vérifications, sans aucun composant
+Gendustry : `setSpeciesTemplateOverride` alimente directement le cache de templates.
+
+- `countTreeCost` est exactement `countTreeSteps` tant que `config.dominance_weighting` est `false`
+  — c'est cette égalité qui rend les 97 artefacts valides.
+- Une espèce récessive pèse `recessive_step_weight`, une dominante pèse 1.
+- Le poids est bien relu depuis la config, pas figé.
+- Une espèce inconnue du registre n'est pas pénalisée.
+- Le démontage restaure le drapeau et vide les surcharges, sinon tout le reste de la suite
+  calculerait des plans différents.
+
+## 16. Correspondance de mot entier
+
+`extractSpecies` passe désormais par `speciesMatchesItem`, le test de mot entier déjà utilisé pour
+valider la sortie du Mutatron. La correspondance la plus longue est conservée, donc une espèce en
+deux mots l'emporte sur l'espèce en un mot qu'elle contient. Les trois appelants —
+`scanInventory` et les deux boucles de comptage de récolte — en bénéficient sans modification.

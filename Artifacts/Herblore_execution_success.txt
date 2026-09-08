@@ -1,6 +1,5 @@
 === Execution Analysis for Herblore ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 16
@@ -18,85 +17,85 @@ Total accumulation cycles: 0
      Total steps planned: 17
      Tree species: Herblore
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=17, current_step=371
+  4. [GUI_CALL] current_species=Common, current_step=371, progress=Completed Common, step_type=breeding, total_steps=17
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=17, current_step=372
+  7. [GUI_CALL] current_species=Cultivated, current_step=372, progress=Completed Cultivated, step_type=breeding, total_steps=17
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+  8. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   9. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=17, current_step=373
+  10. [GUI_CALL] current_species=Sinister, current_step=373, progress=Completed Sinister, step_type=breeding, total_steps=17
      Progress: Completed Sinister
-  11. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
+  11. [GUI_CALL] current_species=Frugal, progress=Breeding: Modest + Sinister -> Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   12. [BREEDING] ✅ Modest + Sinister -> Frugal
-  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=17, current_step=374
+  13. [GUI_CALL] current_species=Frugal, current_step=374, progress=Completed Frugal, step_type=breeding, total_steps=17
      Progress: Completed Frugal
-  14. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
+  14. [GUI_CALL] current_species=Austere, progress=Breeding: Modest + Frugal -> Austere, step_type=breeding
      Progress: Breeding: Modest + Frugal -> Austere
   15. [BREEDING] ✅ Modest + Frugal -> Austere
-  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, step_type=breeding, total_steps=17, current_step=375
+  16. [GUI_CALL] current_species=Austere, current_step=375, progress=Completed Austere, step_type=breeding, total_steps=17
      Progress: Completed Austere
-  17. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
+  17. [GUI_CALL] current_species=Secluded, progress=Breeding: Austere + Monastic -> Secluded, step_type=breeding
      Progress: Breeding: Austere + Monastic -> Secluded
   18. [BREEDING] ✅ Austere + Monastic -> Secluded
-  19. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, step_type=breeding, total_steps=17, current_step=376
+  19. [GUI_CALL] current_species=Secluded, current_step=376, progress=Completed Secluded, step_type=breeding, total_steps=17
      Progress: Completed Secluded
-  20. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
+  20. [GUI_CALL] current_species=Hermitic, progress=Breeding: Secluded + Monastic -> Hermitic, step_type=breeding
      Progress: Breeding: Secluded + Monastic -> Hermitic
   21. [BREEDING] ✅ Secluded + Monastic -> Hermitic
-  22. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, step_type=breeding, total_steps=17, current_step=377
+  22. [GUI_CALL] current_species=Hermitic, current_step=377, progress=Completed Hermitic, step_type=breeding, total_steps=17
      Progress: Completed Hermitic
-  23. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
-     Progress: Breeding: Ender + Hermitic -> Spectral
-  24. [BREEDING] ✅ Ender + Hermitic -> Spectral
-  25. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, step_type=breeding, total_steps=17, current_step=378
-     Progress: Completed Spectral
-  26. [GUI_CALL] progress=Breeding: Ender + Secluded -> Abnormal, current_species=Abnormal, step_type=breeding
+  23. [GUI_CALL] current_species=Abnormal, progress=Breeding: Ender + Secluded -> Abnormal, step_type=breeding
      Progress: Breeding: Ender + Secluded -> Abnormal
-  27. [BREEDING] ✅ Ender + Secluded -> Abnormal
-  28. [GUI_CALL] progress=Completed Abnormal, current_species=Abnormal, step_type=breeding, total_steps=17, current_step=379
+  24. [BREEDING] ✅ Ender + Secluded -> Abnormal
+  25. [GUI_CALL] current_species=Abnormal, current_step=378, progress=Completed Abnormal, step_type=breeding, total_steps=17
      Progress: Completed Abnormal
-  29. [GUI_CALL] progress=Breeding: Abnormal + Hermitic -> Spatial, current_species=Spatial, step_type=breeding
-     Progress: Breeding: Abnormal + Hermitic -> Spatial
-  30. [BREEDING] ✅ Abnormal + Hermitic -> Spatial
-  31. [GUI_CALL] progress=Completed Spatial, current_species=Spatial, step_type=breeding, total_steps=17, current_step=380
-     Progress: Completed Spatial
-  32. [GUI_CALL] progress=Breeding: Spectral + Spatial -> Quantum, current_species=Quantum, step_type=breeding
-     Progress: Breeding: Spectral + Spatial -> Quantum
-  33. [BREEDING] ✅ Spectral + Spatial -> Quantum
-  34. [GUI_CALL] progress=Completed Quantum, current_species=Quantum, step_type=breeding, total_steps=17, current_step=381
-     Progress: Completed Quantum
-  35. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+  26. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
-  36. [BREEDING] ✅ Cultivated + Common -> Noble
-  37. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=17, current_step=382
+  27. [BREEDING] ✅ Cultivated + Common -> Noble
+  28. [GUI_CALL] current_species=Noble, current_step=379, progress=Completed Noble, step_type=breeding, total_steps=17
      Progress: Completed Noble
-  38. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
+  29. [GUI_CALL] current_species=Mystical, progress=Breeding: Noble + Monastic -> Mystical, step_type=breeding
      Progress: Breeding: Noble + Monastic -> Mystical
-  39. [BREEDING] ✅ Noble + Monastic -> Mystical
-  40. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, step_type=breeding, total_steps=17, current_step=383
+  30. [BREEDING] ✅ Noble + Monastic -> Mystical
+  31. [GUI_CALL] current_species=Mystical, current_step=380, progress=Completed Mystical, step_type=breeding, total_steps=17
      Progress: Completed Mystical
-  41. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
+  32. [GUI_CALL] current_species=Eldritch, progress=Breeding: Mystical + Cultivated -> Eldritch, step_type=breeding
      Progress: Breeding: Mystical + Cultivated -> Eldritch
-  42. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
-  43. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, step_type=breeding, total_steps=17, current_step=384
+  33. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  34. [GUI_CALL] current_species=Eldritch, current_step=381, progress=Completed Eldritch, step_type=breeding, total_steps=17
      Progress: Completed Eldritch
-  44. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
+  35. [GUI_CALL] current_species=Esoteric, progress=Breeding: Cultivated + Eldritch -> Esoteric, step_type=breeding
      Progress: Breeding: Cultivated + Eldritch -> Esoteric
-  45. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
-  46. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, step_type=breeding, total_steps=17, current_step=385
+  36. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  37. [GUI_CALL] current_species=Esoteric, current_step=382, progress=Completed Esoteric, step_type=breeding, total_steps=17
      Progress: Completed Esoteric
-  47. [GUI_CALL] progress=Breeding: Esoteric + Quantum -> Herblore, current_species=Herblore, step_type=breeding
+  38. [GUI_CALL] current_species=Spectral, progress=Breeding: Ender + Hermitic -> Spectral, step_type=breeding
+     Progress: Breeding: Ender + Hermitic -> Spectral
+  39. [BREEDING] ✅ Ender + Hermitic -> Spectral
+  40. [GUI_CALL] current_species=Spectral, current_step=383, progress=Completed Spectral, step_type=breeding, total_steps=17
+     Progress: Completed Spectral
+  41. [GUI_CALL] current_species=Spatial, progress=Breeding: Abnormal + Hermitic -> Spatial, step_type=breeding
+     Progress: Breeding: Abnormal + Hermitic -> Spatial
+  42. [BREEDING] ✅ Abnormal + Hermitic -> Spatial
+  43. [GUI_CALL] current_species=Spatial, current_step=384, progress=Completed Spatial, step_type=breeding, total_steps=17
+     Progress: Completed Spatial
+  44. [GUI_CALL] current_species=Quantum, progress=Breeding: Spectral + Spatial -> Quantum, step_type=breeding
+     Progress: Breeding: Spectral + Spatial -> Quantum
+  45. [BREEDING] ✅ Spectral + Spatial -> Quantum
+  46. [GUI_CALL] current_species=Quantum, current_step=385, progress=Completed Quantum, step_type=breeding, total_steps=17
+     Progress: Completed Quantum
+  47. [GUI_CALL] current_species=Herblore, progress=Breeding: Esoteric + Quantum -> Herblore, step_type=breeding
      Progress: Breeding: Esoteric + Quantum -> Herblore
   48. [BREEDING] ✅ Esoteric + Quantum -> Herblore
-  49. [GUI_CALL] progress=Completed Herblore, current_species=Herblore, step_type=breeding, total_steps=17, current_step=386
+  49. [GUI_CALL] current_species=Herblore, current_step=386, progress=Completed Herblore, step_type=breeding, total_steps=17
      Progress: Completed Herblore
   50. [EXECUTION_RESULT] ✅ Returned: true
 

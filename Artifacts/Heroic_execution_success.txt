@@ -1,6 +1,5 @@
 === Execution Analysis for Heroic ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 1
@@ -18,10 +17,10 @@ Total accumulation cycles: 0
      Total steps planned: 1
      Tree species: Heroic
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Valiant + Steadfast -> Heroic, current_species=Heroic, step_type=breeding
+  2. [GUI_CALL] current_species=Heroic, progress=Breeding: Valiant + Steadfast -> Heroic, step_type=breeding
      Progress: Breeding: Valiant + Steadfast -> Heroic
   3. [BREEDING] ✅ Valiant + Steadfast -> Heroic
-  4. [GUI_CALL] progress=Completed Heroic, current_species=Heroic, step_type=breeding, total_steps=1, current_step=65
+  4. [GUI_CALL] current_species=Heroic, current_step=65, progress=Completed Heroic, step_type=breeding, total_steps=1
      Progress: Completed Heroic
   5. [EXECUTION_RESULT] ✅ Returned: true
 

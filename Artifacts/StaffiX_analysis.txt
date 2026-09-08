@@ -1,24 +1,22 @@
 === Breeding Analysis for StaffiX ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 12
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Forest
-  2. Monastic
-  3. Meadows
-  4. Modest
+  2. Meadows
+  3. Modest
+  4. Monastic
   5. Water
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     1 Forest princess OR 1 Forest drone
-    1 Monastic princess OR 1 Monastic drone
     2 Meadows princesses OR 2 Meadows drones
     3 Modest princesses OR 2 Modest drones
+    1 Monastic princess OR 1 Monastic drone
     1 Water princess OR 1 Water drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.

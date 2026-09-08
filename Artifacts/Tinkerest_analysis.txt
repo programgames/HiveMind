@@ -1,33 +1,31 @@
 === Breeding Analysis for Tinkerest ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 47
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Forest
-  2. Monastic
-  3. Meadows
-  4. Rocky
-  5. Modest
+  2. Meadows
+  3. Modest
+  4. Monastic
+  5. Rocky
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     8 Forest princesses OR 8 Forest drones
-    1 Monastic princess OR 1 Monastic drone
     16 Meadows princesses OR 16 Meadows drones
-    2 Rocky princesses OR 2 Rocky drones
     3 Modest princesses OR 3 Modest drones
+    1 Monastic princess OR 1 Monastic drone
+    2 Rocky princesses OR 2 Rocky drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 
 ⚠️  OPTIMIZATION ANALYSIS:
   Potential missed reuse opportunities:
-    → Robust: 2 occurrences, 0 reused, could reuse 1 more
-    → Resilient: 2 occurrences, 0 reused, could reuse 1 more
     → Industrious: 2 occurrences, 0 reused, could reuse 1 more
+    → Resilient: 2 occurrences, 0 reused, could reuse 1 more
+    → Robust: 2 occurrences, 0 reused, could reuse 1 more
 
 📊 PLAN STATISTICS:
   Unique species in tree: 31

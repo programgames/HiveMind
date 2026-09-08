@@ -1,21 +1,19 @@
 === Breeding Analysis for Nuclear Technician ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 6
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Meadows
+  1. Bomber
   2. Forest
-  3. Bomber
+  3. Meadows
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Meadows princesses OR 2 Meadows drones
-    1 Forest princess OR 1 Forest drone
     1 Bomber princess OR 1 Bomber drone
+    1 Forest princess OR 1 Forest drone
+    2 Meadows princesses OR 2 Meadows drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

@@ -1,6 +1,5 @@
 === Execution Analysis for Nuclear Technician ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 6
@@ -18,35 +17,35 @@ Total accumulation cycles: 0
      Total steps planned: 6
      Tree species: Nuclear Technician
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=6, current_step=499
+  4. [GUI_CALL] current_species=Common, current_step=499, progress=Completed Common, step_type=breeding, total_steps=6
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=6, current_step=500
+  7. [GUI_CALL] current_species=Cultivated, current_step=500, progress=Completed Cultivated, step_type=breeding, total_steps=6
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
+  8. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Student
   9. [BREEDING] ✅ Common + Cultivated -> Student
-  10. [GUI_CALL] progress=Completed Student, current_species=Student, step_type=breeding, total_steps=6, current_step=501
+  10. [GUI_CALL] current_species=Student, current_step=501, progress=Completed Student, step_type=breeding, total_steps=6
      Progress: Completed Student
-  11. [GUI_CALL] progress=Breeding: Common + Student -> Graduate, current_species=Graduate, step_type=breeding
+  11. [GUI_CALL] current_species=Graduate, progress=Breeding: Common + Student -> Graduate, step_type=breeding
      Progress: Breeding: Common + Student -> Graduate
   12. [BREEDING] ✅ Common + Student -> Graduate
-  13. [GUI_CALL] progress=Completed Graduate, current_species=Graduate, step_type=breeding, total_steps=6, current_step=502
+  13. [GUI_CALL] current_species=Graduate, current_step=502, progress=Completed Graduate, step_type=breeding, total_steps=6
      Progress: Completed Graduate
-  14. [GUI_CALL] progress=Breeding: Graduate + Student -> PHD, current_species=PHD, step_type=breeding
+  14. [GUI_CALL] current_species=PHD, progress=Breeding: Graduate + Student -> PHD, step_type=breeding
      Progress: Breeding: Graduate + Student -> PHD
   15. [BREEDING] ✅ Graduate + Student -> PHD
-  16. [GUI_CALL] progress=Completed PHD, current_species=PHD, step_type=breeding, total_steps=6, current_step=503
+  16. [GUI_CALL] current_species=PHD, current_step=503, progress=Completed PHD, step_type=breeding, total_steps=6
      Progress: Completed PHD
-  17. [GUI_CALL] progress=Breeding: Bomber + PHD -> Nuclear Technician, current_species=Nuclear Technician, step_type=breeding
+  17. [GUI_CALL] current_species=Nuclear Technician, progress=Breeding: Bomber + PHD -> Nuclear Technician, step_type=breeding
      Progress: Breeding: Bomber + PHD -> Nuclear Technician
   18. [BREEDING] ✅ Bomber + PHD -> Nuclear Technician
-  19. [GUI_CALL] progress=Completed Nuclear Technician, current_species=Nuclear Technician, step_type=breeding, total_steps=6, current_step=504
+  19. [GUI_CALL] current_species=Nuclear Technician, current_step=504, progress=Completed Nuclear Technician, step_type=breeding, total_steps=6
      Progress: Completed Nuclear Technician
   20. [EXECUTION_RESULT] ✅ Returned: true
 

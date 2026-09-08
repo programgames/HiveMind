@@ -1,23 +1,21 @@
 === Breeding Analysis for Shadow46x2 ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 14
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Meadows
-  2. Forest
-  3. Unusual
-  4. Monastic
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Unusual
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    5 Meadows princesses OR 2 Meadows drones
     2 Forest princesses OR 2 Forest drones
-    2 Unusual princesses OR 1 Unusual drone
+    5 Meadows princesses OR 2 Meadows drones
     1 Monastic princess OR 1 Monastic drone
+    2 Unusual princesses OR 1 Unusual drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

@@ -1,23 +1,21 @@
 === Breeding Analysis for SpoonyPanda ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 17
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Rocky
+  1. Forest
   2. Meadows
-  3. Forest
-  4. Monastic
+  3. Monastic
+  4. Rocky
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Rocky princess OR 1 Rocky drone
-    4 Meadows princesses OR 3 Meadows drones
     1 Forest princess OR 1 Forest drone
+    4 Meadows princesses OR 3 Meadows drones
     1 Monastic princess OR 1 Monastic drone
+    1 Rocky princess OR 1 Rocky drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

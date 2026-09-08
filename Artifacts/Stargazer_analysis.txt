@@ -1,31 +1,29 @@
 === Breeding Analysis for Stargazer ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 16
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Steadfast
+  1. Ender
   2. Forest
-  3. Valiant
-  4. Monastic
-  5. Ender
-  6. Meadows
-  7. Marble
-  8. Modest
+  3. Marble
+  4. Meadows
+  5. Modest
+  6. Monastic
+  7. Steadfast
+  8. Valiant
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
+    2 Ender princesses OR 2 Ender drones
+    1 Forest princess OR 1 Forest drone
     2 Marble princesses OR 1 Marble drone
+    2 Meadows princesses OR 1 Meadows drone
+    3 Modest princesses OR 1 Modest drone
+    2 Monastic princesses
     1 Steadfast princess OR 1 Steadfast drone
     1 Valiant princess OR 1 Valiant drone
-    2 Monastic princesses
-    2 Ender princesses OR 2 Ender drones
-    2 Meadows princesses OR 1 Meadows drone
-    1 Forest princess OR 1 Forest drone
-    3 Modest princesses OR 1 Modest drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

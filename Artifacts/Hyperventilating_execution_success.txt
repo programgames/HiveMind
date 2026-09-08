@@ -1,6 +1,5 @@
 === Execution Analysis for Hyperventilating ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 7
@@ -18,40 +17,40 @@ Total accumulation cycles: 0
      Total steps planned: 8
      Tree species: Hyperventilating
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=8, current_step=388
+  4. [GUI_CALL] current_species=Common, current_step=388, progress=Completed Common, step_type=breeding, total_steps=8
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=8, current_step=389
+  7. [GUI_CALL] current_species=Cultivated, current_step=389, progress=Completed Cultivated, step_type=breeding, total_steps=8
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+  8. [GUI_CALL] current_species=Noble, progress=Breeding: Cultivated + Common -> Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   9. [BREEDING] ✅ Cultivated + Common -> Noble
-  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=8, current_step=390
+  10. [GUI_CALL] current_species=Noble, current_step=390, progress=Completed Noble, step_type=breeding, total_steps=8
      Progress: Completed Noble
-  11. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
+  11. [GUI_CALL] current_species=Majestic, progress=Breeding: Noble + Cultivated -> Majestic, step_type=breeding
      Progress: Breeding: Noble + Cultivated -> Majestic
   12. [BREEDING] ✅ Noble + Cultivated -> Majestic
-  13. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, step_type=breeding, total_steps=8, current_step=391
+  13. [GUI_CALL] current_species=Majestic, current_step=391, progress=Completed Majestic, step_type=breeding, total_steps=8
      Progress: Completed Majestic
-  14. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
+  14. [GUI_CALL] current_species=Imperial, progress=Breeding: Noble + Majestic -> Imperial, step_type=breeding
      Progress: Breeding: Noble + Majestic -> Imperial
   15. [BREEDING] ✅ Noble + Majestic -> Imperial
-  16. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, step_type=breeding, total_steps=8, current_step=392
+  16. [GUI_CALL] current_species=Imperial, current_step=392, progress=Completed Imperial, step_type=breeding, total_steps=8
      Progress: Completed Imperial
-  17. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
+  17. [GUI_CALL] current_species=Student, progress=Breeding: Common + Cultivated -> Student, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Student
   18. [BREEDING] ✅ Common + Cultivated -> Student
-  19. [GUI_CALL] progress=Completed Student, current_species=Student, step_type=breeding, total_steps=8, current_step=393
+  19. [GUI_CALL] current_species=Student, current_step=393, progress=Completed Student, step_type=breeding, total_steps=8
      Progress: Completed Student
-  20. [GUI_CALL] progress=Breeding: Imperial + Student -> Hyperventilating, current_species=Hyperventilating, step_type=breeding
+  20. [GUI_CALL] current_species=Hyperventilating, progress=Breeding: Imperial + Student -> Hyperventilating, step_type=breeding
      Progress: Breeding: Imperial + Student -> Hyperventilating
   21. [BREEDING] ✅ Imperial + Student -> Hyperventilating
-  22. [GUI_CALL] progress=Completed Hyperventilating, current_species=Hyperventilating, step_type=breeding, total_steps=8, current_step=394
+  22. [GUI_CALL] current_species=Hyperventilating, current_step=394, progress=Completed Hyperventilating, step_type=breeding, total_steps=8
      Progress: Completed Hyperventilating
   23. [EXECUTION_RESULT] ✅ Returned: true
 

@@ -1,37 +1,35 @@
 === Breeding Analysis for Heraldry ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 36
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Infernal
+  1. Ender
   2. Forest
-  3. Monastic
-  4. Ender
-  5. Meadows
-  6. Oblivion
-  7. Modest
+  3. Infernal
+  4. Meadows
+  5. Modest
+  6. Monastic
+  7. Oblivion
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Infernal princesses OR 2 Infernal drones
-    5 Forest princesses OR 5 Forest drones
-    4 Monastic princesses OR 3 Monastic drones
     1 Ender princess OR 1 Ender drone
+    5 Forest princesses OR 5 Forest drones
+    2 Infernal princesses OR 2 Infernal drones
     9 Meadows princesses OR 9 Meadows drones
-    1 Oblivion princess OR 1 Oblivion drone
     3 Modest princesses OR 2 Modest drones
+    4 Monastic princesses OR 3 Monastic drones
+    1 Oblivion princess OR 1 Oblivion drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 
 ⚠️  OPTIMIZATION ANALYSIS:
   Potential missed reuse opportunities:
-    → Noble: 2 occurrences, 0 reused, could reuse 1 more
-    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
     → Eldritch: 2 occurrences, 0 reused, could reuse 0 more
+    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
+    → Noble: 2 occurrences, 0 reused, could reuse 1 more
 
 📊 PLAN STATISTICS:
   Unique species in tree: 33

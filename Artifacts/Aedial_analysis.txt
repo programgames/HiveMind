@@ -1,23 +1,21 @@
 === Breeding Analysis for Aedial ===
-Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 21
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Monastic
+  1. Forest
   2. Meadows
-  3. Forest
-  4. Modest
+  3. Modest
+  4. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Monastic princesses OR 1 Monastic drone
-    7 Meadows princesses OR 6 Meadows drones
     6 Forest princesses OR 6 Forest drones
+    7 Meadows princesses OR 6 Meadows drones
     2 Modest princesses OR 2 Modest drones
+    2 Monastic princesses OR 1 Monastic drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

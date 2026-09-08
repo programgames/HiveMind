@@ -1,8 +1,6 @@
 === Breeding Analysis for UselessForce ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 8
 Can execute: NO
 

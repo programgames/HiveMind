@@ -1,19 +1,17 @@
 === Breeding Analysis for Isekai ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 1
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Deep Learner
-  2. Crepuscular
+  1. Crepuscular
+  2. Deep Learner
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Deep Learner princess OR 1 Deep Learner drone
     1 Crepuscular princess OR 1 Crepuscular drone
+    1 Deep Learner princess OR 1 Deep Learner drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

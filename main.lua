@@ -757,11 +757,13 @@ end
 -- a substring of a longer one was shadowing it. Plain find, because a species name is data and
 -- must not be read as a pattern.
 function extractSpecies(itemName)
-    local lowered = itemName:lower()
     local best = nil
 
+    -- Whole word, through the same test the mutatron output validation uses: a substring match
+    -- reads "Common" out of "Uncommon Princess". The longest match still wins, so a two-word
+    -- species is preferred over the one-word species contained in it.
     for _, species in ipairs(available_bees) do
-        if lowered:find(species:lower(), 1, true) then
+        if speciesMatchesItem(itemName, species) then
             if not best or #species > #best then
                 best = species
             end
@@ -813,6 +815,11 @@ function calculateBreedingPath(target)
     for species, count in pairs(base_princesses_needed) do
         table.insert(starting_princesses, species)
     end
+
+    -- pairs() has no defined order and Lua randomises string hashing per process, so the same
+    -- plan listed its starting species differently on every run. Sort, so the plan reads the
+    -- same twice and a diff between two runs means something.
+    table.sort(starting_princesses)
 
     -- Check if plan can be executed (no missing base species)
     local can_execute = true
@@ -5266,7 +5273,19 @@ function executeBreedingTree(tree, drone_requirements, hasAPI, total_steps)
     end
 
     -- For species with no primary breeding nodes, designate the first collected instance as primary
-    for species, instances in pairs(species_found) do
+    --
+    -- Walked in sorted order: the fallback primaries are appended to primary_breeding_nodes here,
+    -- and topologicalSortByDependencies preserves input order between nodes it cannot order by
+    -- dependency. Iterating pairs() therefore made the execution order of independent subtrees
+    -- change from one run to the next, for the same plan.
+    local species_in_order = {}
+    for species in pairs(species_found) do
+        table.insert(species_in_order, species)
+    end
+    table.sort(species_in_order)
+
+    for _, species in ipairs(species_in_order) do
+        local instances = species_found[species]
         local has_primary = false
         for _, instance in ipairs(instances) do
             if instance.is_primary_breeding_node then

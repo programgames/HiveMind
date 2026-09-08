@@ -1,24 +1,22 @@
 === Breeding Analysis for Buried ===
-Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 32
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Forest
-  2. Rocky
-  3. Meadows
-  4. Monastic
+  2. Meadows
+  3. Monastic
+  4. Rocky
   5. Wintry
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     3 Forest princesses OR 3 Forest drones
-    1 Rocky princess OR 1 Rocky drone
     5 Meadows princesses OR 3 Meadows drones
     2 Monastic princesses OR 2 Monastic drones
+    1 Rocky princess OR 1 Rocky drone
     1 Wintry princess OR 1 Wintry drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.

@@ -1,19 +1,17 @@
 === Breeding Analysis for High-Pitched ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 1
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Oxygen
-  2. Deep Learner
+  1. Deep Learner
+  2. Oxygen
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Oxygen princess OR 1 Oxygen drone
     1 Deep Learner princess OR 1 Deep Learner drone
+    1 Oxygen princess OR 1 Oxygen drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

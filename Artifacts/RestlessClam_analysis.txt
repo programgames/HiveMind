@@ -1,24 +1,22 @@
 === Breeding Analysis for RestlessClam ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
 Total steps: 21
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Smouldering
-  2. Monastic
-  3. Meadows
-  4. Forest
+  1. Forest
+  2. Meadows
+  3. Monastic
+  4. Smouldering
   5. Wintry
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Smouldering princess OR 1 Smouldering drone
-    1 Monastic princess OR 1 Monastic drone
-    5 Meadows princesses OR 5 Meadows drones
     3 Forest princesses OR 3 Forest drones
+    5 Meadows princesses OR 5 Meadows drones
+    1 Monastic princess OR 1 Monastic drone
+    1 Smouldering princess OR 1 Smouldering drone
     1 Wintry princess OR 1 Wintry drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.

@@ -1,22 +1,20 @@
 === Breeding Analysis for Sandman366 ===
-Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 21
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Monastic
+  1. Forest
   2. Meadows
-  3. Forest
+  3. Monastic
   4. Wintry
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Monastic princesses OR 2 Monastic drones
-    4 Meadows princesses OR 4 Meadows drones
     2 Forest princesses OR 2 Forest drones
+    4 Meadows princesses OR 4 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
     1 Wintry princess OR 1 Wintry drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.

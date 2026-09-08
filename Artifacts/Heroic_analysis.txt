@@ -1,19 +1,17 @@
 === Breeding Analysis for Heroic ===
-Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 1
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Valiant
-  2. Steadfast
+  1. Steadfast
+  2. Valiant
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Valiant princess OR 1 Valiant drone
     1 Steadfast princess OR 1 Steadfast drone
+    1 Valiant princess OR 1 Valiant drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

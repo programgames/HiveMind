@@ -1,8 +1,6 @@
 === Breeding Analysis for Supernatural ===
-Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
 Total steps: 9
 Can execute: NO
 

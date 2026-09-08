@@ -1,6 +1,5 @@
 === Execution Analysis for UselessForce ===
 Test Type: success
-Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 7
@@ -18,40 +17,40 @@ Total accumulation cycles: 0
      Total steps planned: 8
      Tree species: UselessForce
      Drone req count: 0
-  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+  2. [GUI_CALL] current_species=Common, progress=Breeding: Meadows + Forest -> Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=8, current_step=720
+  4. [GUI_CALL] current_species=Common, current_step=720, progress=Completed Common, step_type=breeding, total_steps=8
      Progress: Completed Common
-  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+  5. [GUI_CALL] current_species=Cultivated, progress=Breeding: Meadows + Common -> Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=8, current_step=721
+  7. [GUI_CALL] current_species=Cultivated, current_step=721, progress=Completed Cultivated, step_type=breeding, total_steps=8
      Progress: Completed Cultivated
-  8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
+  8. [GUI_CALL] current_species=Diligent, progress=Breeding: Common + Cultivated -> Diligent, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Diligent
   9. [BREEDING] ✅ Common + Cultivated -> Diligent
-  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, step_type=breeding, total_steps=8, current_step=722
+  10. [GUI_CALL] current_species=Diligent, current_step=722, progress=Completed Diligent, step_type=breeding, total_steps=8
      Progress: Completed Diligent
-  11. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+  11. [GUI_CALL] current_species=Sinister, progress=Breeding: Modest + Cultivated -> Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   12. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  13. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=8, current_step=723
+  13. [GUI_CALL] current_species=Sinister, current_step=723, progress=Completed Sinister, step_type=breeding, total_steps=8
      Progress: Completed Sinister
-  14. [GUI_CALL] progress=Breeding: Sinister + Cultivated -> Fiendish, current_species=Fiendish, step_type=breeding
+  14. [GUI_CALL] current_species=Fiendish, progress=Breeding: Sinister + Cultivated -> Fiendish, step_type=breeding
      Progress: Breeding: Sinister + Cultivated -> Fiendish
   15. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
-  16. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, step_type=breeding, total_steps=8, current_step=724
+  16. [GUI_CALL] current_species=Fiendish, current_step=724, progress=Completed Fiendish, step_type=breeding, total_steps=8
      Progress: Completed Fiendish
-  17. [GUI_CALL] progress=Breeding: Common + Diligent -> Red, current_species=Red, step_type=breeding
+  17. [GUI_CALL] current_species=Red, progress=Breeding: Common + Diligent -> Red, step_type=breeding
      Progress: Breeding: Common + Diligent -> Red
   18. [BREEDING] ✅ Common + Diligent -> Red
-  19. [GUI_CALL] progress=Completed Red, current_species=Red, step_type=breeding, total_steps=8, current_step=725
+  19. [GUI_CALL] current_species=Red, current_step=725, progress=Completed Red, step_type=breeding, total_steps=8
      Progress: Completed Red
-  20. [GUI_CALL] progress=Breeding: Red + Fiendish -> UselessForce, current_species=UselessForce, step_type=breeding
+  20. [GUI_CALL] current_species=UselessForce, progress=Breeding: Red + Fiendish -> UselessForce, step_type=breeding
      Progress: Breeding: Red + Fiendish -> UselessForce
   21. [BREEDING] ✅ Red + Fiendish -> UselessForce
-  22. [GUI_CALL] progress=Completed UselessForce, current_species=UselessForce, step_type=breeding, total_steps=8, current_step=726
+  22. [GUI_CALL] current_species=UselessForce, current_step=726, progress=Completed UselessForce, step_type=breeding, total_steps=8
      Progress: Completed UselessForce
   23. [EXECUTION_RESULT] ✅ Returned: true
 
