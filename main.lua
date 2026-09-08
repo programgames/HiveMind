@@ -3511,13 +3511,13 @@ function loadMutatron(parent1, parent2)
         using_queen = princess_slot ~= nil
     end
 
-    -- A queen is not a princess, and the mutatron's first slot takes a princess. But a queen is a
-    -- princess that has already mated: run her through the apiary and she leaves one behind. The
-    -- program has an apiary and knows how to use it, so there is no reason to stop and ask.
+    -- A queen in a chest is an unfinished cycle, not a problem. She is what the mutatron
+    -- produces, and her place is the apiary: she dies there and leaves the princess and the
+    -- drones. So finish that cycle rather than stopping to ask -- it is the same second half
+    -- every breeding step already runs.
     if using_queen and config.convert_queens then
-        drawGUI({current_species = parent1, step_type = "Converting",
-                 progress = "Only a " .. parent1 .. " queen in stock -- running her through the "
-                            .. "apiary to get a princess back",
+        drawGUI({current_species = parent1, step_type = "Apiary",
+                 progress = "Finishing the " .. parent1 .. " cycle: her queen goes to the apiary",
                  status = "Working"})
 
         trace("converting %s queen to a princess through the apiary", tostring(parent1))
@@ -3539,7 +3539,40 @@ function loadMutatron(parent1, parent2)
                          status = "Working"})
                 trace("conversion produced a %s princess", tostring(parent1))
             else
+                -- The cycle reported success and nothing came of it, which no message can
+                -- explain from the outside. Write down what is actually in each place, so the
+                -- trace answers it instead of the next run having to reproduce it.
                 trace("conversion ran but produced no %s princess", tostring(parent1))
+
+                if gendustry and gendustry.available and gendustry.apiary then
+                    local outputs = apiaryCall("listOutputs")
+
+                    if type(outputs) == "table" then
+                        for _, item in pairs(outputs) do
+                            trace("  apiary output slot %s: %s x%s", tostring(item.slot),
+                                tostring(item.label or item.name), tostring(item.count))
+                        end
+                    end
+
+                    local status = getApiaryPrincessStatus()
+                    if status then
+                        trace("  apiary queen slot: type=%s freed=%s", tostring(status.type),
+                            tostring(status.freed))
+                    end
+                end
+
+                for _, side in ipairs({config.output_chest_side, config.input_chest_side}) do
+                    local size = inv_controller.getInventorySize(side)
+
+                    for slot = 1, (size or 0) do
+                        local held = inv_controller.getStackInSlot(side, slot)
+
+                        if held and tostring(held.label or ""):lower():find("princess") then
+                            trace("  %s slot %d holds %s", getSideName(side), slot,
+                                tostring(held.label))
+                        end
+                    end
+                end
             end
         else
             trace("conversion failed: %s", tostring(convert_error))
@@ -4697,20 +4730,19 @@ function displayBreedingPlan(target, breeding_plan)
     local queens_only = collectQueenOnlySpecies(breeding_plan.tree)
 
     if #queens_only > 0 then
-        print("=== HELD ONLY AS A QUEEN ===")
+        print("=== UNFINISHED CYCLES ===")
 
         for _, species in ipairs(queens_only) do
-            print(string.format("  %-18s marked [Q] in the tree", species))
+            print(string.format("  %-18s a queen is waiting for the apiary  [Q]", species))
         end
 
         print()
-        print("The mutatron takes a princess, never a queen. Each of these costs one extra apiary")
-        print("cycle first: the queen goes in, dies, and leaves the princess the cross needs.")
+        print("A queen is what the mutatron produces; her place is the apiary, where she dies and")
+        print("leaves the princess and the drones. These are simply cycles that were never")
+        print("finished -- one apiary cycle each, and they are done.")
 
-        if config.convert_queens then
-            print("That is done for you (config.convert_queens is on).")
-        else
-            print("config.convert_queens is off, so the run will stop at the first one.")
+        if not config.convert_queens then
+            print("config.convert_queens is off, so the run will stop at the first one instead.")
         end
 
         print()
