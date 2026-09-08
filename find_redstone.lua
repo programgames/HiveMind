@@ -144,6 +144,28 @@ for _, name in ipairs(ORDER) do
     if sides[name] then pcall(rs.setOutput, sides[name], 0) end
 end
 
+-- Read the previous log before wiping it. A side that killed the computer left "about to raise"
+-- with no "lowered" after it: that side is the one that did it, and there is no reason to try it
+-- again. This is how the script recovers from a run that never got to finish.
+local culprit = nil
+do
+    local previous = io.open(LOG, "r")
+    if previous then
+        local pending = nil
+        for line in previous:lines() do
+            local raising = line:match("^about to raise (%S+)")
+            if raising then pending = raising end
+            if line:match("^%s+lowered") then pending = nil end
+        end
+        previous:close()
+
+        if pending then
+            culprit = pending
+            SKIP[pending:lower()] = true
+        end
+    end
+end
+
 -- A fresh log each run, so the last line is always from the run that just died.
 local wipe = io.open(LOG, "w")
 if wipe then
@@ -152,10 +174,16 @@ if wipe then
 end
 note("start  " .. energy())
 
-print("find_redstone  version 2026-09-08h")
+print("find_redstone  version 2026-09-08i")
 print("Progress is written to " .. LOG .. " as it goes.")
 print("If the screen goes black, reboot and read it: edit " .. LOG)
 print()
+if culprit then
+    print("Last run stopped while '" .. culprit .. "' was raised, so the computer went down")
+    print("there. Skipping it. Pass --skip= to override.")
+    print()
+end
+
 if next(SKIP) then
     local names = {}
     for name in pairs(SKIP) do names[#names + 1] = name end
