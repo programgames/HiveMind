@@ -36,6 +36,13 @@ local term = require("term")
 local sides = require("sides")
 local event = require("event")
 local gpu = component.gpu
+
+-- Unguarded, this threw a bare "attempt to index a nil value" when no Redstone Card was fitted,
+-- which says nothing about what is missing.
+if not component.isAvailable("redstone") then
+    error("A Redstone Card is required: the Mechanical User is fired by a redstone signal.")
+end
+
 local redstone = component.redstone
 
 -- Optional components for status indicators
@@ -526,12 +533,12 @@ config = {
     -- General settings
     -- The face of the COMPUTER the redstone leaves from, on its way to the Mechanical User.
     --
-    -- An absolute compass direction on purpose. front/back/left/right are resolved through the
-    -- case's own facing, which cannot be read off the world, so they can only be found by trial --
-    -- and a wrong guess raises a signal into whatever happens to sit there. north/south/east/west/
-    -- up/down are what F3 shows, so you pick the side and lay the wire on it rather than hunting
-    -- for the one the wire is already on.
-    mech_user_side = sides.north,
+    -- Up, because it needs no compass at all and the wire is two dust long: one on top of the
+    -- computer, one on top of the Adapter, which puts it against the Mechanical User sitting on
+    -- the apiary. front/back/left/right are resolved through the case's own facing, which cannot
+    -- be read off the world, so they can only be found by trial -- and a wrong guess raises a
+    -- signal into whatever happens to sit there.
+    mech_user_side = sides.up,
     pulse_duration = 1,               -- Duration of redstone pulse in seconds
     apiary_wait_time = 30,            -- Time to wait for apiary to process queen (seconds)
     collection_wait_time = 5,         -- Time between collection attempts
