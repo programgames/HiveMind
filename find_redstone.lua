@@ -34,6 +34,15 @@ local HOLD = tonumber(options.hold) or 0.3
 local GAP = tonumber(options.gap) or 2
 local PAUSE = options.pause == true
 
+-- A side can do worse than nothing. If it feeds something that cuts the computer's own power --
+-- a redstone-controlled energy conduit, a switch on the supply -- raising it shuts the computer
+-- down, and the output stays raised, so it cannot come back. Name such sides here and they are
+-- never touched:  find_redstone --skip=south
+local SKIP = {}
+for name in tostring(options.skip or ""):gmatch("[^,%s]+") do
+    SKIP[name:lower()] = true
+end
+
 if not component.isAvailable("redstone") then
     print("No redstone component on the network.")
     print("The computer needs a Redstone Card, or a Redstone I/O block must be connected.")
@@ -76,6 +85,13 @@ local function pulse(name)
         print("'" .. tostring(name) .. "' is not a side")
 
         return
+    end
+
+    if SKIP[name:lower()] then
+        note(string.format("skipped  %-6s  (--skip)", name))
+        print(string.format("  %-6s skipped", name))
+
+        return true
     end
 
     -- Named before the pulse, not after: you need to be watching when it happens.
@@ -136,10 +152,18 @@ if wipe then
 end
 note("start  " .. energy())
 
-print("find_redstone  version 2026-09-08g")
+print("find_redstone  version 2026-09-08h")
 print("Progress is written to " .. LOG .. " as it goes.")
 print("If the screen goes black, reboot and read it: edit " .. LOG)
 print()
+if next(SKIP) then
+    local names = {}
+    for name in pairs(SKIP) do names[#names + 1] = name end
+    table.sort(names)
+    print("Skipping: " .. table.concat(names, ", "))
+    print()
+end
+
 print("Watch the REDSTONE DUST, not the Mechanical User: the wire lights up just")
 print("the same and nothing is triggered. If you would rather watch the machine,")
 print("take the beebee gun out first -- under a signal it fires again and again.")
