@@ -727,11 +727,63 @@ function setupDisplay()
     updateStatusIndicators("idle", "System started - Ready for commands")
 end
 
+--- Note where a bee was found, so the plan can be questioned
+---
+--- "It says I have a Cultivated -- where does that come from?" had no answer: the scan counted
+--- bees and threw away everything else. It now keeps the side, the slot and the label it read.
+--- @param species string Species the item was identified as
+--- @param kind string "princess" or "drone"
+--- @param side number Inventory side it was found on
+--- @param slot number Slot within that inventory
+--- @param label string The item name that was read
+function recordBeeSource(species, kind, side, slot, label)
+    inventory.sources = inventory.sources or {}
+
+    local key = species .. " " .. kind
+    inventory.sources[key] = inventory.sources[key] or {}
+
+    table.insert(inventory.sources[key], {
+        species = species, kind = kind, side = side, slot = slot, label = label,
+    })
+end
+
+--- Print what the scan actually found, species by species, and where
+function printInventoryDetail()
+    local keys = {}
+    for key in pairs(inventory.sources or {}) do
+        table.insert(keys, key)
+    end
+    table.sort(keys)
+
+    if #keys == 0 then
+        print("No bees identified in any connected inventory.")
+
+        return
+    end
+
+    print()
+    print("Bees found, and where:")
+
+    for _, key in ipairs(keys) do
+        local entries = inventory.sources[key]
+        local first = entries[1]
+        local places = {}
+
+        for _, entry in ipairs(entries) do
+            table.insert(places, getSideName(entry.side) .. " slot " .. entry.slot)
+        end
+
+        print(string.format("  %-24s x%-3d read as \"%s\"  (%s)", key, #entries,
+            tostring(first.label), table.concat(places, ", ")))
+    end
+end
+
 -- Scan inventories for princesses and drones (including input/output chests)
 function scanInventory()
     print("Scanning inventories for bees...")
     inventory.princesses = {}
     inventory.drones = {}
+    inventory.sources = {}
 
     local total_inventories = 0
 
@@ -761,11 +813,13 @@ function scanInventory()
                         local species = extractSpecies(item_name)
                         if species then
                             table.insert(inventory.princesses, species)
+                            recordBeeSource(species, "princess", side, slot, item_name)
                         end
                     elseif item_name:lower():find("drone") then
                         local species = extractSpecies(item_name)
                         if species then
                             table.insert(inventory.drones, species)
+                            recordBeeSource(species, "drone", side, slot, item_name)
                         end
                     end
                 end
@@ -802,11 +856,13 @@ function scanInventory()
                             local species = extractSpecies(item_name)
                             if species then
                                 table.insert(inventory.princesses, species)
+                                recordBeeSource(species, "princess", side, slot, item_name)
                             end
                         elseif item_name:lower():find("drone") then
                             local species = extractSpecies(item_name)
                             if species then
                                 table.insert(inventory.drones, species)
+                                recordBeeSource(species, "drone", side, slot, item_name)
                             end
                         end
                     end
@@ -821,6 +877,7 @@ function scanInventory()
     else
         print("Scanned " .. total_inventories .. " inventories")
         print("Found " .. #inventory.princesses .. " princesses/queens, " .. #inventory.drones .. " drones")
+        printInventoryDetail()
     end
 end
 
@@ -6256,6 +6313,7 @@ return {
 
     -- The execution path, so test_ingame.lua can drive it against a simulated world
     scanInventory = scanInventory,
+    printInventoryDetail = printInventoryDetail,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
     waitForMutatronOutput = waitForMutatronOutput,
