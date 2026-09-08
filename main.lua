@@ -5545,8 +5545,16 @@ function waitForApiaryCycle()
     end
 
     local status = getApiaryPrincessStatus()
+
+    trace("  waitForApiaryCycle entry: type=%s freed=%s",
+        tostring(status and status.type), tostring(status and status.freed))
+
     if status and (status.freed or status.type == "none") then
-        -- The BeeBee Gun already ended it; no signal is coming
+        -- The BeeBee Gun already ended it; no signal is coming.
+        --
+        -- Reached with an EMPTY queen slot, this reports a finished cycle that never ran -- and
+        -- the caller then wonders why nothing was produced. Say which it was.
+        trace("  queen slot already empty -- nothing to wait for")
 
         return true, computer.uptime() - started
     end
@@ -6622,10 +6630,16 @@ function getSpeciesPurity(slot)
 end
 
 function executeAccumulationCycle(species)
+    trace("apiary cycle for %s", tostring(species))
     drawGUI({current_species = species, step_type = "Accumulation", progress = "Running accumulation cycle", status = "Working"})
 
     -- Find existing queen of this species across all inventories
     local queen_side, queen_slot, queen_stack = findItemAnyInventory(species .. ".*queen")
+
+    trace("  queen: %s in %s slot %s",
+        tostring(queen_stack and (queen_stack.label or queen_stack.name)),
+        queen_side and getSideName(queen_side) or "nowhere", tostring(queen_slot))
+
     if not queen_slot then
         drawGUI({progress = "Accumulation failed", errors = "No " .. species .. " queen found", status = "Error"})
         return false
@@ -6644,9 +6658,15 @@ function executeAccumulationCycle(species)
     end
 
     -- Move queen to apiary, apiary held still during the transfer (task 20)
+    trace("  inserting into %s slot %s (apiary_input_slot)", getSideName(config.apiary_side),
+        tostring(config.apiary_input_slot))
+
     local insert_mode = freezeApiary()
     local success = moveItem(queen_side, queen_slot, config.apiary_side, config.apiary_input_slot, 1)
     unfreezeApiary(insert_mode)
+
+    trace("  insertion %s; queen slot now holds %s", success and "reported success" or "FAILED",
+        tostring(occupantOf(config.apiary_side, config.apiary_input_slot)))
 
     if not success then
         local blocker = occupantOf(config.apiary_side, config.apiary_input_slot)
@@ -6663,6 +6683,9 @@ function executeAccumulationCycle(species)
     prepareApiaryForRun()
 
     local mated_ok, mated_msg = waitForMatedQueen(config.apiary_mating_timeout)
+
+    trace("  mated wait -> %s (%s)", tostring(mated_ok), tostring(mated_msg))
+
     if not mated_ok then
         drawGUI({progress = "Accumulation failed", errors = mated_msg, status = "Error"})
 
@@ -6691,6 +6714,9 @@ function executeAccumulationCycle(species)
     end
 
     local cycle_ok, cycle_info = waitForApiaryCycle()
+
+    trace("  cycle wait -> %s (%s)", tostring(cycle_ok), tostring(cycle_info))
+
     if not cycle_ok then
         drawGUI({progress = "Accumulation failed", errors = tostring(cycle_info), status = "Error"})
 
@@ -6701,6 +6727,8 @@ function executeAccumulationCycle(species)
     local previous_mode = freezeApiary()
     local collected = collectApiaryProducts()
     unfreezeApiary(previous_mode)
+
+    trace("  collect -> %s", tostring(collected))
 
     if not collected then
         -- Task 19: name the Forestry cause instead of staying silent
