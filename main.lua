@@ -67,6 +67,11 @@ local gui_state
 local control_state
 local status_colors
 
+-- The size the screen actually ended up at. The GUI frame is drawn against these rather than
+-- against 80 by 25, so a tier 3 screen is used at its full size instead of being shrunk to the
+-- size of a tier 2 one.
+local screen_width, screen_height = 80, 25
+
 -- config is declared here for the same reason: refreshGendustrySlots, just below, reads
 -- config.slot_offset. Written above `local config`, it would resolve a nil global and silently
 -- fall back to an offset of 1, ignoring whatever check_slots.lua found.
@@ -683,11 +688,35 @@ local inventory = {
     drones = {}
 }
 
+--- Use the largest resolution this GPU and screen can manage
+---
+--- setResolution(80, 25) was hardcoded, so a tier 3 screen -- 160 by 50 -- was cut down to the
+--- size of a tier 2 one. The pair is only as good as its weaker half, which is what
+--- maxResolution already answers.
+--- @return number width, number height The resolution in use
+function applyBestResolution()
+    local ok, width, height = pcall(gpu.maxResolution)
+
+    if not ok or type(width) ~= "number" or type(height) ~= "number" then
+        width, height = 80, 25
+    end
+
+    -- The frame below assumes at least the tier 2 size; anything smaller would draw outside it.
+    width = math.max(80, math.floor(width))
+    height = math.max(25, math.floor(height))
+
+    pcall(gpu.setResolution, width, height)
+
+    screen_width, screen_height = width, height
+
+    return width, height
+end
+
 -- Clear screen and set up display
 function setupDisplay()
     term.clear()
 
-    gpu.setResolution(80, 25)
+    applyBestResolution()
     gpu.setBackground(0x000000)  -- TODO: better color (slate gray instead of black?)
     gpu.setForeground(0xFFFFFF)  -- TODO: better color (light gray instead of white?)
 
@@ -4019,7 +4048,8 @@ function selectTarget()
 
     -- Declared out here on purpose. Inside the loop these were reset on every redraw, so "n"
     -- moved to page two and the next redraw put you straight back on page one.
-    local page_size = 15
+    -- One line per bee, minus the room the header, the mod list and the prompt need.
+    local page_size = math.max(5, (screen_height or 25) - 10 - #mods)
     local current_page = 1
 
     mod_counts = {}
@@ -4875,11 +4905,9 @@ end
 
 --- Initialize the GUI display
 function initGUI()
-    local width, height = gpu.getResolution()
-
     -- Clear screen and set up GUI layout
     term.clear()
-    gpu.setResolution(80, 25)
+    applyBestResolution()
     gpu.setBackground(0x000000)
     gpu.setForeground(0xFFFFFF)
 
@@ -4888,24 +4916,26 @@ function initGUI()
 end
 
 function drawGUIFrame()
-    -- Draw top border
-    gpu.set(1, 1, "╔" .. string.rep("═", 78) .. "╗")
+    local width = screen_width or 80
+    local height = screen_height or 25
+    local rule = string.rep("═", width - 2)
 
-    -- Draw section separators
-    gpu.set(1, 3, "╠" .. string.rep("═", 78) .. "╣")
-    gpu.set(1, 6, "╠" .. string.rep("═", 78) .. "╣")
-    gpu.set(1, 9, "╠" .. string.rep("═", 78) .. "╣")
-    gpu.set(1, 12, "╠" .. string.rep("═", 78) .. "╣")
-    gpu.set(1, 15, "╠" .. string.rep("═", 78) .. "╣")
-    gpu.set(1, 18, "╠" .. string.rep("═", 78) .. "╣")
+    -- Draw top border
+    gpu.set(1, 1, "╔" .. rule .. "╗")
+
+    -- Draw section separators. The rows are fixed: the sections hold a known number of lines,
+    -- and extra height goes to the last one, which is where the error messages land.
+    for _, row in ipairs({3, 6, 9, 12, 15, 18}) do
+        gpu.set(1, row, "╠" .. rule .. "╣")
+    end
 
     -- Draw bottom border
-    gpu.set(1, 25, "╚" .. string.rep("═", 78) .. "╝")
+    gpu.set(1, height, "╚" .. rule .. "╝")
 
     -- Draw side borders
-    for i = 2, 24 do
+    for i = 2, height - 1 do
         gpu.set(1, i, "║")
-        gpu.set(80, i, "║")
+        gpu.set(width, i, "║")
     end
 
     -- Draw section labels

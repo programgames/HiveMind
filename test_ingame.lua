@@ -429,7 +429,8 @@ local mock_component = {
 
     gpu = {
         setResolution = function() return true end,
-        getResolution = function() return 80, 25 end,
+        getResolution = function() return 160, 50 end,
+        maxResolution = function() return 160, 50 end,
         setBackground = function() return 0 end,
         setForeground = function() return 0xFFFFFF end,
         fill = function() return true end,

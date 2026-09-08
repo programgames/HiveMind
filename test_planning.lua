@@ -39,6 +39,7 @@ local function mockOpenComputersEnvironment()
         -- Mock GPU
         gpu = {
             getResolution = function() return 80, 25 end,
+            maxResolution = function() return 80, 25 end,
             setResolution = function(w, h) end,
             setBackground = function(color) end,
             setForeground = function(color) end,
