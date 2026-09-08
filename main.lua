@@ -569,6 +569,11 @@ config = {
     apiary_wait_time = 30,            -- Time to wait for apiary to process queen (seconds)
     collection_wait_time = 5,         -- Time between collection attempts
     add_drone_count = 0,              -- Number of additional drones to produce during accumulation
+
+    -- The mutatron eats both parents. A species with no recipe -- one you found, traded or were
+    -- given -- cannot be made again, so spending the last one is irreversible. The plan screen
+    -- says which ones a run will use up before you start it; set false to hide that warning.
+    warn_last_base_species = true,
     enabled_mods = {"Forestry", "MagicBees", "ExtraBees", "Career Bees", "MeatballCraft"},  -- Mods to include in bee list (nil for all)
 
     -- Status indicators
@@ -2738,6 +2743,33 @@ end
 --- Check if we have a specific species as princess
 --- @param species string The bee species to check for
 --- @return boolean hasPrincess True if we have this species as princess/queen
+--- Count how many of a species are in stock
+--- @param species string Species name
+--- @param kind string "princess" or "drone"
+--- @return number count
+function countSpecies(species, kind)
+    local list = (kind == "drone") and inventory.drones or inventory.princesses
+    local count = 0
+
+    for _, held in ipairs(list or {}) do
+        if held == species then
+            count = count + 1
+        end
+    end
+
+    return count
+end
+
+--- Is this a species the program cannot breed?
+---
+--- The database is keyed by what a cross produces, so anything absent from it is a starting
+--- species: found in a hive, traded for, given. Spending the last one cannot be undone.
+--- @param species string Species name
+--- @return boolean unbreedable
+function isBaseSpecies(species)
+    return mutations[species] == nil
+end
+
 function hasSpeciesPrincess(species)
     for _, princess in ipairs(inventory.princesses) do
         if princess == species then
@@ -2990,6 +3022,47 @@ function collectBlockingLeaves(tree)
     table.sort(list)
 
     return list
+end
+
+--- List the unbreedable species a plan will consume, and what is held of each
+---
+--- The mutatron eats both parents, and a species absent from the database cannot be remade. This
+--- is the one thing worth knowing BEFORE a run rather than after it.
+--- @param tree table|nil The breeding tree
+--- @return table[] entries { species, princesses, drones, tight }
+function collectConsumedBaseSpecies(tree)
+    local seen = {}
+
+    local function walk(node)
+        if not node then return end
+
+        if isBaseSpecies(node.species)
+           and (hasSpeciesPrincess(node.species) or hasSpeciesDrone(node.species)) then
+            seen[node.species] = true
+        end
+
+        walk(node.left_parent)
+        walk(node.right_parent)
+    end
+
+    walk(tree)
+
+    local entries = {}
+    for species in pairs(seen) do
+        local princesses = countSpecies(species, "princess")
+        local drones = countSpecies(species, "drone")
+
+        table.insert(entries, {
+            species = species,
+            princesses = princesses,
+            drones = drones,
+            tight = (princesses + drones) <= 1,
+        })
+    end
+
+    table.sort(entries, function(a, b) return a.species < b.species end)
+
+    return entries
 end
 
 --- Insert princess and drone into mutatron
@@ -4061,6 +4134,25 @@ function displayBreedingPlan(target, breeding_plan)
     -- The same information is in the sections above, but a deep tree pushes them off the top of
     -- the screen -- and this is the one thing you have to act on before pressing 1.
     local blocking = collectBlockingLeaves(breeding_plan.tree)
+
+    if config.warn_last_base_species then
+        local at_risk = collectConsumedBaseSpecies(breeding_plan.tree)
+
+        if #at_risk > 0 then
+            print("=== THESE WILL BE USED UP ===")
+
+            for _, entry in ipairs(at_risk) do
+                print(string.format("  %-18s %d princess(es), %d drone(s) in stock%s",
+                    entry.species, entry.princesses, entry.drones,
+                    entry.tight and "   <-- your last one" or ""))
+            end
+
+            print()
+            print("The mutatron consumes BOTH parents. These species have no recipe, so once")
+            print("spent they cannot be made again. Breed spares first if you want to keep them.")
+            print()
+        end
+    end
 
     if #blocking > 0 then
         print("=== YOU MUST SUPPLY THESE FIRST ===")
@@ -6386,7 +6478,10 @@ return {
     -- The execution path, so test_ingame.lua can drive it against a simulated world
     scanInventory = scanInventory,
     printInventoryDetail = printInventoryDetail,
+    countSpecies = countSpecies,
+    isBaseSpecies = isBaseSpecies,
     collectBlockingLeaves = collectBlockingLeaves,
+    collectConsumedBaseSpecies = collectConsumedBaseSpecies,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
     waitForMutatronOutput = waitForMutatronOutput,
