@@ -4,10 +4,17 @@
 -- facing, so "right" is not a direction you can read off the world. This pulses each side in turn
 -- and names it, so you can watch which one reaches the Mechanical User.
 --
+-- TAKE THE BEEBEE GUN OUT OF THE MECHANICAL USER FIRST.
+--
+-- A Mechanical User held under power does not act once, it acts over and over. With the gun in
+-- it that fires a swarm, and the game stops responding. Empty, it just swings, which is all this
+-- test needs to see.
+--
 -- Usage:
---   find_redstone              -- 3 seconds on each of the six sides
---   find_redstone --hold=5     -- longer, if the Mechanical User is slow to react
---   find_redstone --side=right -- pulse one named side only
+--   find_redstone              -- a short pulse on each side, with a pause to watch
+--   find_redstone --hold=0.6   -- longer pulse, if the Mechanical User misses it
+--   find_redstone --gap=3      -- longer pause between sides
+--   find_redstone --side=right -- one named side only
 --
 -- Stand where you can see the Mechanical User. The side that makes it swing is the one to put in
 -- config.mech_user_side.
@@ -18,7 +25,9 @@ local shell = require("shell")
 
 local _, options = shell.parse(...)
 
-local HOLD = tonumber(options.hold) or 3
+-- Short by design. Three seconds of held signal is dozens of activations, not one.
+local HOLD = tonumber(options.hold) or 0.3
+local GAP = tonumber(options.gap) or 2
 
 if not component.isAvailable("redstone") then
     print("No redstone component on the network.")
@@ -41,7 +50,8 @@ local function pulse(name)
         return
     end
 
-    io.write(string.format("  %-6s -> ON  ", name))
+    -- Named before the pulse, not after: you need to be watching when it happens.
+    io.write(string.format("  %-6s ... ", name))
     io.flush()
 
     local ok = pcall(rs.setOutput, side, 15)
@@ -53,12 +63,25 @@ local function pulse(name)
 
     os.sleep(HOLD)
     pcall(rs.setOutput, side, 0)
-    print("off")
+    print("done")
+
+    -- The pause is the point: it separates one side's reaction from the next one's pulse.
+    os.sleep(GAP)
 end
 
-print("find_redstone  version 2026-09-08c")
-print("Pulsing each side for " .. HOLD .. "s. Watch the Mechanical User.")
-print("Note the name that makes it swing, then put it in config.mech_user_side.")
+-- Clear everything first. A previous run that was interrupted can have left a side held high,
+-- and a Mechanical User under a stuck signal keeps firing.
+for _, name in ipairs(ORDER) do
+    if sides[name] then pcall(rs.setOutput, sides[name], 0) end
+end
+
+print("find_redstone  version 2026-09-08e")
+print()
+print("Take the beebee gun OUT of the Mechanical User before running this.")
+print("Under a held signal it fires again and again, which will lag the game.")
+print()
+print(string.format("Pulse %ss, then %ss to watch. Note the side that makes it swing.",
+    tostring(HOLD), tostring(GAP)))
 print()
 
 if options.side then
