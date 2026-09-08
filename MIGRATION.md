@@ -52,15 +52,17 @@ réel d'une abeille, état du slot reine, erreurs Forestry, modificateurs de ruc
 | Q6 | `requireAnalyzedBees` ? | `false` sur le serveur |
 | Q7 | Upgrade Automation ? | À ne pas installer (D3) |
 
-## 5. Point ouvert — bloquant pour L2-11 et L4-25
+## 5. Q3 — fermée le 2026-09-08
 
-| Réf | Question | Moyen de résolution |
-|---|---|---|
-| Q3 | Les index de slots sont-ils 0-based (driver) ou 1-based (inventory_controller) ? | Exécuter `check_slots.lua` en jeu, ruche et Mutatron chargés, et rapporter les deux verdicts `OFFSET` |
+**`slot_offset = 1`.** Mesuré en jeu contre une Industrial Apiary chargée : 2 slots occupés sur 2
+s'alignent à `+1`, aucun à `0` ni à `-1`. La convention est celle d'OpenComputers, pas celle d'une
+machine en particulier, donc elle vaut pour toutes.
 
-`apiary_output_slots = {2,3,4,5,6}` (`main.lua:453`) contre `outputs = 6..14` annoncés par le
-driver : les deux plages ne se recouvrent pas. Si la config est fausse, la récolte lit les slots
-d'upgrades au lieu des sorties.
+`apiary_output_slots` valait `{2,3,4,5,6}` : le programme lisait les slots d'**upgrades** au lieu
+des sorties. Le repli est corrigé en `{7..15}` — les sorties `6..14` du driver, décalées de 1.
+
+Vérifié au passage sur la même installation : `apiary_input_slot = 1` était juste, ainsi que
+`mutatron_input_slots = {1,2}`, `mutatron_output_slot = 3` et `mutatron_labware_slot = 4`.
 
 ---
 
@@ -79,7 +81,7 @@ d'upgrades au lieu des sorties.
 | 08 | L2 | Base en dur = plan a priori, `listMutations` = vérité | 05 | moyen | Appliqué |
 | 09 | L2 | Gérer le labware | 11 | élevé | Appliqué |
 | 10 | L2 | Surveiller le mutagène via `getTank` | 03 | moyen | Appliqué |
-| 11 | L2 | Index de slots via `listSlots()` | Q3 | élevé | Appliqué, Q3 |
+| 11 | L2 | Index de slots via `listSlots()` | — | élevé | Appliqué |
 | 30 | L3 | Supprimer les impulsions de la phase 2 | — | élevé | Appliqué |
 | 12 | L3 | Attente sur `advmutatron_finished` | 14 | moyen | Appliqué |
 | 13 | L3 | Attente sur `apiary_finished` | 14 | moyen | Appliqué |
@@ -94,7 +96,7 @@ d'upgrades au lieu des sorties.
 | 22 | L4 | Valider l'espèce produite via `getOutput` | 05 | élevé | Appliqué |
 | 23 | L4 | Accumulation pilotée par `pure` | 22 | moyen | Appliqué |
 | 24 | L4 | Gérer le refus `requireAnalyzedBees` | 23 | faible | Appliqué |
-| 25 | L4 | Récolte via `listOutputs()` | Q3, 11 | élevé | Appliqué, Q3 |
+| 25 | L4 | Récolte via `listOutputs()` | 11 | élevé | Appliqué |
 | 26 | L5 | Confronter la base à `listSpeciesTemplates` | 03 | moyen | Appliqué |
 | 27 | L5 | Pondérer le coût par dominance | 26 | élevé | Appliqué |
 | 29 | L5 | Exposer environnement et modificateurs | 03 | faible | Appliqué |
@@ -393,6 +395,8 @@ avant la première fonction qui les utilise (soit avant `main.lua:2499`), et ren
 | 2026-09-08 | Suite de tests rendue déterministe : 97/97 artefacts stables (§14) |
 | 2026-09-08 | Pondération par dominance couverte par 10 vérifications (§15) |
 | 2026-09-08 | `extractSpecies` sur mot entier (§16). Seul Q3/H1 reste ouvert. |
+| 2026-09-08 | Montage réel vérifié : Mutatron à droite, ruche à gauche, entrée à l'arrière, sortie en bas |
+| 2026-09-08 | **Q3 fermée** : `slot_offset = 1` mesuré ; `apiary_output_slots` corrigé de `{2..6}` à `{7..15}` |
 
 ## 10. Ordre d'application
 
@@ -474,7 +478,7 @@ Livrées dans le code, mais non vérifiées. Chacune est isolée à un endroit.
 
 | # | Hypothèse | Où | Comment trancher |
 |---|---|---|---|
-| H1 | `config.slot_offset = 1` (drivers 0-based, `inventory_controller` 1-based) | `config` | `check_slots.lua`, verdicts `OFFSET`. Le rapport de diagnostic imprime aussi les deux numérotations côte à côte. |
+| ~~H1~~ | **Confirmée** : `slot_offset = 1`, mesuré en jeu | `config` | Fait, voir §5 |
 | H2 | L'index passé à `selectAndProduce` est la clé de boucle de `pairs()`, comme dans `breed.lua`, et non `entry.index` | `findMutationIndex` | Un `print` de `listMutations()` avec deux parents chargés |
 | H3 | Le `label` d'une mutation est le nom de l'espèce résultante, pas une forme « A + B → C » | `findMutationIndex` | Même `print` |
 | H4 | `config.mutagen_reserve_mb = 1000` couvre un cycle | `waitForMutagen` | Lire le `Y` dans `not enough mutagen: X of Y mB` |

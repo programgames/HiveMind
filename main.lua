@@ -559,14 +559,15 @@ config = {
     mutatron_output_slot = 3,         -- Queen output slot (driver output = 2)
     mutatron_labware_slot = 4,        -- Labware slot in mutatron (driver labware = 3)
     apiary_input_slot = 1,            -- Queen input slot in apiary (driver queen = 0)
-    apiary_output_slots = {2, 3, 4, 5, 6},  -- Product output slots (driver outputs = 6..14)
+    apiary_output_slots = {7, 8, 9, 10, 11, 12, 13, 14, 15},  -- driver outputs 6..14, plus offset
     beebee_gun_slot = 1,              -- Slot where beebee gun should be in Mechanical User
 
     -- Gendustry drivers (The-Apiarist-Terminal)
     -- The drivers report raw tile slot indices, inventory_controller numbers them from one:
-    -- controller_slot = driver_slot + slot_offset. Run check_slots.lua in game to confirm the
-    -- value below; the two OFFSET verdicts it prints are what belongs here.
-    slot_offset = 1,                  -- Applied to every slot index reported by a driver
+    -- controller_slot = driver_slot + slot_offset. Confirmed in game against a loaded Industrial
+    -- Apiary: 2 of 2 occupied slots line up at +1, none at 0 or -1. The convention is OpenComputers'
+    -- own, so it holds for every machine, not just that one.
+    slot_offset = 1,                  -- Measured in game: controller_slot = driver_slot + 1
     report_path = "/home/hivemind_report.txt",  -- Diagnostic report written by checkGendustryAPI
 
     -- Mutagen management (task 10)

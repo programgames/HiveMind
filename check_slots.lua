@@ -134,7 +134,7 @@ end
 -- Printed first, so a report can be told apart from one produced by an older copy. GitHub serves
 -- raw files through a cache for a few minutes, so a download right after a push can silently
 -- hand back the previous version.
-local VERSION = "2026-09-08c  side auto-detect"
+local VERSION = "2026-09-08d  uncertainty reported"
 
 w("HIVEMIND -- SLOT INDEX VERIFICATION (read-only)")
 w("script version: " .. VERSION)
@@ -432,11 +432,13 @@ local function chooseSide(address, label, override, driverSize)
     for _, side in ipairs(candidates) do
         if detectOffset(address, side, label, true) then
 
-            return side, #candidates
+            return side, #candidates, true
         end
     end
 
-    return candidates[1], #candidates
+    -- Nothing correlated, so the size is all there is to go on -- and it is not enough: an
+    -- OpenComputers case answers ten slots, exactly like the Advanced Mutatron. Say so.
+    return candidates[1], #candidates, false
 end
 
 local function driverSize(address)
@@ -446,27 +448,33 @@ local function driverSize(address)
     return nil
 end
 
-local apiarySide, apiaryShared = chooseSide(apiary, "INDUSTRIAL APIARY",
+local apiarySide, apiaryShared, apiarySure = chooseSide(apiary, "INDUSTRIAL APIARY",
     options.apiary and APIARY_SIDE or nil, driverSize(apiary))
-local advSide, advShared = chooseSide(adv, "ADVANCED MUTATRON",
+local advSide, advShared, advSure = chooseSide(adv, "ADVANCED MUTATRON",
     options.mutatron and MUTATRON_SIDE or nil, driverSize(adv))
 
-local function announce(label, side, shared)
+local function announce(label, side, shared, sure, flag)
     if not side then
         w(string.format("  %s: no side of this block has the right slot count", label))
 
         return
     end
 
-    w(string.format("  %s is on the %s side%s", label, SIDE_NAMES[side] or tostring(side),
-        shared > 1 and string.format("  (%d sides shared that slot count)", shared) or ""))
+    w(string.format("  %s is on the %s side", label, SIDE_NAMES[side] or tostring(side)))
+
+    if shared > 1 and not sure then
+        w(string.format("    UNCERTAIN: %d sides answer that slot count and the machine is empty,",
+            shared))
+        w("    so nothing could be matched. Put an item in it and run again, or pass")
+        w(string.format("    --%s=<side> to say which it is.", flag))
+    end
 end
 
 w(string.rep("-", 72))
 w("SIDES CHOSEN FOR THE OFFSET TEST")
 w(string.rep("-", 72))
-announce("Industrial Apiary", apiarySide, apiaryShared or 0)
-announce("Advanced Mutatron", advSide, advShared or 0)
+announce("Industrial Apiary", apiarySide, apiaryShared or 0, apiarySure, "apiary")
+announce("Advanced Mutatron", advSide, advShared or 0, advSure, "mutatron")
 w()
 
 local apiaryOffset, apiarySlots = detectOffset(apiary, apiarySide, "INDUSTRIAL APIARY")
