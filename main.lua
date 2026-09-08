@@ -714,9 +714,10 @@ end
 
 -- Clear screen and set up display
 function setupDisplay()
-    term.clear()
-
+    -- Resolution first, then clear. Changing it afterwards redraws the old buffer at the new
+    -- size, which is what left the previous screen showing through the frame.
     applyBestResolution()
+    term.clear()
     gpu.setBackground(0x000000)  -- TODO: better color (slate gray instead of black?)
     gpu.setForeground(0xFFFFFF)  -- TODO: better color (light gray instead of white?)
 
@@ -5023,9 +5024,9 @@ end
 
 --- Initialize the GUI display
 function initGUI()
-    -- Clear screen and set up GUI layout
-    term.clear()
+    -- Set up GUI layout, resolution before clearing (see setupDisplay)
     applyBestResolution()
+    term.clear()
     gpu.setBackground(0x000000)
     gpu.setForeground(0xFFFFFF)
 
@@ -5233,6 +5234,15 @@ function executeBreeding(target, breeding_plan)
         return true
     end
 
+    -- Everything that prints happens BEFORE the frame is drawn. checkGendustryAPI writes its
+    -- report path and prepareApiaryForRun its warnings with print(), which scrolls the terminal
+    -- underneath the frame and leaves the two overlaid on top of each other.
+    local hasAPI = checkGendustryAPI()
+
+    -- Tune the signal rates and warn about an Automation upgrade before the first
+    -- cycle rather than after it (tasks 15, 18)
+    prepareApiaryForRun()
+
     -- Initialize GUI and status indicators
     initGUI()
     setGUITarget(target)
@@ -5248,12 +5258,6 @@ function executeBreeding(target, breeding_plan)
         inventory_status = "Checking inventory...",
         status = "Running"
     })
-
-    local hasAPI = checkGendustryAPI()
-
-    -- Tune the signal rates and warn about an Automation upgrade before the first
-    -- cycle rather than after it (tasks 15, 18)
-    prepareApiaryForRun()
 
     -- Execute the breeding tree
     gui_state.current_step = 0
@@ -5272,11 +5276,18 @@ function executeBreeding(target, breeding_plan)
         -- Final inventory scan
         scanInventory()
     else
+        -- Keep the reason the step itself gave. Overwriting it with a generic line threw away
+        -- the only sentence that said what actually went wrong.
+        local reason = gui_state.errors
+        if not reason or reason == "" then
+            reason = "Could not complete breeding strategy"
+        end
+
         drawGUI({
             step_type = "complete",
             current_species = target,
             progress = "Breeding failed!",
-            errors = "Could not complete breeding strategy",
+            errors = reason,
             status = "Error"
         })
     end
