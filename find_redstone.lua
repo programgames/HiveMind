@@ -56,6 +56,7 @@ local function pulse(name)
     print("off")
 end
 
+print("find_redstone  version 2026-09-08c")
 print("Pulsing each side for " .. HOLD .. "s. Watch the Mechanical User.")
 print("Note the name that makes it swing, then put it in config.mech_user_side.")
 print()

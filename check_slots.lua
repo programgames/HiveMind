@@ -131,7 +131,13 @@ local function sortedKeys(t)
 end
 
 -- 1. What is on the network -------------------------------------------------
+-- Printed first, so a report can be told apart from one produced by an older copy. GitHub serves
+-- raw files through a cache for a few minutes, so a download right after a push can silently
+-- hand back the previous version.
+local VERSION = "2026-09-08c  side auto-detect"
+
 w("HIVEMIND -- SLOT INDEX VERIFICATION (read-only)")
+w("script version: " .. VERSION)
 w(string.rep("=", 72))
 w()
 
