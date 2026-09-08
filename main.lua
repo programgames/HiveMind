@@ -6101,6 +6101,16 @@ function main()
     end
 end
 
+-- Run the program when this file is executed, not when it is required.
+--
+-- Without this the file defined main() and never called it: running it on the computer loaded
+-- every function, returned the table below and exited, with nothing on screen. Lua passes the
+-- module name in `...` to a required file and nothing to a script, which is how the two are told
+-- apart -- the same guard test_planning.lua uses.
+if ... == nil then
+    main()
+end
+
 -- Always export module functions (tests import this module)
 return {
     -- Planning functions
