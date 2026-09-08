@@ -42,8 +42,31 @@ if not component.isAvailable("redstone") then
 end
 
 local rs = component.redstone
+local computer = require("computer")
 
 local ORDER = {"down", "up", "north", "south", "west", "east", "front", "back", "left", "right"}
+
+-- The screen has gone black twice, which in OpenComputers means the computer stopped rather than
+-- the program. Nothing survives that on screen, so each step is written to a file and flushed
+-- immediately: after a reboot, the last line names the side that was live when it died, and the
+-- energy readings say whether it starved.
+local LOG = options.log or "/home/rs_log.txt"
+
+local function note(text)
+    local f = io.open(LOG, "a")
+    if not f then return end
+
+    f:write(text .. "\n")
+    f:close()
+end
+
+local function energy()
+    local ok, stored = pcall(computer.energy)
+    local ok2, max = pcall(computer.maxEnergy)
+    if not ok or not ok2 then return "energy unreadable" end
+
+    return string.format("energy %.0f/%.0f", stored or 0, max or 0)
+end
 
 -- front/back/left/right are the same six faces under another name, resolved through the block's
 -- facing. Both sets are listed because config.mech_user_side is written in the relative form.
@@ -59,15 +82,22 @@ local function pulse(name)
     io.write(string.format("  %-6s ... ", name))
     io.flush()
 
+    note(string.format("about to raise %-6s  %s", name, energy()))
+
     local ok = pcall(rs.setOutput, side, 15)
     if not ok then
+        note("  refused: no such side on this block")
         print("refused (no such side on this block)")
 
         return
     end
 
+    note(string.format("  raised   %-6s  %s", name, energy()))
+
     os.sleep(HOLD)
     pcall(rs.setOutput, side, 0)
+
+    note(string.format("  lowered  %-6s  %s", name, energy()))
     print("done")
 
     if PAUSE then
@@ -98,7 +128,17 @@ for _, name in ipairs(ORDER) do
     if sides[name] then pcall(rs.setOutput, sides[name], 0) end
 end
 
-print("find_redstone  version 2026-09-08f")
+-- A fresh log each run, so the last line is always from the run that just died.
+local wipe = io.open(LOG, "w")
+if wipe then
+    wipe:write("find_redstone log\n")
+    wipe:close()
+end
+note("start  " .. energy())
+
+print("find_redstone  version 2026-09-08g")
+print("Progress is written to " .. LOG .. " as it goes.")
+print("If the screen goes black, reboot and read it: edit " .. LOG)
 print()
 print("Watch the REDSTONE DUST, not the Mechanical User: the wire lights up just")
 print("the same and nothing is triggered. If you would rather watch the machine,")
@@ -130,5 +170,8 @@ for _, name in ipairs(ORDER) do
     if sides[name] then pcall(rs.setOutput, sides[name], 0) end
 end
 
+note("finished cleanly  " .. energy())
+
 print()
 print("All outputs back to zero.")
+print("Log: " .. LOG)
