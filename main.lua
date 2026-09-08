@@ -3197,11 +3197,33 @@ function describeLoadFailure(species, kind, from_side, from_slot, to_slot)
             .. "slots -- check config.slot_offset", species, kind, to_slot, size)
     end
 
+    -- What was actually picked up matters more than what was asked for. A "princess" search falls
+    -- back to a queen when no princess is in stock, and a queen is a different item: the mutatron
+    -- takes a princess in that slot and refuses the queen without a word.
+    local label = tostring(source)
+
+    if label:lower():find("queen") then
+
+        return string.format(
+            "The mutatron refused %s. It is a QUEEN, and the mutatron takes a PRINCESS in that "
+            .. "slot. Put the queen in the apiary first: when she dies she leaves a princess, "
+            .. "which is what this cross needs.", label)
+    end
+
+    -- A machine mid-cycle refuses insertions, and looks exactly like one that refuses them always.
+    if gendustry and gendustry.available and gendustry.adv then
+        if advCall("isWorking") then
+
+            return string.format("The mutatron is still working, so it refused %s. It should "
+                .. "accept it once the current cycle ends.", label)
+        end
+    end
+
     return string.format(
-        "The mutatron refused the %s %s into slot %s and into every free slot. It has %d slots "
-        .. "and the target is empty, so the face the adapter touches is not accepting bees -- "
-        .. "try an adapter on another face of the machine.",
-        species, kind, tostring(to_slot), size)
+        "The mutatron refused %s into slot %s and into every free slot. It has %d slots and the "
+        .. "target is empty, so either that face of the machine accepts nothing -- try an adapter "
+        .. "on another face -- or the item is not one this slot takes.",
+        label, tostring(to_slot), size)
 end
 
 --- Insert princess and drone into mutatron
@@ -3221,8 +3243,19 @@ function loadMutatron(parent1, parent2)
     -- Two searches rather than "princess|queen": Lua patterns have no alternation, so that group
     -- was matched literally and never found anything.
     local princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*princess")
+    local using_queen = false
+
     if not princess_slot then
+        -- A queen is a fallback, not an equal: the mutatron's first slot takes a princess. Kept
+        -- so the failure can name the problem rather than reporting nothing found at all.
         princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*queen")
+        using_queen = princess_slot ~= nil
+    end
+
+    if using_queen then
+        drawGUI({progress = "Only a " .. parent1 .. " queen is in stock, not a princess",
+                 errors = "The mutatron takes a princess: put the queen through the apiary first",
+                 status = "Warning"})
     end
 
     local drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
