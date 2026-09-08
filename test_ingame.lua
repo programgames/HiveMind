@@ -622,6 +622,29 @@ check("loading with only a queen does not raise", converted, tostring(why))
 check("the queen went through the apiary", world.apiary.shot == true)
 print()
 
+print("A queen that cannot be converted must never reach the mutatron")
+-- The apiary refuses to take her, so the conversion cannot happen. What matters is that the
+-- program stops and says so, rather than handing the queen to a machine that will refuse it and
+-- report a machine fault.
+world.inventories[SIDES.back].slots[1] = stack("forestry:bee_queen_ge", "Meadows Queen")
+world.inventories[SIDES.back].slots[2] = stack("forestry:bee_drone_ge", "Forest Drone")
+setDriverSlot(world.apiary.side, world.apiary.slots.queen,
+    stack("forestry:bee_princess_ge", "Stuck Princess"))
+world.inventories[SIDES.down] = chest(0, {})   -- nowhere to put it, so clearing must fail
+hive.scanInventory()
+
+local ok3, err3 = pcall(function() return hive.loadMutatron("Meadows", "Forest") end)
+local loaded = false
+if ok3 then loaded = true end
+check("it stops instead of raising", loaded, tostring(err3))
+check("no queen was put into the mutatron",
+    driverSlot(world.mutatron.side, world.mutatron.slots.in1) == nil,
+    tostring((driverSlot(world.mutatron.side, world.mutatron.slots.in1) or {}).label))
+
+world.inventories[SIDES.down] = chest(27, {})
+setDriverSlot(world.apiary.side, world.apiary.slots.queen, nil)
+print()
+
 print("A machine left loaded by a previous attempt")
 -- Exactly the state a crashed or aborted run leaves behind.
 setDriverSlot(world.mutatron.side, world.mutatron.slots.in1,

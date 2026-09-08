@@ -3417,6 +3417,7 @@ function loadMutatron(parent1, parent2)
     -- was matched literally and never found anything.
     local princess_side, princess_slot, princess_stack = findItemAnyInventory(parent1 .. ".*princess")
     local using_queen = false
+    local conversion_error = nil
 
     if not princess_slot then
         -- A queen is a fallback, not an equal: the mutatron's first slot takes a princess. Kept
@@ -3436,7 +3437,7 @@ function loadMutatron(parent1, parent2)
 
         trace("converting %s queen to a princess through the apiary", tostring(parent1))
 
-        local converted = executeAccumulationCycle(parent1)
+        local converted, convert_error = executeAccumulationCycle(parent1)
 
         if control_state.abort_requested then return false, "Aborted" end
 
@@ -3451,16 +3452,42 @@ function loadMutatron(parent1, parent2)
             if not using_queen then
                 drawGUI({progress = parent1 .. " princess recovered from the apiary",
                          status = "Working"})
+                trace("conversion produced a %s princess", tostring(parent1))
+            else
+                trace("conversion ran but produced no %s princess", tostring(parent1))
             end
+        else
+            trace("conversion failed: %s", tostring(convert_error))
+            conversion_error = convert_error
         end
     end
 
+    -- Never hand a queen to the mutatron. It refuses one, and the refusal reads as a machine
+    -- fault -- which is the error that came back over and over while the code carried on
+    -- regardless with the bee it already knew was wrong.
     if using_queen then
-        drawGUI({progress = "Only a " .. parent1 .. " queen is in stock, not a princess",
-                 errors = "The mutatron takes a princess. Put the queen in the apiary: when she "
-                          .. "dies she leaves one. Set config.convert_queens = true to have this "
-                          .. "done for you.",
-                 status = "Warning"})
+        local reason
+
+        if not config.convert_queens then
+            reason = string.format(
+                "Only a %s QUEEN is in stock and the mutatron takes a princess. Put her in the "
+                .. "apiary: when she dies she leaves one. Or set config.convert_queens = true to "
+                .. "have that done for you.", parent1)
+        elseif conversion_error then
+            reason = string.format(
+                "Only a %s QUEEN is in stock. Putting her through the apiary to get a princess "
+                .. "back did not work: %s", parent1, tostring(conversion_error))
+        else
+            reason = string.format(
+                "Only a %s QUEEN is in stock. She went through the apiary but left no %s "
+                .. "princess -- check the output chest and the apiary's own slots.",
+                parent1, parent1)
+        end
+
+        drawGUI({current_species = parent1, step_type = "Loading", progress = "Cannot load a queen",
+                 errors = reason, status = "Error"})
+
+        return false, reason
     end
 
     local drone_side, drone_slot, drone_stack = findItemAnyInventory(parent2 .. ".*drone")
