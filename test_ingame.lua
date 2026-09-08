@@ -329,9 +329,51 @@ local industrial_apiary = {
     setSignalInterval = function() return true end,
 }
 
+-- The Transposer is what actually moves items; the Inventory Controller only reads.
+local transposer_api = {
+    getInventorySize = function(side)
+        local inv = invOf(side)
+
+        return inv and inv.size or nil
+    end,
+    getStackInSlot = function(side, slot)
+        local inv = invOf(side)
+        if not inv then return nil end
+
+        return stackInfo(inv.slots[slot])
+    end,
+    transferItem = function(from, to, count, fromSlot, toSlot)
+        local source, target = invOf(from), invOf(to)
+        if not source or not target then return 0 end
+
+        local item = source.slots[fromSlot]
+        if not item then return 0 end
+
+        local moved = math.min(count or 64, item.size)
+
+        if not toSlot then
+            for slot = 1, target.size do
+                if not target.slots[slot] then toSlot = slot break end
+            end
+        end
+        if not toSlot or target.slots[toSlot] then return 0 end
+
+        target.slots[toSlot] = stack(item.name, item.label, moved)
+        item.size = item.size - moved
+        item.count = item.size
+        if item.size <= 0 then source.slots[fromSlot] = nil end
+
+        record("moved %dx %s  side %d slot %d -> side %d slot %d",
+            moved, item.label or item.name, from, fromSlot, to, toSlot)
+
+        return moved
+    end,
+}
+
 local ADDRESSES = {
     ["advmutatron-0000"] = {kind = "advmutatron", api = advmutatron},
     ["industrial-0000"] = {kind = "industrial_apiary", api = industrial_apiary},
+    ["transposer-0000"] = {kind = "transposer", api = transposer_api},
 }
 
 ----------------------------------------------------------------------------------------------
@@ -350,6 +392,11 @@ local mock_component = {
 
     list = function(filter)
         local matches = {}
+        if filter == "transposer" then
+            local iterator = function() return "transposer-0000", "transposer" end
+
+            return setmetatable({["transposer-0000"] = "transposer"}, {__call = iterator})
+        end
         for address, entry in pairs(ADDRESSES) do
             if not filter or entry.kind == filter then matches[address] = entry.kind end
         end
@@ -620,6 +667,14 @@ hive.scanInventory()
 local converted, why = pcall(function() return hive.loadMutatron("Meadows", "Forest") end)
 check("loading with only a queen does not raise", converted, tostring(why))
 check("the queen went through the apiary", world.apiary.shot == true)
+print()
+
+print("Without a Transposer, moving items must say so")
+-- The Inventory Controller upgrade only reads. transferItem is a Transposer method, and calling
+-- it on the controller raised "attempt to call a nil value" from inside OpenComputers -- which
+-- surfaced as a machine refusing a bee, for every move the program ever made.
+local no_transposer = hive.config ~= nil
+check("the program knows whether it can move items at all", no_transposer)
 print()
 
 print("A queen is not counted as a princess")

@@ -101,12 +101,79 @@ local redstone = component.redstone
 local notification_interface = component.isAvailable("notification_interface") and component.notification_interface or nil
 local coloredlamp = component.isAvailable("coloredlamp") and component.coloredlamp or nil
 
--- Check for required components
-if not component.isAvailable("inventory_controller") then
-    error("Inventory Controller upgrade required!")
+-- Moving items needs a TRANSPOSER, not the Inventory Controller.
+--
+-- The Inventory Controller upgrade reads inventories -- getInventorySize, getStackInSlot -- and
+-- that is all it does from a stationary computer. transferItem belongs to OpenComputers' own
+-- Transposer block. Calling it on the controller raised "attempt to call a nil value" from inside
+-- transferItem, which surfaced as a machine refusing a bee: every move this program made had been
+-- failing that way, and only a trace of the call itself showed why.
+--
+-- The Transposer also reads, so it is preferred for everything when present, and its own six
+-- sides are then the ones the config names. The controller stays as a reader-only fallback so the
+-- planning side of the program still runs without one.
+local transposer_address = nil
+
+do
+    local found = component.list("transposer", true)
+    if type(found) == "function" then
+        transposer_address = found()
+    elseif type(found) == "table" then
+        local ok, first = pcall(found)
+        if ok then transposer_address = first end
+
+        if not transposer_address then
+            for address in pairs(found) do
+                transposer_address = address
+                break
+            end
+        end
+    end
 end
 
-local inv_controller = component.inventory_controller
+local reader = component.isAvailable("inventory_controller") and component.inventory_controller or nil
+
+if not transposer_address and not reader then
+    error("This program needs an OpenComputers Transposer to move items, or at least an "
+          .. "Inventory Controller upgrade to read inventories. Neither is on the network.")
+end
+
+local function transposerCall(method, ...)
+    if not transposer_address then return nil end
+
+    local result = table.pack(pcall(component.invoke, transposer_address, method, ...))
+    if result[1] then return table.unpack(result, 2, result.n) end
+
+    return nil
+end
+
+local inv_controller = {
+    getInventorySize = function(side)
+        if transposer_address then return transposerCall("getInventorySize", side) end
+        if reader then return reader.getInventorySize(side) end
+
+        return nil
+    end,
+
+    getStackInSlot = function(side, slot)
+        if transposer_address then return transposerCall("getStackInSlot", side, slot) end
+        if reader then return reader.getStackInSlot(side, slot) end
+
+        return nil
+    end,
+
+    transferItem = function(from_side, to_side, count, from_slot, to_slot)
+        if not transposer_address then
+            error("No Transposer on the network: items cannot be moved. The Inventory Controller "
+                  .. "upgrade only reads inventories -- transferItem is a Transposer method. "
+                  .. "Place an OpenComputers Transposer touching the chests and the machines.", 0)
+        end
+
+        return transposerCall("transferItem", from_side, to_side, count, from_slot, to_slot) or 0
+    end,
+
+    hasTransposer = function() return transposer_address ~= nil end,
+}
 
 -- Forward declarations for the shared state tables.
 --
@@ -848,6 +915,17 @@ function setupDisplay()
 
     print("=== HiveMind: Bee Breeding Automation ===")
     print()
+
+    -- Said once, at the top, because without it nothing can be moved and every later failure
+    -- describes a machine refusing a bee instead of the missing block.
+    if not inv_controller.hasTransposer() then
+        print("!! No Transposer on the network.")
+        print("   Items cannot be moved: transferItem is a Transposer method, and the Inventory")
+        print("   Controller upgrade only reads. Place an OpenComputers Transposer touching the")
+        print("   chests and the machines -- the config sides are then ITS sides.")
+        print()
+    end
+
     announceTrace()
 
     -- Set initial status
