@@ -2955,6 +2955,42 @@ function findItemAnyInventory(pattern)
     return nil
 end
 
+--- List the leaves of a plan that cannot be bred and are not in stock
+---
+--- A leaf with no star has no recipe in the database; if neither a princess nor a drone of it is
+--- held, the plan cannot start. Reading that off a forty-line tree by eye is exactly the kind of
+--- thing a program should do for you.
+--- @param tree table|nil The breeding tree
+--- @return string[] species Sorted, without repeats
+function collectBlockingLeaves(tree)
+    local found = {}
+
+    local function walk(node)
+        if not node then return end
+
+        local breedable = node.left_parent or node.right_parent
+
+        if not breedable
+           and not hasSpeciesPrincess(node.species)
+           and not hasSpeciesDrone(node.species) then
+            found[node.species] = true
+        end
+
+        walk(node.left_parent)
+        walk(node.right_parent)
+    end
+
+    walk(tree)
+
+    local list = {}
+    for species in pairs(found) do
+        table.insert(list, species)
+    end
+    table.sort(list)
+
+    return list
+end
+
 --- Insert princess and drone into mutatron
 --- @param parent1 string Species name for princess/queen
 --- @param parent2 string Species name for drone
@@ -4019,6 +4055,26 @@ function displayBreedingPlan(target, breeding_plan)
         print()
     end
 
+    -- What the plan cannot make and you do not have.
+    --
+    -- The same information is in the sections above, but a deep tree pushes them off the top of
+    -- the screen -- and this is the one thing you have to act on before pressing 1.
+    local blocking = collectBlockingLeaves(breeding_plan.tree)
+
+    if #blocking > 0 then
+        print("=== YOU MUST SUPPLY THESE FIRST ===")
+
+        for _, species in ipairs(blocking) do
+            print(string.format("  %-18s a princess OR a drone -- put it in the input chest",
+                species))
+        end
+
+        print()
+        print("These have no recipe in the database and none is in stock, so the plan stops")
+        print("at them. Everything else is bred from what you already have.")
+        print()
+    end
+
     -- Display execution summary
     print("=== EXECUTION SUMMARY ===")
     print("1. Build the tree from bottom to top (depth-first)")
@@ -4026,6 +4082,11 @@ function displayBreedingPlan(target, breeding_plan)
     print("3. When missing drones, execute accumulation cycles")
     print("4. Resume golden path when drones are available")
     print("5. Each step: Princess + Drone -> Queen -> Apiary -> New Queen + Drones")
+
+    if #blocking > 0 then
+        print()
+        print("NOT READY: " .. #blocking .. " species missing, listed above.")
+    end
 
     return true
 end
@@ -6314,6 +6375,7 @@ return {
     -- The execution path, so test_ingame.lua can drive it against a simulated world
     scanInventory = scanInventory,
     printInventoryDetail = printInventoryDetail,
+    collectBlockingLeaves = collectBlockingLeaves,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
     waitForMutatronOutput = waitForMutatronOutput,
