@@ -106,7 +106,80 @@ else
     w("!! No inventory_controller: the offset cannot be determined. Add the upgrade.")
 end
 
--- 2. The offset test --------------------------------------------------------
+-- 2. What sits on each of the six sides -------------------------------------
+--
+-- An Adapter has no visible facing, so there is no way to tell by eye which side the program
+-- calls "front". This reads all six and names what it finds, which is what the config needs.
+w(string.rep("-", 72))
+w("SIDES -- as seen from the block holding the inventory controller")
+w(string.rep("-", 72))
+
+local SIDE_NAMES = {
+    [sides.bottom] = "bottom (down)",
+    [sides.top]    = "top (up)",
+    [sides.back]   = "back",
+    [sides.front]  = "front",
+    [sides.right]  = "right",
+    [sides.left]   = "left",
+}
+
+-- A machine reached through an Adapter answers listSlots; a chest does not. Comparing the
+-- inventory size on a side with the size the driver reports is what identifies the machine.
+local machineSizes = {}
+if adv then
+    local sl = call(adv, "listSlots")
+    if type(sl) == "table" then machineSizes.advmutatron = sl.size end
+end
+if apiary then
+    local sl = call(apiary, "listSlots")
+    if type(sl) == "table" then machineSizes.industrial_apiary = sl.size end
+end
+
+local sideReport = {}
+if inv then
+    for _, side in ipairs({sides.bottom, sides.top, sides.back, sides.front, sides.right, sides.left}) do
+        local size = inv.getInventorySize(side)
+        local guess = ""
+
+        if size then
+            local names = {}
+            for slot = 1, math.min(size, 12) do
+                local stack = inv.getStackInSlot(side, slot)
+                if stack then
+                    names[#names + 1] = describe(stack)
+                end
+                if #names >= 3 then break end
+            end
+
+            for kind, msize in pairs(machineSizes) do
+                if msize == size then guess = guess .. "  <-- likely the " .. kind end
+            end
+
+            w(string.format("  %-14s %3d slots%s", SIDE_NAMES[side] or tostring(side), size, guess))
+            if #names > 0 then
+                w("                 holding: " .. table.concat(names, ", "))
+            end
+
+            sideReport[side] = {size = size, guess = guess}
+        else
+            w(string.format("  %-14s nothing readable (no inventory on that side)",
+                SIDE_NAMES[side] or tostring(side)))
+        end
+    end
+else
+    w("  no inventory_controller, cannot read any side")
+end
+
+w()
+w("  These six answers decide the config lines:")
+w("    mutatron_side       -- the side whose slot count matches the Advanced Mutatron")
+w("    apiary_side         -- the side whose slot count matches the Industrial Apiary")
+w("    input_chest_side    -- the chest holding princesses, drones and labware")
+w("    output_chest_side   -- the chest that receives the products")
+w("    mech_user_side      -- the Mechanical User (redstone, and its own inventory)")
+w()
+
+-- 3. The offset test --------------------------------------------------------
 --
 -- The driver names a slot and says what is in it. The inventory controller reads the
 -- same physical inventory under its own indexing. If driver slot s and controller
@@ -249,7 +322,7 @@ end
 local apiaryOffset, apiarySlots = detectOffset(apiary, APIARY_SIDE, "INDUSTRIAL APIARY")
 local advOffset, advSlots = detectOffset(adv, MUTATRON_SIDE, "ADVANCED MUTATRON")
 
--- 3. Verdict on the config currently in main.lua -----------------------------
+-- 4. Verdict on the config currently in main.lua -----------------------------
 w(string.rep("=", 72))
 w("VERDICT ON main.lua CONFIG")
 w(string.rep("=", 72))
@@ -302,7 +375,7 @@ else
 end
 w()
 
--- 4. State the migration depends on -----------------------------------------
+-- 5. State the migration depends on -----------------------------------------
 w(string.rep("=", 72))
 w("STATE READOUT")
 w(string.rep("=", 72))
