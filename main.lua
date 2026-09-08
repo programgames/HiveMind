@@ -692,6 +692,13 @@ config = {
     mech_user_inventory_side = nil,
 
     -- Slot configurations
+    --
+    -- The machine shows three input slots -- princess, drone, labware -- and one output. The
+    -- driver additionally numbers slots 4 to 9 as "selectors": those are not storage, they are
+    -- the mutation choices the GUI offers when a pair can produce more than one result, which is
+    -- the whole point of the Advanced over the plain Mutatron. listMutations reads them and
+    -- setMutation picks one; nothing is ever moved into them.
+    --
     -- These literals are fallbacks for the degraded mode only (no drivers on the network).
     -- When the drivers answer, applyDriverSlots() overwrites them with listSlots() corrected by
     -- config.slot_offset. BLOCKED BY Q3: the offset itself is decided in game by check_slots.lua,
@@ -712,6 +719,9 @@ config = {
     report_path = "/home/hivemind_report.txt",  -- Diagnostic report written by checkGendustryAPI
 
     -- Mutagen management (task 10)
+    --
+    -- One bucket per operation, per bdew's own documentation -- so 1000 mB, and a full 10,000 mB
+    -- tank is ten crosses. The Advanced Mutatron also wants 20,000 MJ and one labware each time.
     mutagen_reserve_mb = 1000,        -- Millibuckets the tank must hold before a cycle is started
     mutagen_wait_timeout = 120,       -- Seconds to wait for the tank to refill before giving up
 
@@ -3314,6 +3324,12 @@ function clearMutatron()
 end
 
 --- Explain, in one sentence, why a bee could not be put into the mutatron
+---
+--- Confirmed against the machine and bdew's documentation: the mutatron takes a princess and a
+--- drone, never a queen, and burns one labware and one bucket of mutagen per cross. It outputs a
+--- QUEEN, already mated. The apiary, by contrast, only ever yields a princess and drones -- so a
+--- queen found lying in a chest can only have come from the mutatron, left there by a run that
+--- stopped part way.
 ---
 --- "Check mutatron inventory space" was true of only one of the reasons. A machine can refuse an
 --- insertion because the slot is taken, because the face the adapter touches does not accept it,
