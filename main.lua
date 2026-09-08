@@ -4010,9 +4010,17 @@ end
 
 -- Enhanced target selection with mod filtering
 function selectTarget()
-    local mods = config.mod_list or {}
+    -- config.mod_list has never existed: the key is enabled_mods. Reading the wrong one left
+    -- `mods` empty, so the menu listed no filter at all and "f" could only offer 0 to 0.
+    local mods = config.enabled_mods or {}
     local current_filter = nil
+    local search_results = nil
     local filtered_bees = available_bees
+
+    -- Declared out here on purpose. Inside the loop these were reset on every redraw, so "n"
+    -- moved to page two and the next redraw put you straight back on page one.
+    local page_size = 15
+    local current_page = 1
 
     mod_counts = {}
     for _, mod in ipairs(mods) do
@@ -4043,7 +4051,14 @@ function selectTarget()
         end
         print()
 
-        if current_filter then
+        -- A search wins over a mod filter, and both over the full list. Before, a search stored
+        -- its results in filtered_bees and the next redraw overwrote them from current_filter,
+        -- which held "Search: ..." -- a mod name that matches nothing. The results vanished on
+        -- the very next frame.
+        if search_results then
+            filtered_bees = search_results
+            print("Showing matches for '" .. tostring(current_filter) .. "':")
+        elseif current_filter then
             filtered_bees = getBeesByMod(current_filter)
             print("Showing " .. current_filter .. " bees:")
         else
@@ -4052,9 +4067,8 @@ function selectTarget()
         end
 
         -- Show bees with pagination
-        local page_size = 15
-        local total_pages = math.ceil(#filtered_bees / page_size)
-        local current_page = 1
+        local total_pages = math.max(1, math.ceil(#filtered_bees / page_size))
+        if current_page > total_pages then current_page = total_pages end
 
         local function showPage(page)
             local start_idx = (page - 1) * page_size + 1
@@ -4071,7 +4085,7 @@ function selectTarget()
             if total_pages > 1 then
                 print()
                 print("Page " .. page .. " of " .. total_pages)
-                print("Commands: n=next page, p=prev page, f=filter, s=search")
+                print("Commands: n=next page, p=prev page, f=filter, s=search, c=clear, 0=quit")
             end
         end
 
@@ -4085,10 +4099,16 @@ function selectTarget()
             current_page = current_page + 1
         elseif input == "p" and current_page > 1 then
             current_page = current_page - 1
+        elseif input == "c" then
+            current_filter = nil
+            search_results = nil
+            current_page = 1
         elseif input == "f" then
             print("Select mod filter (0-" .. #mods .. "): ")
 
             local filter_choice = tonumber(io.read())
+
+            search_results = nil
 
             if filter_choice == 0 then
                 current_filter = nil
@@ -4101,17 +4121,19 @@ function selectTarget()
             print("Enter search term: ")
 
             local search = io.read():lower()
-            local search_results = {}
+            local matches = {}
 
+            -- Plain find: a species name is data, and "Nuclear Technician" or a name with a dash
+            -- would otherwise be read as a pattern.
             for _, species in ipairs(available_bees) do
-                if species:lower():find(search) then
-                    table.insert(search_results, species)
+                if species:lower():find(search, 1, true) then
+                    table.insert(matches, species)
                 end
             end
 
-            if #search_results > 0 then
-                filtered_bees = search_results
-                current_filter = "Search: " .. search
+            if #matches > 0 then
+                search_results = matches
+                current_filter = search
                 current_page = 1
             else
                 print("No matches found. Press anything...")
