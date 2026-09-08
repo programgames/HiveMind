@@ -570,6 +570,12 @@ config = {
     collection_wait_time = 5,         -- Time between collection attempts
     add_drone_count = 0,              -- Number of additional drones to produce during accumulation
 
+    -- Adjacent inventories other than the two configured chests are only scanned when they hold
+    -- at least this many slots, so a furnace or a small machine is not mistaken for storage. The
+    -- configured input and output chests are always scanned, whatever their size. Lower this if
+    -- you keep bees in a small modded container.
+    min_scan_inventory_size = 10,
+
     -- The mutatron eats both parents. A species with no recipe -- one you found, traded or were
     -- given -- cannot be made again, so spending the last one is irreversible. The plan screen
     -- says which ones a run will use up before you start it; set false to hide that warning.
@@ -849,7 +855,7 @@ function scanInventory()
         if not skip then
             local inv_size = inv_controller.getInventorySize(side)
 
-            if inv_size and inv_size >= 10 then
+            if inv_size and inv_size >= (config.min_scan_inventory_size or 10) then
                 total_inventories = total_inventories + 1
                 print("Found inventory on " .. getSideName(side) .. " side with " .. inv_size .. " slots")
 
@@ -2976,7 +2982,7 @@ function findItemAnyInventory(pattern)
 
         if not already_searched then
             local inv_size = inv_controller.getInventorySize(side)
-            if inv_size and inv_size >= 10 then
+            if inv_size and inv_size >= (config.min_scan_inventory_size or 10) then
                 local slot, stack = findItem(side, pattern)
                 if slot then
                     return side, slot, stack
