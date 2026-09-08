@@ -655,6 +655,11 @@ config = {
     collection_wait_time = 5,         -- Time between collection attempts
     add_drone_count = 0,              -- Number of additional drones to produce during accumulation
 
+    -- The mutatron takes a princess, never a queen. When only a queen of a species is left, run
+    -- her through the apiary first: she dies and leaves a princess, which is what the cross
+    -- needs. Costs one apiary cycle; set false to be asked instead.
+    convert_queens = true,
+
     -- Adjacent inventories other than the two configured chests are only scanned when they hold
     -- at least this many slots, so a furnace or a small machine is not mistaken for storage. The
     -- configured input and output chests are always scanned, whatever their size. Lower this if
@@ -3362,9 +3367,41 @@ function loadMutatron(parent1, parent2)
         using_queen = princess_slot ~= nil
     end
 
+    -- A queen is not a princess, and the mutatron's first slot takes a princess. But a queen is a
+    -- princess that has already mated: run her through the apiary and she leaves one behind. The
+    -- program has an apiary and knows how to use it, so there is no reason to stop and ask.
+    if using_queen and config.convert_queens then
+        drawGUI({current_species = parent1, step_type = "Converting",
+                 progress = "Only a " .. parent1 .. " queen in stock -- running her through the "
+                            .. "apiary to get a princess back",
+                 status = "Working"})
+
+        trace("converting %s queen to a princess through the apiary", tostring(parent1))
+
+        local converted = executeAccumulationCycle(parent1)
+
+        if control_state.abort_requested then return false, "Aborted" end
+
+        if converted then
+            scanInventory()
+
+            princess_side, princess_slot, princess_stack =
+                findItemAnyInventory(parent1 .. ".*princess")
+
+            using_queen = princess_slot == nil
+
+            if not using_queen then
+                drawGUI({progress = parent1 .. " princess recovered from the apiary",
+                         status = "Working"})
+            end
+        end
+    end
+
     if using_queen then
         drawGUI({progress = "Only a " .. parent1 .. " queen is in stock, not a princess",
-                 errors = "The mutatron takes a princess: put the queen through the apiary first",
+                 errors = "The mutatron takes a princess. Put the queen in the apiary: when she "
+                          .. "dies she leaves one. Set config.convert_queens = true to have this "
+                          .. "done for you.",
                  status = "Warning"})
     end
 
@@ -5519,9 +5556,13 @@ function drawGUI(args)
     if args.status then gui_state.status = args.status end
 
     -- Clear content areas (keep borders)
-    for i = 2, 24 do
+    local width = screen_width or 80
+    local height = screen_height or 25
+    local blank = string.rep(" ", width - 2)
+
+    for i = 2, height - 1 do
         if i ~= 3 and i ~= 6 and i ~= 9 and i ~= 12 and i ~= 15 and i ~= 18 then
-            gpu.set(2, i, string.rep(" ", 78))
+            gpu.set(2, i, blank)
         end
     end
 
@@ -5581,16 +5622,23 @@ function drawGUI(args)
     gpu.set(11, 13, gui_state.status)
     gpu.setForeground(0xFFFFFF)
 
-    -- Draw errors/warnings
+    -- Draw errors/warnings.
+    --
+    -- Two lines wrapped at 76 columns, whatever the screen. The messages that matter most are the
+    -- long ones -- they name the item, the slot and what to do about it -- and they were cut off
+    -- exactly where that began. The section runs to the bottom border, so use it.
     if gui_state.errors and gui_state.errors ~= "" then
         gpu.setForeground(0xFF0000) -- Red for errors
-        -- Word wrap errors to fit in the area
-        local error_lines = wrapText(gui_state.errors, 76)
+
+        local error_lines = wrapText(gui_state.errors, width - 4)
+        local room = math.max(2, height - 1 - 19)
+
         for i, line in ipairs(error_lines) do
-            if i <= 2 then -- Only show first 2 lines
+            if i <= room then
                 gpu.set(3, 16 + i, line)
             end
         end
+
         gpu.setForeground(0xFFFFFF)
     end
 

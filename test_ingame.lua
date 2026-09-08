@@ -168,11 +168,18 @@ local function apiaryFire()
         return
     end
 
+    local held = driverSlot(a.side, a.slots.queen)
+
+    -- A dying queen leaves a princess and drones of HER species. Producing a fixed species made
+    -- the queen-to-princess conversion look like it had failed, whatever it converted.
+    local species = tostring(held.label or ""):gsub("%s*[Qq]ueen$", "")
+    if species == "" then species = "Common" end
+
     setDriverSlot(a.side, a.slots.queen, nil)
 
     local products = {
-        stack("forestry:bee_princess_ge", "Common Princess"),
-        stack("forestry:bee_drone_ge", "Common Drone", 2),
+        stack("forestry:bee_princess_ge", species .. " Princess"),
+        stack("forestry:bee_drone_ge", species .. " Drone", 2),
         stack("forestry:honey_drop", "Honey Drop", 4),
     }
     for i, item in ipairs(products) do
@@ -600,6 +607,19 @@ check("products reached the output chest", harvested > 0, tostring(harvested) ..
 check("the princess came back, so the line can continue", princess_back)
 check("the apiary was released after the transfer", world.apiary.redstone_mode == "ALWAYS",
     world.apiary.redstone_mode)
+print()
+
+print("Only a queen left of a species the cross needs")
+-- Exactly the state a run leaves when a cross consumed the princess and an earlier attempt
+-- dropped a queen in a chest: the mutatron takes a princess and refuses the queen outright.
+world.inventories[SIDES.back].slots[1] = stack("forestry:bee_queen_ge", "Meadows Queen")
+world.inventories[SIDES.back].slots[2] = stack("forestry:bee_drone_ge", "Forest Drone")
+world.apiary.shot = false
+hive.scanInventory()
+
+local converted, why = pcall(function() return hive.loadMutatron("Meadows", "Forest") end)
+check("loading with only a queen does not raise", converted, tostring(why))
+check("the queen went through the apiary", world.apiary.shot == true)
 print()
 
 print("A machine left loaded by a previous attempt")
