@@ -1,0 +1,102 @@
+=== Breeding Analysis for Pyramid ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 32
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Ender
+  3. Mad Scientist
+  4. Modest
+  5. Meadows
+  6. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Modest princesses OR 3 Modest drones
+    2 Ender princesses OR 2 Ender drones
+    2 Mad Scientist princesses OR 2 Mad Scientist drones
+    3 Forest princesses OR 3 Forest drones
+    3 Monastic princesses OR 2 Monastic drones
+    6 Meadows princesses OR 6 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 33
+  Total nodes: 65
+  Breeding nodes: 32
+  Reused nodes: 15
+  Primary breeders: 14
+  Duplicate species: 13 (32 duplicate instances)
+  Max depth: 13
+
+🌳 BREEDING TREE:
+└── Pyramid [PD] *
+    ├── Temporal [PD] *
+    │   ├── Quantum Strange [PD] *
+    │   │   ├── Phantasmal [P] (reusing)
+    │   │   └── Mad Scientist [PD]
+    │   └── Quantum Charming [PD] *
+    │       ├── Mad Scientist [PD]
+    │       └── Phantasmal [PD] *
+    │           ├── Spectral [PD] *
+    │           │   ├── Hermitic [PD] *
+    │           │   │   ├── Monastic [P] (reusing)
+    │           │   │   └── Secluded [PD] *
+    │           │   │       ├── Monastic [PD]
+    │           │   │       └── Austere [PD] *
+    │           │   │           ├── Frugal [PD] *
+    │           │   │           │   ├── Sinister [PD] *
+    │           │   │           │   │   ├── Cultivated [P] (reusing)
+    │           │   │           │   │   └── Modest [PD]
+    │           │   │           │   └── Modest [PD]
+    │           │   │           └── Modest [PD]
+    │           │   └── Ender [PD]
+    │           └── Ender [PD]
+    └── Lordly [PD] *
+        ├── Timely [PD] *
+        │   ├── Ethereal [PD] *
+        │   │   ├── Arcane [PD] *
+        │   │   │   ├── Mysterious [PD] *
+        │   │   │   │   ├── Common [P] (reusing)
+        │   │   │   │   └── Forest [PD]
+        │   │   │   └── Esoteric [PD] *
+        │   │   │       ├── Eldritch [P] (reusing)
+        │   │   │       └── Cultivated [PD] *
+        │   │   │           ├── Common [P] (reusing)
+        │   │   │           └── Meadows [PD]
+        │   │   └── Supernatural [PD] *
+        │   │       ├── Charmed [P] (reusing)
+        │   │       └── Enchanted [PD] *
+        │   │           ├── Charmed [PD] *
+        │   │           │   ├── Eldritch [PD] *
+        │   │           │   │   ├── Cultivated [P] (reusing)
+        │   │           │   │   └── Mystical [PD] *
+        │   │           │   │       ├── Monastic [PD]
+        │   │           │   │       └── Noble [PD] *
+        │   │           │   │           ├── Common [P] (reusing)
+        │   │           │   │           └── Cultivated [PD] *
+        │   │           │   │               ├── Common [PD] *
+        │   │           │   │               │   ├── Forest [PD]
+        │   │           │   │               │   └── Meadows [PD]
+        │   │           │   │               └── Meadows [PD]
+        │   │           │   └── Cultivated [P] (reusing)
+        │   │           └── Eldritch [P] (reusing)
+        │   └── Imperial [P] (reusing)
+        └── Imperial [PD] *
+            ├── Majestic [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [P] (reusing)
+            │   │   └── Meadows [PD]
+            │   └── Noble [P] (reusing)
+            └── Noble [PD] *
+                ├── Common [P] (reusing)
+                └── Cultivated [PD] *
+                    ├── Common [PD] *
+                    │   ├── Forest [PD]
+                    │   └── Meadows [PD]
+                    └── Meadows [PD]

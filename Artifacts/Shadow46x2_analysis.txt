@@ -1,0 +1,62 @@
+=== Breeding Analysis for Shadow46x2 ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 14
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Unusual
+  2. Forest
+  3. Monastic
+  4. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Unusual princesses OR 1 Unusual drone
+    2 Forest princesses OR 2 Forest drones
+    1 Monastic princess OR 1 Monastic drone
+    5 Meadows princesses OR 2 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 17
+  Total nodes: 29
+  Breeding nodes: 14
+  Reused nodes: 9
+  Primary breeders: 7
+  Duplicate species: 6 (12 duplicate instances)
+  Max depth: 8
+
+🌳 BREEDING TREE:
+└── Shadow46x2 [PD] *
+    ├── Transmuting [PD] *
+    │   ├── Mutable [PD] *
+    │   │   ├── Eldritch [PD] *
+    │   │   │   ├── Cultivated [P] (reusing)
+    │   │   │   └── Mystical [PD] *
+    │   │   │       ├── Monastic [PD]
+    │   │   │       └── Noble [PD] *
+    │   │   │           ├── Common [PD] *
+    │   │   │           │   ├── Forest [PD]
+    │   │   │           │   └── Meadows [P] (reusing)
+    │   │   │           └── Cultivated [P] (reusing)
+    │   │   └── Unusual [P] (reusing)
+    │   └── Unusual [PD]
+    └── Fermented [PD] *
+        ├── Meadows [PD]
+        └── Farmerly [PD] *
+            ├── Unweary [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [P] (reusing)
+            │   │   └── Meadows [PD]
+            │   └── Diligent [P] (reusing)
+            └── Rural [PD] *
+                ├── Diligent [PD] *
+                │   ├── Cultivated [P] (reusing)
+                │   └── Common [PD] *
+                │       ├── Forest [PD]
+                │       └── Meadows [P] (reusing)
+                └── Meadows [P] (reusing)

@@ -1,0 +1,96 @@
+=== Execution Analysis for LordRaine ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 13
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 13
+  GUI calls: 26, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: LordRaine
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 13
+     Tree species: LordRaine
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=410, step_type=breeding, total_steps=13
+     Progress: Completed Common
+  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=411, step_type=breeding, total_steps=13
+     Progress: Completed Cultivated
+  8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  9. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=412, step_type=breeding, total_steps=13
+     Progress: Completed Sinister
+  11. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
+     Progress: Breeding: Modest + Sinister -> Frugal
+  12. [BREEDING] ✅ Modest + Sinister -> Frugal
+  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=413, step_type=breeding, total_steps=13
+     Progress: Completed Frugal
+  14. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
+     Progress: Breeding: Modest + Frugal -> Austere
+  15. [BREEDING] ✅ Modest + Frugal -> Austere
+  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, current_step=414, step_type=breeding, total_steps=13
+     Progress: Completed Austere
+  17. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
+     Progress: Breeding: Austere + Monastic -> Secluded
+  18. [BREEDING] ✅ Austere + Monastic -> Secluded
+  19. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, current_step=415, step_type=breeding, total_steps=13
+     Progress: Completed Secluded
+  20. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
+     Progress: Breeding: Secluded + Monastic -> Hermitic
+  21. [BREEDING] ✅ Secluded + Monastic -> Hermitic
+  22. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, current_step=416, step_type=breeding, total_steps=13
+     Progress: Completed Hermitic
+  23. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
+     Progress: Breeding: Ender + Hermitic -> Spectral
+  24. [BREEDING] ✅ Ender + Hermitic -> Spectral
+  25. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, current_step=417, step_type=breeding, total_steps=13
+     Progress: Completed Spectral
+  26. [GUI_CALL] progress=Breeding: Ender + Spectral -> Phantasmal, current_species=Phantasmal, step_type=breeding
+     Progress: Breeding: Ender + Spectral -> Phantasmal
+  27. [BREEDING] ✅ Ender + Spectral -> Phantasmal
+  28. [GUI_CALL] progress=Completed Phantasmal, current_species=Phantasmal, current_step=418, step_type=breeding, total_steps=13
+     Progress: Completed Phantasmal
+  29. [GUI_CALL] progress=Breeding: Phantasmal + Mad Scientist -> Quantum Charming, current_species=Quantum Charming, step_type=breeding
+     Progress: Breeding: Phantasmal + Mad Scientist -> Quantum Charming
+  30. [BREEDING] ✅ Phantasmal + Mad Scientist -> Quantum Charming
+  31. [GUI_CALL] progress=Completed Quantum Charming, current_species=Quantum Charming, current_step=419, step_type=breeding, total_steps=13
+     Progress: Completed Quantum Charming
+  32. [GUI_CALL] progress=Breeding: Mad Scientist + Phantasmal -> Quantum Strange, current_species=Quantum Strange, step_type=breeding
+     Progress: Breeding: Mad Scientist + Phantasmal -> Quantum Strange
+  33. [BREEDING] ✅ Mad Scientist + Phantasmal -> Quantum Strange
+  34. [GUI_CALL] progress=Completed Quantum Strange, current_species=Quantum Strange, current_step=420, step_type=breeding, total_steps=13
+     Progress: Completed Quantum Strange
+  35. [GUI_CALL] progress=Breeding: Quantum Charming + Quantum Strange -> Temporal, current_species=Temporal, step_type=breeding
+     Progress: Breeding: Quantum Charming + Quantum Strange -> Temporal
+  36. [BREEDING] ✅ Quantum Charming + Quantum Strange -> Temporal
+  37. [GUI_CALL] progress=Completed Temporal, current_species=Temporal, current_step=421, step_type=breeding, total_steps=13
+     Progress: Completed Temporal
+  38. [GUI_CALL] progress=Breeding: Sorcerous + Temporal -> LordRaine, current_species=LordRaine, step_type=breeding
+     Progress: Breeding: Sorcerous + Temporal -> LordRaine
+  39. [BREEDING] ✅ Sorcerous + Temporal -> LordRaine
+  40. [GUI_CALL] progress=Completed LordRaine, current_species=LordRaine, current_step=422, step_type=breeding, total_steps=13
+     Progress: Completed LordRaine
+  41. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=LordRaine, TreeExists=true, Steps=13
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 26
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

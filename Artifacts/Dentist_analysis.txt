@@ -1,0 +1,54 @@
+=== Breeding Analysis for Dentist ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 10
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Meadows
+  2. Forest
+  3. Deep Learner
+  4. Oxygen
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Meadows princesses OR 3 Meadows drones
+    1 Forest princess OR 1 Forest drone
+    1 Deep Learner princess OR 1 Deep Learner drone
+    1 Oxygen princess OR 1 Oxygen drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 13
+  Total nodes: 21
+  Breeding nodes: 10
+  Reused nodes: 5
+  Primary breeders: 6
+  Duplicate species: 4 (8 duplicate instances)
+  Max depth: 6
+
+🌳 BREEDING TREE:
+└── Dentist [PD] *
+    ├── Hyperventilating [PD] *
+    │   ├── Student [PD] *
+    │   │   ├── Cultivated [P] (reusing)
+    │   │   └── Common [PD] *
+    │   │       ├── Forest [PD]
+    │   │       └── Meadows [PD]
+    │   └── Imperial [PD] *
+    │       ├── Majestic [PD] *
+    │       │   ├── Cultivated [PD] *
+    │       │   │   ├── Common [P] (reusing)
+    │       │   │   └── Meadows [PD]
+    │       │   └── Noble [P] (reusing)
+    │       └── Noble [PD] *
+    │           ├── Common [P] (reusing)
+    │           └── Cultivated [PD] *
+    │               ├── Common [P] (reusing)
+    │               └── Meadows [PD]
+    └── High-Pitched [PD] *
+        ├── Deep Learner [PD]
+        └── Oxygen [PD]

@@ -1,0 +1,100 @@
+=== Breeding Analysis for Buried ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 2.00 ms
+Total steps: 32
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Rocky
+  2. Wintry
+  3. Monastic
+  4. Forest
+  5. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Rocky princess OR 1 Rocky drone
+    1 Wintry princess OR 1 Wintry drone
+    2 Monastic princesses OR 2 Monastic drones
+    3 Forest princesses OR 3 Forest drones
+    5 Meadows princesses OR 3 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 33
+  Total nodes: 65
+  Breeding nodes: 32
+  Reused nodes: 23
+  Primary breeders: 16
+  Duplicate species: 15 (32 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── Buried [PD] *
+    ├── Valuable [PD] *
+    │   ├── Shining [PD] *
+    │   │   ├── Galvanized [PD] *
+    │   │   │   ├── Resilient [P] (reusing)
+    │   │   │   └── Wintry [PD]
+    │   │   └── Majestic [P] (reusing)
+    │   └── Glittering [PD] *
+    │       ├── Rusty [PD] *
+    │       │   ├── Resilient [PD] *
+    │       │   │   ├── Robust [PD] *
+    │       │   │   │   ├── Unweary [P] (reusing)
+    │       │   │   │   └── Tolerant [PD] *
+    │       │   │   │       ├── Diligent [P] (reusing)
+    │       │   │   │       └── Rocky [PD]
+    │       │   │   └── Industrious [PD] *
+    │       │   │       ├── Unweary [PD] *
+    │       │   │       │   ├── Cultivated [PD] *
+    │       │   │       │   │   ├── Common [P] (reusing)
+    │       │   │       │   │   └── Meadows [PD]
+    │       │   │       │   └── Diligent [P] (reusing)
+    │       │   │       └── Diligent [PD] *
+    │       │   │           ├── Cultivated [P] (reusing)
+    │       │   │           └── Common [PD] *
+    │       │   │               ├── Forest [PD]
+    │       │   │               └── Meadows [P] (reusing)
+    │       │   └── Meadows [PD]
+    │       └── Majestic [PD] *
+    │           ├── Cultivated [PD] *
+    │           │   ├── Common [P] (reusing)
+    │           │   └── Meadows [PD]
+    │           └── Noble [PD] *
+    │               ├── Common [PD] *
+    │               │   ├── Forest [PD]
+    │               │   └── Meadows [P] (reusing)
+    │               └── Cultivated [P] (reusing)
+    └── Skystone [PD] *
+        ├── Windy [PD] *
+        │   ├── Ethereal [P] (reusing)
+        │   └── Supernatural [PD] *
+        │       ├── Charmed [P] (reusing)
+        │       └── Enchanted [PD] *
+        │           ├── Charmed [PD] *
+        │           │   ├── Eldritch [PD] *
+        │           │   │   ├── Cultivated [P] (reusing)
+        │           │   │   └── Mystical [PD] *
+        │           │   │       ├── Monastic [PD]
+        │           │   │       └── Noble [P] (reusing)
+        │           │   └── Cultivated [P] (reusing)
+        │           └── Eldritch [P] (reusing)
+        └── Earthen [PD] *
+            ├── Ethereal [PD] *
+            │   ├── Arcane [PD] *
+            │   │   ├── Mysterious [PD] *
+            │   │   │   ├── Common [P] (reusing)
+            │   │   │   └── Forest [PD]
+            │   │   └── Esoteric [PD] *
+            │   │       ├── Eldritch [PD] *
+            │   │       │   ├── Cultivated [P] (reusing)
+            │   │       │   └── Mystical [PD] *
+            │   │       │       ├── Monastic [PD]
+            │   │       │       └── Noble [P] (reusing)
+            │   │       └── Cultivated [P] (reusing)
+            │   └── Supernatural [P] (reusing)
+            └── Supernatural [P] (reusing)

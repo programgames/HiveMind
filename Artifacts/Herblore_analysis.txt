@@ -1,0 +1,70 @@
+=== Breeding Analysis for Herblore ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 17
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Monastic
+  3. Ender
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Modest princesses OR 3 Modest drones
+    3 Monastic princesses OR 2 Monastic drones
+    2 Ender princesses OR 2 Ender drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Common: 2 occurrences, 0 reused, could reuse 0 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 21
+  Total nodes: 35
+  Breeding nodes: 17
+  Reused nodes: 6
+  Primary breeders: 6
+  Duplicate species: 9 (14 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── Herblore [PD] *
+    ├── Quantum [PD] *
+    │   ├── Spatial [PD] *
+    │   │   ├── Hermitic [P] (reusing)
+    │   │   └── Abnormal [PD] *
+    │   │       ├── Secluded [P] (reusing)
+    │   │       └── Ender [PD]
+    │   └── Spectral [PD] *
+    │       ├── Hermitic [PD] *
+    │       │   ├── Monastic [P] (reusing)
+    │       │   └── Secluded [PD] *
+    │       │       ├── Monastic [PD]
+    │       │       └── Austere [PD] *
+    │       │           ├── Frugal [PD] *
+    │       │           │   ├── Sinister [PD] *
+    │       │           │   │   ├── Cultivated [P] (reusing)
+    │       │           │   │   └── Modest [PD]
+    │       │           │   └── Modest [PD]
+    │       │           └── Modest [PD]
+    │       └── Ender [PD]
+    └── Esoteric [PD] *
+        ├── Eldritch [PD] *
+        │   ├── Cultivated [P] (reusing)
+        │   └── Mystical [PD] *
+        │       ├── Monastic [PD]
+        │       └── Noble [PD] *
+        │           ├── Common [PD] * ← COULD REUSE
+        │           │   ├── Forest   
+        │           │   └── Meadows   
+        │           └── Cultivated [P] (reusing)
+        └── Cultivated [PD] *
+            ├── Common [PD] * ← COULD REUSE
+            │   ├── Forest   
+            │   └── Meadows   
+            └── Meadows   

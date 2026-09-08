@@ -1,0 +1,70 @@
+=== Breeding Analysis for Baguette ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 17
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Valiant
+  3. Monastic
+  4. Forest
+  5. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Modest princess OR 1 Modest drone
+    1 Valiant princess OR 1 Valiant drone
+    2 Monastic princesses
+    4 Forest princesses OR 4 Forest drones
+    4 Meadows princesses OR 1 Meadows drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 20
+  Total nodes: 35
+  Breeding nodes: 17
+  Reused nodes: 11
+  Primary breeders: 5
+  Duplicate species: 5 (15 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── Baguette [PD] *
+    ├── Pupil [PD] *
+    │   ├── Monastic [P] (reusing)
+    │   └── Arcane [PD] *
+    │       ├── Mysterious [PD] *
+    │       │   ├── Common [P] (reusing)
+    │       │   └── Forest [PD]
+    │       └── Esoteric [PD] *
+    │           ├── Eldritch [PD] *
+    │           │   ├── Cultivated [P] (reusing)
+    │           │   └── Mystical [PD] *
+    │           │       ├── Monastic [P] (reusing)
+    │           │       └── Noble [PD] *
+    │           │           ├── Common [PD] *
+    │           │           │   ├── Forest [PD]
+    │           │           │   └── Meadows [P] (reusing)
+    │           │           └── Cultivated [P] (reusing)
+    │           └── Cultivated [P] (reusing)
+    └── Thief [PD] *
+        ├── Police [PD] *
+        │   ├── Graduate [PD] *
+        │   │   ├── Student [PD] *
+        │   │   │   ├── Cultivated [P] (reusing)
+        │   │   │   └── Common [PD] *
+        │   │   │       ├── Forest [PD]
+        │   │   │       └── Meadows [P] (reusing)
+        │   │   └── Common [P] (reusing)
+        │   └── Valiant [PD]
+        └── Sinister [PD] *
+            ├── Cultivated [PD] *
+            │   ├── Common [PD] *
+            │   │   ├── Forest [PD]
+            │   │   └── Meadows [P] (reusing)
+            │   └── Meadows [PD]
+            └── Modest [PD]

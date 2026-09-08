@@ -1,0 +1,78 @@
+=== Breeding Analysis for RestlessClam ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 21
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Smouldering
+  3. Wintry
+  4. Monastic
+  5. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Forest princesses OR 3 Forest drones
+    1 Smouldering princess OR 1 Smouldering drone
+    1 Wintry princess OR 1 Wintry drone
+    1 Monastic princess OR 1 Monastic drone
+    5 Meadows princesses OR 5 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 22
+  Total nodes: 43
+  Breeding nodes: 21
+  Reused nodes: 11
+  Primary breeders: 9
+  Duplicate species: 8 (21 duplicate instances)
+  Max depth: 12
+
+🌳 BREEDING TREE:
+└── RestlessClam [PD] *
+    ├── Shocking [PD] *
+    │   ├── Windy [PD] *
+    │   │   ├── Ethereal [PD] *
+    │   │   │   ├── Arcane [PD] *
+    │   │   │   │   ├── Mysterious [PD] *
+    │   │   │   │   │   ├── Common [P] (reusing)
+    │   │   │   │   │   └── Forest [PD]
+    │   │   │   │   └── Esoteric [PD] *
+    │   │   │   │       ├── Eldritch [PD] *
+    │   │   │   │       │   ├── Cultivated [P] (reusing)
+    │   │   │   │       │   └── Mystical [PD] *
+    │   │   │   │       │       ├── Monastic [PD]
+    │   │   │   │       │       └── Noble [PD] *
+    │   │   │   │       │           ├── Common [P] (reusing)
+    │   │   │   │       │           └── Cultivated [PD] *
+    │   │   │   │       │               ├── Common [PD] *
+    │   │   │   │       │               │   ├── Forest [PD]
+    │   │   │   │       │               │   └── Meadows [PD]
+    │   │   │   │       │               └── Meadows [PD]
+    │   │   │   │       └── Cultivated [P] (reusing)
+    │   │   │   └── Supernatural [P] (reusing)
+    │   │   └── Supernatural [PD] *
+    │   │       ├── Charmed [P] (reusing)
+    │   │       └── Enchanted [PD] *
+    │   │           ├── Charmed [PD] *
+    │   │           │   ├── Eldritch [PD] *
+    │   │           │   │   ├── Cultivated [PD] *
+    │   │           │   │   │   ├── Common [P] (reusing)
+    │   │           │   │   │   └── Meadows [PD]
+    │   │           │   │   └── Mystical [P] (reusing)
+    │   │           │   └── Cultivated [P] (reusing)
+    │   │           └── Eldritch [P] (reusing)
+    │   └── Smouldering [PD]
+    └── White [PD] *
+        ├── Diligent [PD] *
+        │   ├── Cultivated [PD] *
+        │   │   ├── Common [P] (reusing)
+        │   │   └── Meadows [PD]
+        │   └── Common [PD] *
+        │       ├── Forest [PD]
+        │       └── Meadows [PD]
+        └── Wintry [PD]

@@ -1,0 +1,111 @@
+=== Execution Analysis for Pyromaniacal ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 16
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 16
+  GUI calls: 32, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Pyromaniacal
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 19
+     Tree species: Pyromaniacal
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=532, step_type=breeding, total_steps=19
+     Progress: Completed Common
+  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=533, step_type=breeding, total_steps=19
+     Progress: Completed Cultivated
+  8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  9. [BREEDING] ✅ Common + Cultivated -> Diligent
+  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=534, step_type=breeding, total_steps=19
+     Progress: Completed Diligent
+  11. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  12. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  13. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=535, step_type=breeding, total_steps=19
+     Progress: Completed Sinister
+  14. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Student
+  15. [BREEDING] ✅ Common + Cultivated -> Student
+  16. [GUI_CALL] progress=Completed Student, current_species=Student, current_step=536, step_type=breeding, total_steps=19
+     Progress: Completed Student
+  17. [GUI_CALL] progress=Breeding: Common + Student -> Graduate, current_species=Graduate, step_type=breeding
+     Progress: Breeding: Common + Student -> Graduate
+  18. [BREEDING] ✅ Common + Student -> Graduate
+  19. [GUI_CALL] progress=Completed Graduate, current_species=Graduate, current_step=537, step_type=breeding, total_steps=19
+     Progress: Completed Graduate
+  20. [GUI_CALL] progress=Breeding: Graduate + Student -> PHD, current_species=PHD, step_type=breeding
+     Progress: Breeding: Graduate + Student -> PHD
+  21. [BREEDING] ✅ Graduate + Student -> PHD
+  22. [GUI_CALL] progress=Completed PHD, current_species=PHD, current_step=538, step_type=breeding, total_steps=19
+     Progress: Completed PHD
+  23. [GUI_CALL] progress=Breeding: Diligent + Cultivated -> Unweary, current_species=Unweary, step_type=breeding
+     Progress: Breeding: Diligent + Cultivated -> Unweary
+  24. [BREEDING] ✅ Diligent + Cultivated -> Unweary
+  25. [GUI_CALL] progress=Completed Unweary, current_species=Unweary, current_step=539, step_type=breeding, total_steps=19
+     Progress: Completed Unweary
+  26. [GUI_CALL] progress=Breeding: Diligent + Unweary -> Industrious, current_species=Industrious, step_type=breeding
+     Progress: Breeding: Diligent + Unweary -> Industrious
+  27. [BREEDING] ✅ Diligent + Unweary -> Industrious
+  28. [GUI_CALL] progress=Completed Industrious, current_species=Industrious, current_step=540, step_type=breeding, total_steps=19
+     Progress: Completed Industrious
+  29. [GUI_CALL] progress=Breeding: Graduate + Industrious -> Smelter, current_species=Smelter, step_type=breeding
+     Progress: Breeding: Graduate + Industrious -> Smelter
+  30. [BREEDING] ✅ Graduate + Industrious -> Smelter
+  31. [GUI_CALL] progress=Completed Smelter, current_species=Smelter, current_step=541, step_type=breeding, total_steps=19
+     Progress: Completed Smelter
+  32. [GUI_CALL] progress=Breeding: Sinister + Cultivated -> Fiendish, current_species=Fiendish, step_type=breeding
+     Progress: Breeding: Sinister + Cultivated -> Fiendish
+  33. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
+  34. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, current_step=542, step_type=breeding, total_steps=19
+     Progress: Completed Fiendish
+  35. [GUI_CALL] progress=Breeding: Sinister + Fiendish -> Demonic, current_species=Demonic, step_type=breeding
+     Progress: Breeding: Sinister + Fiendish -> Demonic
+  36. [BREEDING] ✅ Sinister + Fiendish -> Demonic
+  37. [GUI_CALL] progress=Completed Demonic, current_species=Demonic, current_step=543, step_type=breeding, total_steps=19
+     Progress: Completed Demonic
+  38. [GUI_CALL] progress=Breeding: Smelter + Demonic -> Devil, current_species=Devil, step_type=breeding
+     Progress: Breeding: Smelter + Demonic -> Devil
+  39. [BREEDING] ✅ Smelter + Demonic -> Devil
+  40. [GUI_CALL] progress=Completed Devil, current_species=Devil, current_step=544, step_type=breeding, total_steps=19
+     Progress: Completed Devil
+  41. [GUI_CALL] progress=Breeding: Cultivated + Graduate -> Artistic, current_species=Artistic, step_type=breeding
+     Progress: Breeding: Cultivated + Graduate -> Artistic
+  42. [BREEDING] ✅ Cultivated + Graduate -> Artistic
+  43. [GUI_CALL] progress=Completed Artistic, current_species=Artistic, current_step=545, step_type=breeding, total_steps=19
+     Progress: Completed Artistic
+  44. [GUI_CALL] progress=Breeding: Artistic + PHD -> Rainbow, current_species=Rainbow, step_type=breeding
+     Progress: Breeding: Artistic + PHD -> Rainbow
+  45. [BREEDING] ✅ Artistic + PHD -> Rainbow
+  46. [GUI_CALL] progress=Completed Rainbow, current_species=Rainbow, current_step=546, step_type=breeding, total_steps=19
+     Progress: Completed Rainbow
+  47. [GUI_CALL] progress=Breeding: Devil + Rainbow -> Pyromaniacal, current_species=Pyromaniacal, step_type=breeding
+     Progress: Breeding: Devil + Rainbow -> Pyromaniacal
+  48. [BREEDING] ✅ Devil + Rainbow -> Pyromaniacal
+  49. [GUI_CALL] progress=Completed Pyromaniacal, current_species=Pyromaniacal, current_step=547, step_type=breeding, total_steps=19
+     Progress: Completed Pyromaniacal
+  50. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Pyromaniacal, TreeExists=true, Steps=19
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 32
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

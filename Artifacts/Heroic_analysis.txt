@@ -1,0 +1,32 @@
+=== Breeding Analysis for Heroic ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 1
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Steadfast
+  2. Valiant
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Steadfast princess OR 1 Steadfast drone
+    1 Valiant princess OR 1 Valiant drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 3
+  Total nodes: 3
+  Breeding nodes: 1
+  Reused nodes: 0
+  Primary breeders: 0
+  Duplicate species: 0 (0 duplicate instances)
+  Max depth: 2
+
+🌳 BREEDING TREE:
+└── Heroic [PD] *
+    ├── Steadfast [PD]
+    └── Valiant [PD]

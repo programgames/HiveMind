@@ -49,6 +49,17 @@ end
 
 local inv_controller = component.inventory_controller
 
+-- Forward declarations for the shared state tables.
+--
+-- Lua resolves a name in a function body against the locals visible where the body is written,
+-- so a `local` declared further down the file is invisible to every function above it: the body
+-- reads a global instead, and gets nil. waitForBeebeeGun and loadMutatron did exactly that with
+-- control_state and raised on their first call. Declaring the three here, and assigning them at
+-- their original sites, keeps them in scope for the whole file.
+local gui_state
+local control_state
+local status_colors
+
 -- Try to find Gendustry APIs through adapter blocks
 local gendustry = {}
 local adapters = {}
@@ -621,13 +632,24 @@ function getSideName(side)
 end
 
 -- Extract species name from item name
+--
+-- Keeps the longest match rather than the first. available_bees is sorted alphabetically, so
+-- returning the first hit made "Uncommon Queen" resolve to "Common": every species whose name is
+-- a substring of a longer one was shadowing it. Plain find, because a species name is data and
+-- must not be read as a pattern.
 function extractSpecies(itemName)
+    local lowered = itemName:lower()
+    local best = nil
+
     for _, species in ipairs(available_bees) do
-        if itemName:lower():find(species:lower()) then
-            return species
+        if lowered:find(species:lower(), 1, true) then
+            if not best or #species > #best then
+                best = species
+            end
         end
     end
-    return nil
+
+    return best
 end
 
 -- New tree-based breeding path calculation
@@ -3029,8 +3051,8 @@ function selectTarget()
     end
 end
 
--- GUI state variables
-local gui_state = {
+-- GUI state variables (declared at the top of the file)
+gui_state = {
     target = "",
     current_species = "",
     step_type = "", -- "breeding", "accumulation", "complete"
@@ -3042,8 +3064,8 @@ local gui_state = {
     progress = ""
 }
 
--- Error handling and control state
-local control_state = {
+-- Error handling and control state (declared at the top of the file)
+control_state = {
     paused = false,
     error_state = false,
     last_error = "",
@@ -3219,7 +3241,7 @@ function validateBeeAvailability(species, bee_type)
 end
 
 function validateMutatronOutput()
-    local stack = inventory_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
+    local stack = inv_controller.getStackInSlot(config.mutatron_side, config.mutatron_output_slot)
     if stack then
         return true, nil
     else
@@ -3228,7 +3250,7 @@ function validateMutatronOutput()
 end
 
 function validateApiarySpace()
-    local stack = inventory_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
+    local stack = inv_controller.getStackInSlot(config.apiary_side, config.apiary_input_slot)
     if not stack then
         return true, nil
     else
@@ -3260,8 +3282,8 @@ function sendChatNotification(message, player)
     end
 end
 
--- Status indicator color scheme
-local status_colors = {
+-- Status indicator color scheme (declared at the top of the file)
+status_colors = {
     idle = 0xFFFFFF,      -- White - idle/ready
     working = 0x00FF00,   -- Green - working normally
     waiting = 0xFFFF00,   -- Yellow - waiting for resources

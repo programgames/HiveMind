@@ -1,0 +1,211 @@
+=== Execution Analysis for Connor ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 36
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 36
+  GUI calls: 72, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Connor
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 44
+     Tree species: Connor
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=207, step_type=breeding, total_steps=44
+     Progress: Completed Common
+  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=208, step_type=breeding, total_steps=44
+     Progress: Completed Cultivated
+  8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=209, step_type=breeding, total_steps=44
+     Progress: Completed Noble
+  11. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  12. [BREEDING] ✅ Common + Cultivated -> Diligent
+  13. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=210, step_type=breeding, total_steps=44
+     Progress: Completed Diligent
+  14. [GUI_CALL] progress=Breeding: Noble + Diligent -> Ancient, current_species=Ancient, step_type=breeding
+     Progress: Breeding: Noble + Diligent -> Ancient
+  15. [BREEDING] ✅ Noble + Diligent -> Ancient
+  16. [GUI_CALL] progress=Completed Ancient, current_species=Ancient, current_step=211, step_type=breeding, total_steps=44
+     Progress: Completed Ancient
+  17. [GUI_CALL] progress=Breeding: Diligent + Cultivated -> Unweary, current_species=Unweary, step_type=breeding
+     Progress: Breeding: Diligent + Cultivated -> Unweary
+  18. [BREEDING] ✅ Diligent + Cultivated -> Unweary
+  19. [GUI_CALL] progress=Completed Unweary, current_species=Unweary, current_step=212, step_type=breeding, total_steps=44
+     Progress: Completed Unweary
+  20. [GUI_CALL] progress=Breeding: Diligent + Unweary -> Industrious, current_species=Industrious, step_type=breeding
+     Progress: Breeding: Diligent + Unweary -> Industrious
+  21. [BREEDING] ✅ Diligent + Unweary -> Industrious
+  22. [GUI_CALL] progress=Completed Industrious, current_species=Industrious, current_step=213, step_type=breeding, total_steps=44
+     Progress: Completed Industrious
+  23. [GUI_CALL] progress=Breeding: Rocky + Diligent -> Tolerant, current_species=Tolerant, step_type=breeding
+     Progress: Breeding: Rocky + Diligent -> Tolerant
+  24. [BREEDING] ✅ Rocky + Diligent -> Tolerant
+  25. [GUI_CALL] progress=Completed Tolerant, current_species=Tolerant, current_step=214, step_type=breeding, total_steps=44
+     Progress: Completed Tolerant
+  26. [GUI_CALL] progress=Breeding: Tolerant + Unweary -> Robust, current_species=Robust, step_type=breeding
+     Progress: Breeding: Tolerant + Unweary -> Robust
+  27. [BREEDING] ✅ Tolerant + Unweary -> Robust
+  28. [GUI_CALL] progress=Completed Robust, current_species=Robust, current_step=215, step_type=breeding, total_steps=44
+     Progress: Completed Robust
+  29. [GUI_CALL] progress=Breeding: Industrious + Robust -> Resilient, current_species=Resilient, step_type=breeding
+     Progress: Breeding: Industrious + Robust -> Resilient
+  30. [BREEDING] ✅ Industrious + Robust -> Resilient
+  31. [GUI_CALL] progress=Completed Resilient, current_species=Resilient, current_step=216, step_type=breeding, total_steps=44
+     Progress: Completed Resilient
+  32. [GUI_CALL] progress=Breeding: Meadows + Resilient -> Rusty, current_species=Rusty, step_type=breeding
+     Progress: Breeding: Meadows + Resilient -> Rusty
+  33. [BREEDING] ✅ Meadows + Resilient -> Rusty
+  34. [GUI_CALL] progress=Completed Rusty, current_species=Rusty, current_step=217, step_type=breeding, total_steps=44
+     Progress: Completed Rusty
+  35. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
+     Progress: Breeding: Noble + Cultivated -> Majestic
+  36. [BREEDING] ✅ Noble + Cultivated -> Majestic
+  37. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, current_step=218, step_type=breeding, total_steps=44
+     Progress: Completed Majestic
+  38. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  39. [BREEDING] ✅ Noble + Monastic -> Mystical
+  40. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, current_step=219, step_type=breeding, total_steps=44
+     Progress: Completed Mystical
+  41. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  42. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  43. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, current_step=220, step_type=breeding, total_steps=44
+     Progress: Completed Eldritch
+  44. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Charmed, current_species=Charmed, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Charmed
+  45. [BREEDING] ✅ Cultivated + Eldritch -> Charmed
+  46. [GUI_CALL] progress=Completed Charmed, current_species=Charmed, current_step=221, step_type=breeding, total_steps=44
+     Progress: Completed Charmed
+  47. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Esoteric
+  48. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  49. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, current_step=222, step_type=breeding, total_steps=44
+     Progress: Completed Esoteric
+  50. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  51. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  52. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=223, step_type=breeding, total_steps=44
+     Progress: Completed Sinister
+  53. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
+     Progress: Breeding: Modest + Sinister -> Frugal
+  54. [BREEDING] ✅ Modest + Sinister -> Frugal
+  55. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=224, step_type=breeding, total_steps=44
+     Progress: Completed Frugal
+  56. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
+     Progress: Breeding: Modest + Frugal -> Austere
+  57. [BREEDING] ✅ Modest + Frugal -> Austere
+  58. [GUI_CALL] progress=Completed Austere, current_species=Austere, current_step=225, step_type=breeding, total_steps=44
+     Progress: Completed Austere
+  59. [GUI_CALL] progress=Breeding: Eldritch + Charmed -> Enchanted, current_species=Enchanted, step_type=breeding
+     Progress: Breeding: Eldritch + Charmed -> Enchanted
+  60. [BREEDING] ✅ Eldritch + Charmed -> Enchanted
+  61. [GUI_CALL] progress=Completed Enchanted, current_species=Enchanted, current_step=226, step_type=breeding, total_steps=44
+     Progress: Completed Enchanted
+  62. [GUI_CALL] progress=Breeding: Enchanted + Charmed -> Supernatural, current_species=Supernatural, step_type=breeding
+     Progress: Breeding: Enchanted + Charmed -> Supernatural
+  63. [BREEDING] ✅ Enchanted + Charmed -> Supernatural
+  64. [GUI_CALL] progress=Completed Supernatural, current_species=Supernatural, current_step=227, step_type=breeding, total_steps=44
+     Progress: Completed Supernatural
+  65. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
+     Progress: Breeding: Forest + Common -> Mysterious
+  66. [BREEDING] ✅ Forest + Common -> Mysterious
+  67. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, current_step=228, step_type=breeding, total_steps=44
+     Progress: Completed Mysterious
+  68. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
+     Progress: Breeding: Esoteric + Mysterious -> Arcane
+  69. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  70. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, current_step=229, step_type=breeding, total_steps=44
+     Progress: Completed Arcane
+  71. [GUI_CALL] progress=Breeding: Supernatural + Arcane -> Ethereal, current_species=Ethereal, step_type=breeding
+     Progress: Breeding: Supernatural + Arcane -> Ethereal
+  72. [BREEDING] ✅ Supernatural + Arcane -> Ethereal
+  73. [GUI_CALL] progress=Completed Ethereal, current_species=Ethereal, current_step=230, step_type=breeding, total_steps=44
+     Progress: Completed Ethereal
+  74. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
+     Progress: Breeding: Austere + Monastic -> Secluded
+  75. [BREEDING] ✅ Austere + Monastic -> Secluded
+  76. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, current_step=231, step_type=breeding, total_steps=44
+     Progress: Completed Secluded
+  77. [GUI_CALL] progress=Breeding: Secluded + Ancient -> Primeval, current_species=Primeval, step_type=breeding
+     Progress: Breeding: Secluded + Ancient -> Primeval
+  78. [BREEDING] ✅ Secluded + Ancient -> Primeval
+  79. [GUI_CALL] progress=Completed Primeval, current_species=Primeval, current_step=232, step_type=breeding, total_steps=44
+     Progress: Completed Primeval
+  80. [GUI_CALL] progress=Breeding: Primeval + Ancient -> Prehistoric, current_species=Prehistoric, step_type=breeding
+     Progress: Breeding: Primeval + Ancient -> Prehistoric
+  81. [BREEDING] ✅ Primeval + Ancient -> Prehistoric
+  82. [GUI_CALL] progress=Completed Prehistoric, current_species=Prehistoric, current_step=233, step_type=breeding, total_steps=44
+     Progress: Completed Prehistoric
+  83. [GUI_CALL] progress=Breeding: Prehistoric + Resilient -> Unstable, current_species=Unstable, step_type=breeding
+     Progress: Breeding: Prehistoric + Resilient -> Unstable
+  84. [BREEDING] ✅ Prehistoric + Resilient -> Unstable
+  85. [GUI_CALL] progress=Completed Unstable, current_species=Unstable, current_step=234, step_type=breeding, total_steps=44
+     Progress: Completed Unstable
+  86. [GUI_CALL] progress=Breeding: Unstable + Rusty -> Nuclear, current_species=Nuclear, step_type=breeding
+     Progress: Breeding: Unstable + Rusty -> Nuclear
+  87. [BREEDING] ✅ Unstable + Rusty -> Nuclear
+  88. [GUI_CALL] progress=Completed Nuclear, current_species=Nuclear, current_step=235, step_type=breeding, total_steps=44
+     Progress: Completed Nuclear
+  89. [GUI_CALL] progress=Breeding: Majestic + Rusty -> Glittering, current_species=Glittering, step_type=breeding
+     Progress: Breeding: Majestic + Rusty -> Glittering
+  90. [BREEDING] ✅ Majestic + Rusty -> Glittering
+  91. [GUI_CALL] progress=Completed Glittering, current_species=Glittering, current_step=236, step_type=breeding, total_steps=44
+     Progress: Completed Glittering
+  92. [GUI_CALL] progress=Breeding: Nuclear + Glittering -> Radioactive, current_species=Radioactive, step_type=breeding
+     Progress: Breeding: Nuclear + Glittering -> Radioactive
+  93. [BREEDING] ✅ Nuclear + Glittering -> Radioactive
+  94. [GUI_CALL] progress=Completed Radioactive, current_species=Radioactive, current_step=237, step_type=breeding, total_steps=44
+     Progress: Completed Radioactive
+  95. [GUI_CALL] progress=Breeding: Oblivion + Ethereal -> Nameless, current_species=Nameless, step_type=breeding
+     Progress: Breeding: Oblivion + Ethereal -> Nameless
+  96. [BREEDING] ✅ Oblivion + Ethereal -> Nameless
+  97. [GUI_CALL] progress=Completed Nameless, current_species=Nameless, current_step=238, step_type=breeding, total_steps=44
+     Progress: Completed Nameless
+  98. [GUI_CALL] progress=Breeding: Oblivion + Nameless -> Abandoned, current_species=Abandoned, step_type=breeding
+     Progress: Breeding: Oblivion + Nameless -> Abandoned
+  99. [BREEDING] ✅ Oblivion + Nameless -> Abandoned
+  100. [GUI_CALL] progress=Completed Abandoned, current_species=Abandoned, current_step=239, step_type=breeding, total_steps=44
+     Progress: Completed Abandoned
+  101. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
+     Progress: Breeding: Noble + Majestic -> Imperial
+  102. [BREEDING] ✅ Noble + Majestic -> Imperial
+  103. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, current_step=240, step_type=breeding, total_steps=44
+     Progress: Completed Imperial
+  104. [GUI_CALL] progress=Breeding: Abandoned + Imperial -> Draconic, current_species=Draconic, step_type=breeding
+     Progress: Breeding: Abandoned + Imperial -> Draconic
+  105. [BREEDING] ✅ Abandoned + Imperial -> Draconic
+  106. [GUI_CALL] progress=Completed Draconic, current_species=Draconic, current_step=241, step_type=breeding, total_steps=44
+     Progress: Completed Draconic
+  107. [GUI_CALL] progress=Breeding: Radioactive + Draconic -> Connor, current_species=Connor, step_type=breeding
+     Progress: Breeding: Radioactive + Draconic -> Connor
+  108. [BREEDING] ✅ Radioactive + Draconic -> Connor
+  109. [GUI_CALL] progress=Completed Connor, current_species=Connor, current_step=242, step_type=breeding, total_steps=44
+     Progress: Completed Connor
+  110. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Connor, TreeExists=true, Steps=44
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 72
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

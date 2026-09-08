@@ -1,0 +1,68 @@
+=== Breeding Analysis for NerdySpider ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 16
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Ender
+  3. Forest
+  4. Monastic
+  5. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    2 Ender princesses OR 1 Ender drone
+    2 Monastic princesses
+    4 Modest princesses OR 2 Modest drones
+    3 Meadows princesses OR 2 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 20
+  Total nodes: 33
+  Breeding nodes: 16
+  Reused nodes: 11
+  Primary breeders: 9
+  Duplicate species: 8 (13 duplicate instances)
+  Max depth: 9
+
+🌳 BREEDING TREE:
+└── NerdySpider [PD] *
+    ├── Esmeraldi [PD] *
+    │   ├── Argentum [PD] *
+    │   │   ├── Imperial [PD] *
+    │   │   │   ├── Majestic [PD] *
+    │   │   │   │   ├── Cultivated [PD] *
+    │   │   │   │   │   ├── Common [P] (reusing)
+    │   │   │   │   │   └── Meadows [PD]
+    │   │   │   │   └── Noble [P] (reusing)
+    │   │   │   └── Noble [PD] *
+    │   │   │       ├── Common [P] (reusing)
+    │   │   │       └── Cultivated [PD] *
+    │   │   │           ├── Common [PD] *
+    │   │   │           │   ├── Forest [PD]
+    │   │   │           │   └── Meadows [P] (reusing)
+    │   │   │           └── Meadows [PD]
+    │   │   └── Modest [PD]
+    │   └── Austere [P] (reusing)
+    └── Phantasmal [PD] *
+        ├── Spectral [PD] *
+        │   ├── Hermitic [PD] *
+        │   │   ├── Monastic [P] (reusing)
+        │   │   └── Secluded [PD] *
+        │   │       ├── Monastic [P] (reusing)
+        │   │       └── Austere [PD] *
+        │   │           ├── Frugal [PD] *
+        │   │           │   ├── Sinister [PD] *
+        │   │           │   │   ├── Cultivated [P] (reusing)
+        │   │           │   │   └── Modest [PD]
+        │   │           │   └── Modest [P] (reusing)
+        │   │           └── Modest [P] (reusing)
+        │   └── Ender [P] (reusing)
+        └── Ender [PD]

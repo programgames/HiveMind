@@ -1,0 +1,62 @@
+=== Breeding Analysis for ChaosStrikez ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 16
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Monastic
+  2. Valiant
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Monastic princesses
+    1 Valiant princess OR 1 Valiant drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 19
+  Total nodes: 33
+  Breeding nodes: 16
+  Reused nodes: 11
+  Primary breeders: 7
+  Duplicate species: 7 (14 duplicate instances)
+  Max depth: 11
+
+🌳 BREEDING TREE:
+└── ChaosStrikez [PD] *
+    ├── Savant [PD] *
+    │   ├── Pupil [P] (reusing)
+    │   └── Scholarly [PD] *
+    │       ├── Arcane [P] (reusing)
+    │       └── Pupil [PD] *
+    │           ├── Monastic [P] (reusing)
+    │           └── Arcane [PD] *
+    │               ├── Mysterious [PD] *
+    │               │   ├── Common [P] (reusing)
+    │               │   └── Forest   
+    │               └── Esoteric [PD] *
+    │                   ├── Eldritch [PD] *
+    │                   │   ├── Cultivated [P] (reusing)
+    │                   │   └── Mystical [PD] *
+    │                   │       ├── Monastic [P] (reusing)
+    │                   │       └── Noble [PD] *
+    │                   │           ├── Common [PD] *
+    │                   │           │   ├── Forest   
+    │                   │           │   └── Meadows    (reusing)
+    │                   │           └── Cultivated [P] (reusing)
+    │                   └── Cultivated [P] (reusing)
+    └── Energetic [PD] *
+        ├── Excited [PD] *
+        │   ├── Cultivated [P] (reusing)
+        │   └── Valiant [PD]
+        └── Diligent [PD] *
+            ├── Cultivated [PD] *
+            │   ├── Common [P] (reusing)
+            │   └── Meadows   
+            └── Common [PD] *
+                ├── Forest   
+                └── Meadows   

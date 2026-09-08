@@ -1,0 +1,38 @@
+=== Breeding Analysis for Industrious ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 6
+Can execute: YES
+
+📋 STARTING PRINCESSES NEEDED:
+  (none - all base species available)
+
+⚠️  OPTIMIZATION ANALYSIS:
+  Potential missed reuse opportunities:
+    → Cultivated: 2 occurrences, 0 reused, could reuse 0 more
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 7
+  Total nodes: 13
+  Breeding nodes: 6
+  Reused nodes: 3
+  Primary breeders: 5
+  Duplicate species: 4 (6 duplicate instances)
+  Max depth: 4
+
+🌳 BREEDING TREE:
+└── Industrious [PD] *
+    ├── Unweary [PD] *
+    │   ├── Cultivated [PD] *
+    │   │   ├── Common [P] (reusing)
+    │   │   └── Meadows   
+    │   └── Diligent [P] (reusing)
+    └── Diligent [PD] *
+        ├── Cultivated [PD] *
+        │   ├── Common [P] (reusing)
+        │   └── Meadows   
+        └── Common [PD] *
+            ├── Forest   
+            └── Meadows   

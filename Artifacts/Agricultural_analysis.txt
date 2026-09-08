@@ -1,0 +1,96 @@
+=== Breeding Analysis for Agricultural ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 2.00 ms
+Total steps: 32
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Tropical
+  2. Modest
+  3. Monastic
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    2 Tropical princesses OR 2 Tropical drones
+    1 Modest princess OR 1 Modest drone
+    1 Monastic princess OR 1 Monastic drone
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 27
+  Total nodes: 65
+  Breeding nodes: 32
+  Reused nodes: 12
+  Primary breeders: 9
+  Duplicate species: 11 (38 duplicate instances)
+  Max depth: 13
+
+🌳 BREEDING TREE:
+└── Agricultural [PD] *
+    ├── Doctoral [PD] *
+    │   ├── Lordly [PD] *
+    │   │   ├── Timely [PD] *
+    │   │   │   ├── Ethereal [PD] *
+    │   │   │   │   ├── Arcane [PD] *
+    │   │   │   │   │   ├── Mysterious [PD] *
+    │   │   │   │   │   │   ├── Common [PD] *
+    │   │   │   │   │   │   │   ├── Forest   
+    │   │   │   │   │   │   │   └── Meadows   
+    │   │   │   │   │   │   └── Forest   
+    │   │   │   │   │   └── Esoteric [PD] *
+    │   │   │   │   │       ├── Eldritch [P] (reusing)
+    │   │   │   │   │       └── Cultivated [PD] *
+    │   │   │   │   │           ├── Common [PD] *
+    │   │   │   │   │           │   ├── Forest   
+    │   │   │   │   │           │   └── Meadows   
+    │   │   │   │   │           └── Meadows   
+    │   │   │   │   └── Supernatural [PD] *
+    │   │   │   │       ├── Charmed [P] (reusing)
+    │   │   │   │       └── Enchanted [PD] *
+    │   │   │   │           ├── Charmed [PD] *
+    │   │   │   │           │   ├── Eldritch [P] (reusing)
+    │   │   │   │           │   └── Cultivated [PD] *
+    │   │   │   │           │       ├── Common [P] (reusing)
+    │   │   │   │           │       └── Meadows   
+    │   │   │   │           └── Eldritch [PD] *
+    │   │   │   │               ├── Cultivated [P] (reusing)
+    │   │   │   │               └── Mystical [PD] *
+    │   │   │   │                   ├── Monastic [PD]
+    │   │   │   │                   └── Noble [PD] *
+    │   │   │   │                       ├── Common [P] (reusing)
+    │   │   │   │                       └── Cultivated [PD] *
+    │   │   │   │                           ├── Common [PD] *
+    │   │   │   │                           │   ├── Forest   
+    │   │   │   │                           │   └── Meadows   
+    │   │   │   │                           └── Meadows   
+    │   │   │   └── Imperial [PD] *
+    │   │   │       ├── Majestic [PD] *
+    │   │   │       │   ├── Cultivated [PD] *
+    │   │   │       │   │   ├── Common [P] (reusing)
+    │   │   │       │   │   └── Meadows   
+    │   │   │       │   └── Noble [P] (reusing)
+    │   │   │       └── Noble [PD] *
+    │   │   │           ├── Common [P] (reusing)
+    │   │   │           └── Cultivated [PD] *
+    │   │   │               ├── Common [PD] *
+    │   │   │               │   ├── Forest   
+    │   │   │               │   └── Meadows   
+    │   │   │               └── Meadows   
+    │   │   └── Imperial [P] (reusing)
+    │   └── Timely [P] (reusing)
+    └── Virulent [PD] *
+        ├── Infectious [PD] *
+        │   ├── Malicious [P] (reusing)
+        │   └── Tropical [PD]
+        └── Malicious [PD] *
+            ├── Sinister [PD] *
+            │   ├── Cultivated [PD] *
+            │   │   ├── Common [PD] *
+            │   │   │   ├── Forest   
+            │   │   │   └── Meadows   
+            │   │   └── Meadows   
+            │   └── Modest [PD]
+            └── Tropical [PD]

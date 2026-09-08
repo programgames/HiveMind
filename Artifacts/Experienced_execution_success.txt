@@ -1,0 +1,36 @@
+=== Execution Analysis for Experienced ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 1
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 1
+  GUI calls: 2, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Experienced
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 1
+     Tree species: Experienced
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Radiant + Armored -> Experienced, current_species=Experienced, step_type=breeding
+     Progress: Breeding: Radiant + Armored -> Experienced
+  3. [BREEDING] ✅ Radiant + Armored -> Experienced
+  4. [GUI_CALL] progress=Completed Experienced, current_species=Experienced, current_step=304, step_type=breeding, total_steps=1
+     Progress: Completed Experienced
+  5. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Experienced, TreeExists=true, Steps=1
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 2
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

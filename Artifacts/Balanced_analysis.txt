@@ -1,0 +1,96 @@
+=== Breeding Analysis for Balanced ===
+Generated: Tue Sep  8 14:08:57 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 28
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Forest
+  3. Ender
+  4. Meadows
+  5. Monastic
+  6. Oblivion
+  7. Mad Scientist
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Modest princesses OR 2 Modest drones
+    4 Meadows princesses OR 3 Meadows drones
+    2 Ender princesses OR 1 Ender drone
+    2 Forest princesses OR 2 Forest drones
+    3 Monastic princesses
+    2 Oblivion princesses OR 1 Oblivion drone
+    2 Mad Scientist princesses OR 2 Mad Scientist drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 33
+  Total nodes: 57
+  Breeding nodes: 28
+  Reused nodes: 18
+  Primary breeders: 13
+  Duplicate species: 13 (24 duplicate instances)
+  Max depth: 12
+
+🌳 BREEDING TREE:
+└── Balanced [PD] *
+    ├── Forlorn [PD] *
+    │   ├── Nameless [P] (reusing)
+    │   └── Abandoned [PD] *
+    │       ├── Nameless [PD] *
+    │       │   ├── Ethereal [PD] *
+    │       │   │   ├── Arcane [PD] *
+    │       │   │   │   ├── Mysterious [PD] *
+    │       │   │   │   │   ├── Common [PD] *
+    │       │   │   │   │   │   ├── Forest [PD]
+    │       │   │   │   │   │   └── Meadows [P] (reusing)
+    │       │   │   │   │   └── Forest [PD]
+    │       │   │   │   └── Esoteric [PD] *
+    │       │   │   │       ├── Eldritch [P] (reusing)
+    │       │   │   │       └── Cultivated [PD] *
+    │       │   │   │           ├── Common [P] (reusing)
+    │       │   │   │           └── Meadows [PD]
+    │       │   │   └── Supernatural [PD] *
+    │       │   │       ├── Charmed [P] (reusing)
+    │       │   │       └── Enchanted [PD] *
+    │       │   │           ├── Charmed [PD] *
+    │       │   │           │   ├── Eldritch [P] (reusing)
+    │       │   │           │   └── Cultivated [PD] *
+    │       │   │           │       ├── Common [P] (reusing)
+    │       │   │           │       └── Meadows [PD]
+    │       │   │           └── Eldritch [PD] *
+    │       │   │               ├── Cultivated [P] (reusing)
+    │       │   │               └── Mystical [PD] *
+    │       │   │                   ├── Monastic [P] (reusing)
+    │       │   │                   └── Noble [PD] *
+    │       │   │                       ├── Common [P] (reusing)
+    │       │   │                       └── Cultivated [PD] *
+    │       │   │                           ├── Common [P] (reusing)
+    │       │   │                           └── Meadows [PD]
+    │       │   └── Oblivion [P] (reusing)
+    │       └── Oblivion [PD]
+    └── Temporal [PD] *
+        ├── Quantum Strange [PD] *
+        │   ├── Phantasmal [P] (reusing)
+        │   └── Mad Scientist [PD]
+        └── Quantum Charming [PD] *
+            ├── Mad Scientist [PD]
+            └── Phantasmal [PD] *
+                ├── Spectral [PD] *
+                │   ├── Hermitic [PD] *
+                │   │   ├── Monastic [P] (reusing)
+                │   │   └── Secluded [PD] *
+                │   │       ├── Monastic [P] (reusing)
+                │   │       └── Austere [PD] *
+                │   │           ├── Frugal [PD] *
+                │   │           │   ├── Sinister [PD] *
+                │   │           │   │   ├── Cultivated [P] (reusing)
+                │   │           │   │   └── Modest [PD]
+                │   │           │   └── Modest [P] (reusing)
+                │   │           └── Modest [PD]
+                │   └── Ender [P] (reusing)
+                └── Ender [PD]

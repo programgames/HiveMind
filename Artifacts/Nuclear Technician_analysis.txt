@@ -1,0 +1,44 @@
+=== Breeding Analysis for Nuclear Technician ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 0.00 ms
+Total steps: 6
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Forest
+  2. Bomber
+  3. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Forest princess OR 1 Forest drone
+    1 Bomber princess OR 1 Bomber drone
+    2 Meadows princesses OR 2 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 9
+  Total nodes: 13
+  Breeding nodes: 6
+  Reused nodes: 3
+  Primary breeders: 2
+  Duplicate species: 3 (4 duplicate instances)
+  Max depth: 6
+
+🌳 BREEDING TREE:
+└── Nuclear Technician [PD] *
+    ├── PHD [PD] *
+    │   ├── Student [P] (reusing)
+    │   └── Graduate [PD] *
+    │       ├── Student [PD] *
+    │       │   ├── Cultivated [PD] *
+    │       │   │   ├── Common [P] (reusing)
+    │       │   │   └── Meadows [PD]
+    │       │   └── Common [P] (reusing)
+    │       └── Common [PD] *
+    │           ├── Forest [PD]
+    │           └── Meadows [PD]
+    └── Bomber [PD]

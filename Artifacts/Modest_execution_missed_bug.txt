@@ -1,0 +1,26 @@
+=== Execution Analysis for Modest ===
+Test Type: missed_bug
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 1
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 0
+  GUI calls: 0, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  (no execution steps recorded)
+  This usually indicates that executeBreedingTree was not called
+  or that the mocking setup failed.
+
+🔧 EXECUTION DEBUG SUMMARY:
+  No debug information captured - mock setup may have failed
+
+🖥️  GUI INTERACTION SUMMARY:
+  No GUI interactions recorded
+  This may indicate executeBreedingTree was not called or mock setup failed
+
+✅ NO MOCK FAILURES DETECTED

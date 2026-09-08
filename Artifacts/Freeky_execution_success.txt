@@ -1,0 +1,111 @@
+=== Execution Analysis for Freeky ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 16
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 16
+  GUI calls: 32, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Freeky
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 19
+     Tree species: Freeky
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=329, step_type=breeding, total_steps=19
+     Progress: Completed Common
+  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=330, step_type=breeding, total_steps=19
+     Progress: Completed Cultivated
+  8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=331, step_type=breeding, total_steps=19
+     Progress: Completed Noble
+  11. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  12. [BREEDING] ✅ Noble + Monastic -> Mystical
+  13. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, current_step=332, step_type=breeding, total_steps=19
+     Progress: Completed Mystical
+  14. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  15. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  16. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, current_step=333, step_type=breeding, total_steps=19
+     Progress: Completed Eldritch
+  17. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Charmed, current_species=Charmed, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Charmed
+  18. [BREEDING] ✅ Cultivated + Eldritch -> Charmed
+  19. [GUI_CALL] progress=Completed Charmed, current_species=Charmed, current_step=334, step_type=breeding, total_steps=19
+     Progress: Completed Charmed
+  20. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Esoteric
+  21. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  22. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, current_step=335, step_type=breeding, total_steps=19
+     Progress: Completed Esoteric
+  23. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
+     Progress: Breeding: Forest + Common -> Mysterious
+  24. [BREEDING] ✅ Forest + Common -> Mysterious
+  25. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, current_step=336, step_type=breeding, total_steps=19
+     Progress: Completed Mysterious
+  26. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
+     Progress: Breeding: Esoteric + Mysterious -> Arcane
+  27. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  28. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, current_step=337, step_type=breeding, total_steps=19
+     Progress: Completed Arcane
+  29. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
+     Progress: Breeding: Common + Cultivated -> Diligent
+  30. [BREEDING] ✅ Common + Cultivated -> Diligent
+  31. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=338, step_type=breeding, total_steps=19
+     Progress: Completed Diligent
+  32. [GUI_CALL] progress=Breeding: Valiant + Diligent -> Sweetened, current_species=Sweetened, step_type=breeding
+     Progress: Breeding: Valiant + Diligent -> Sweetened
+  33. [BREEDING] ✅ Valiant + Diligent -> Sweetened
+  34. [GUI_CALL] progress=Completed Sweetened, current_species=Sweetened, current_step=339, step_type=breeding, total_steps=19
+     Progress: Completed Sweetened
+  35. [GUI_CALL] progress=Breeding: Eldritch + Charmed -> Enchanted, current_species=Enchanted, step_type=breeding
+     Progress: Breeding: Eldritch + Charmed -> Enchanted
+  36. [BREEDING] ✅ Eldritch + Charmed -> Enchanted
+  37. [GUI_CALL] progress=Completed Enchanted, current_species=Enchanted, current_step=340, step_type=breeding, total_steps=19
+     Progress: Completed Enchanted
+  38. [GUI_CALL] progress=Breeding: Enchanted + Charmed -> Supernatural, current_species=Supernatural, step_type=breeding
+     Progress: Breeding: Enchanted + Charmed -> Supernatural
+  39. [BREEDING] ✅ Enchanted + Charmed -> Supernatural
+  40. [GUI_CALL] progress=Completed Supernatural, current_species=Supernatural, current_step=341, step_type=breeding, total_steps=19
+     Progress: Completed Supernatural
+  41. [GUI_CALL] progress=Breeding: Supernatural + Arcane -> Ethereal, current_species=Ethereal, step_type=breeding
+     Progress: Breeding: Supernatural + Arcane -> Ethereal
+  42. [BREEDING] ✅ Supernatural + Arcane -> Ethereal
+  43. [GUI_CALL] progress=Completed Ethereal, current_species=Ethereal, current_step=342, step_type=breeding, total_steps=19
+     Progress: Completed Ethereal
+  44. [GUI_CALL] progress=Breeding: Ethereal + Arcane -> EMBee, current_species=EMBee, step_type=breeding
+     Progress: Breeding: Ethereal + Arcane -> EMBee
+  45. [BREEDING] ✅ Ethereal + Arcane -> EMBee
+  46. [GUI_CALL] progress=Completed EMBee, current_species=EMBee, current_step=343, step_type=breeding, total_steps=19
+     Progress: Completed EMBee
+  47. [GUI_CALL] progress=Breeding: Sweetened + EMBee -> Freeky, current_species=Freeky, step_type=breeding
+     Progress: Breeding: Sweetened + EMBee -> Freeky
+  48. [BREEDING] ✅ Sweetened + EMBee -> Freeky
+  49. [GUI_CALL] progress=Completed Freeky, current_species=Freeky, current_step=344, step_type=breeding, total_steps=19
+     Progress: Completed Freeky
+  50. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Freeky, TreeExists=true, Steps=19
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 32
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED

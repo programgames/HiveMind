@@ -1,0 +1,64 @@
+=== Breeding Analysis for Luctor ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 15
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Forest
+  3. Rocky
+  4. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    1 Modest princess OR 1 Modest drone
+    2 Forest princesses OR 2 Forest drones
+    2 Rocky princesses OR 2 Rocky drones
+    4 Meadows princesses OR 2 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 16
+  Total nodes: 31
+  Breeding nodes: 15
+  Reused nodes: 9
+  Primary breeders: 8
+  Duplicate species: 8 (15 duplicate instances)
+  Max depth: 7
+
+🌳 BREEDING TREE:
+└── Luctor [PD] *
+    ├── Abyssal [PD] *
+    │   ├── Darkened [PD] *
+    │   │   ├── Rocky [PD]
+    │   │   └── Shadowed [P] (reusing)
+    │   └── Shadowed [PD] *
+    │       ├── Sinister [PD] *
+    │       │   ├── Cultivated [P] (reusing)
+    │       │   └── Modest [PD]
+    │       └── Rocky [PD]
+    └── Rainbow [PD] *
+        ├── PHD [PD] *
+        │   ├── Student [PD] *
+        │   │   ├── Cultivated [PD] *
+        │   │   │   ├── Common [P] (reusing)
+        │   │   │   └── Meadows [PD]
+        │   │   └── Common [P] (reusing)
+        │   └── Graduate [P] (reusing)
+        └── Artistic [PD] *
+            ├── Graduate [PD] *
+            │   ├── Student [PD] *
+            │   │   ├── Cultivated [P] (reusing)
+            │   │   └── Common [PD] *
+            │   │       ├── Forest [PD]
+            │   │       └── Meadows [P] (reusing)
+            │   └── Common [P] (reusing)
+            └── Cultivated [PD] *
+                ├── Common [PD] *
+                │   ├── Forest [PD]
+                │   └── Meadows [P] (reusing)
+                └── Meadows [PD]

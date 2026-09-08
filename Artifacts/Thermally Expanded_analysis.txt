@@ -1,0 +1,86 @@
+=== Breeding Analysis for Thermally Expanded ===
+Generated: Tue Sep  8 14:08:58 2026
+
+✅ BREEDING PLAN SUCCESS
+Planning duration: 1.00 ms
+Total steps: 24
+Can execute: NO
+
+📋 STARTING PRINCESSES NEEDED:
+  1. Modest
+  2. Smouldering
+  3. Infernal
+  4. Monastic
+  5. Forest
+  6. Meadows
+
+⚠️  EXECUTION REQUIREMENTS:
+  To execute this plan, you need one of the following:
+    3 Modest princesses OR 2 Modest drones
+    1 Smouldering princess OR 1 Smouldering drone
+    2 Infernal princesses OR 1 Infernal drone
+    1 Monastic princess OR 1 Monastic drone
+    4 Forest princesses OR 3 Forest drones
+    5 Meadows princesses OR 3 Meadows drones
+
+  Note: Providing princesses is often more efficient due to reuse optimization.
+
+📊 PLAN STATISTICS:
+  Unique species in tree: 27
+  Total nodes: 49
+  Breeding nodes: 24
+  Reused nodes: 14
+  Primary breeders: 8
+  Duplicate species: 8 (22 duplicate instances)
+  Max depth: 10
+
+🌳 BREEDING TREE:
+└── Thermally Expanded [PD] *
+    ├── PHD [PD] *
+    │   ├── Student [P] (reusing)
+    │   └── Graduate [PD] *
+    │       ├── Student [PD] *
+    │       │   ├── Cultivated [P] (reusing)
+    │       │   └── Common [PD] *
+    │       │       ├── Forest [P] (reusing)
+    │       │       └── Meadows [PD]
+    │       └── Common [P] (reusing)
+    └── Pyro [PD] *
+        ├── Carbon [PD] *
+        │   ├── Stannum [PD] *
+        │   │   ├── Industrious [PD] *
+        │   │   │   ├── Unweary [PD] *
+        │   │   │   │   ├── Cultivated [PD] *
+        │   │   │   │   │   ├── Common [P] (reusing)
+        │   │   │   │   │   └── Meadows [PD]
+        │   │   │   │   └── Diligent [P] (reusing)
+        │   │   │   └── Diligent [PD] *
+        │   │   │       ├── Cultivated [P] (reusing)
+        │   │   │       └── Common [PD] *
+        │   │   │           ├── Forest [PD]
+        │   │   │           └── Meadows [P] (reusing)
+        │   │   └── Forest [PD]
+        │   └── Spiteful [PD] *
+        │       ├── Hateful [PD] *
+        │       │   ├── Eldritch [PD] *
+        │       │   │   ├── Cultivated [PD] *
+        │       │   │   │   ├── Common [P] (reusing)
+        │       │   │   │   └── Meadows [PD]
+        │       │   │   └── Mystical [PD] *
+        │       │   │       ├── Monastic [PD]
+        │       │   │       └── Noble [PD] *
+        │       │   │           ├── Common [PD] *
+        │       │   │           │   ├── Forest [PD]
+        │       │   │           │   └── Meadows [P] (reusing)
+        │       │   │           └── Cultivated [P] (reusing)
+        │       │   └── Infernal [P] (reusing)
+        │       └── Infernal [PD]
+        └── Dante [PD] *
+            ├── Smouldering [PD]
+            └── Austere [PD] *
+                ├── Frugal [PD] *
+                │   ├── Sinister [PD] *
+                │   │   ├── Cultivated [P] (reusing)
+                │   │   └── Modest [PD]
+                │   └── Modest [P] (reusing)
+                └── Modest [PD]

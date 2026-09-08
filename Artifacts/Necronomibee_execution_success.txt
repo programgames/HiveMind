@@ -1,0 +1,111 @@
+=== Execution Analysis for Necronomibee ===
+Test Type: success
+Generated: Tue Sep  8 14:08:59 2026
+
+✅ EXECUTION SUCCESS
+Total breeding steps: 16
+Total accumulation cycles: 0
+
+📈 EXECUTION STATISTICS:
+  Distinct species bred: 16
+  GUI calls: 32, GUI errors: 0
+  Status errors: 0
+
+📋 DETAILED EXECUTION LOG:
+  1. [DEBUG_PRE] Target: Necronomibee
+     Tree exists: true
+     Has drone requirements: false
+     Total steps planned: 17
+     Tree species: Necronomibee
+     Drone req count: 0
+  2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
+     Progress: Breeding: Meadows + Forest -> Common
+  3. [BREEDING] ✅ Meadows + Forest -> Common
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=468, step_type=breeding, total_steps=17
+     Progress: Completed Common
+  5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
+     Progress: Breeding: Meadows + Common -> Cultivated
+  6. [BREEDING] ✅ Meadows + Common -> Cultivated
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=469, step_type=breeding, total_steps=17
+     Progress: Completed Cultivated
+  8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
+     Progress: Breeding: Cultivated + Common -> Noble
+  9. [BREEDING] ✅ Cultivated + Common -> Noble
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=470, step_type=breeding, total_steps=17
+     Progress: Completed Noble
+  11. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
+     Progress: Breeding: Noble + Monastic -> Mystical
+  12. [BREEDING] ✅ Noble + Monastic -> Mystical
+  13. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, current_step=471, step_type=breeding, total_steps=17
+     Progress: Completed Mystical
+  14. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
+     Progress: Breeding: Mystical + Cultivated -> Eldritch
+  15. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
+  16. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, current_step=472, step_type=breeding, total_steps=17
+     Progress: Completed Eldritch
+  17. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
+     Progress: Breeding: Cultivated + Eldritch -> Esoteric
+  18. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
+  19. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, current_step=473, step_type=breeding, total_steps=17
+     Progress: Completed Esoteric
+  20. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
+     Progress: Breeding: Forest + Common -> Mysterious
+  21. [BREEDING] ✅ Forest + Common -> Mysterious
+  22. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, current_step=474, step_type=breeding, total_steps=17
+     Progress: Completed Mysterious
+  23. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
+     Progress: Breeding: Esoteric + Mysterious -> Arcane
+  24. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
+  25. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, current_step=475, step_type=breeding, total_steps=17
+     Progress: Completed Arcane
+  26. [GUI_CALL] progress=Breeding: Arcane + Monastic -> Pupil, current_species=Pupil, step_type=breeding
+     Progress: Breeding: Arcane + Monastic -> Pupil
+  27. [BREEDING] ✅ Arcane + Monastic -> Pupil
+  28. [GUI_CALL] progress=Completed Pupil, current_species=Pupil, current_step=476, step_type=breeding, total_steps=17
+     Progress: Completed Pupil
+  29. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
+     Progress: Breeding: Modest + Cultivated -> Sinister
+  30. [BREEDING] ✅ Modest + Cultivated -> Sinister
+  31. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=477, step_type=breeding, total_steps=17
+     Progress: Completed Sinister
+  32. [GUI_CALL] progress=Breeding: Rocky + Sinister -> Shadowed, current_species=Shadowed, step_type=breeding
+     Progress: Breeding: Rocky + Sinister -> Shadowed
+  33. [BREEDING] ✅ Rocky + Sinister -> Shadowed
+  34. [GUI_CALL] progress=Completed Shadowed, current_species=Shadowed, current_step=478, step_type=breeding, total_steps=17
+     Progress: Completed Shadowed
+  35. [GUI_CALL] progress=Breeding: Shadowed + Rocky -> Darkened, current_species=Darkened, step_type=breeding
+     Progress: Breeding: Shadowed + Rocky -> Darkened
+  36. [BREEDING] ✅ Shadowed + Rocky -> Darkened
+  37. [GUI_CALL] progress=Completed Darkened, current_species=Darkened, current_step=479, step_type=breeding, total_steps=17
+     Progress: Completed Darkened
+  38. [GUI_CALL] progress=Breeding: Pupil + Arcane -> Scholarly, current_species=Scholarly, step_type=breeding
+     Progress: Breeding: Pupil + Arcane -> Scholarly
+  39. [BREEDING] ✅ Pupil + Arcane -> Scholarly
+  40. [GUI_CALL] progress=Completed Scholarly, current_species=Scholarly, current_step=480, step_type=breeding, total_steps=17
+     Progress: Completed Scholarly
+  41. [GUI_CALL] progress=Breeding: Scholarly + Pupil -> Savant, current_species=Savant, step_type=breeding
+     Progress: Breeding: Scholarly + Pupil -> Savant
+  42. [BREEDING] ✅ Scholarly + Pupil -> Savant
+  43. [GUI_CALL] progress=Completed Savant, current_species=Savant, current_step=481, step_type=breeding, total_steps=17
+     Progress: Completed Savant
+  44. [GUI_CALL] progress=Breeding: Shadowed + Darkened -> Abyssal, current_species=Abyssal, step_type=breeding
+     Progress: Breeding: Shadowed + Darkened -> Abyssal
+  45. [BREEDING] ✅ Shadowed + Darkened -> Abyssal
+  46. [GUI_CALL] progress=Completed Abyssal, current_species=Abyssal, current_step=482, step_type=breeding, total_steps=17
+     Progress: Completed Abyssal
+  47. [GUI_CALL] progress=Breeding: Savant + Abyssal -> Necronomibee, current_species=Necronomibee, step_type=breeding
+     Progress: Breeding: Savant + Abyssal -> Necronomibee
+  48. [BREEDING] ✅ Savant + Abyssal -> Necronomibee
+  49. [GUI_CALL] progress=Completed Necronomibee, current_species=Necronomibee, current_step=483, step_type=breeding, total_steps=17
+     Progress: Completed Necronomibee
+  50. [EXECUTION_RESULT] ✅ Returned: true
+
+🔧 EXECUTION DEBUG SUMMARY:
+  Setup: Target=Necronomibee, TreeExists=true, Steps=17
+  Result: executeBreedingTree returned true
+
+🖥️  GUI INTERACTION SUMMARY:
+  Total GUI calls: 32
+  GUI error calls: 0
+
+✅ NO MOCK FAILURES DETECTED
