@@ -10,7 +10,15 @@
 -- Usage:
 --   check_slots                    -- uses the sides from main.lua's config
 --   check_slots --apiary=back --mutatron=front
+--   check_slots --brief            -- only what is needed to set the config
+--   check_slots --upload           -- put the report online and print one short link
 --   check_slots --out=/home/slots.txt
+--
+-- The console scrolls faster than it can be read, so the full report is meant to be sent
+-- somewhere rather than watched. --upload posts it to paste.rs and prints the link.
+--
+-- OpenOS ships `pastebin put`, but it no longer works: the API key baked into OpenOS 1.8.7 is
+-- dead upstream and pastebin.com answers 422 to every anonymous upload.
 
 local component = require("component")
 local sides = require("sides")
@@ -31,12 +39,64 @@ local CONFIG_UNDER_TEST = {
     apiary_output_slots = {2, 3, 4, 5, 6},
 }
 
+local BRIEF = options.brief == true
+local UPLOAD = options.upload == true
+-- Uploading and watching the console at once is pointless: the link is the readable copy.
+local QUIET = options.quiet == true or UPLOAD
+
 local out = OUT_PATH and io.open(OUT_PATH, "w") or nil
+
+-- Every line is kept, whatever the output goes to, so the upload can send the whole report.
+local lines = {}
 
 local function w(line)
     line = line or ""
-    print(line)
+    lines[#lines + 1] = line
+
+    if not QUIET then print(line) end
     if out then out:write(line .. "\n") end
+end
+
+--- Put the report online and return a link to it
+---
+--- paste.rs takes a raw body and answers with the URL, which is the least a script needs. The
+--- computer needs an Internet Card; without one this says so rather than failing silently.
+--- @param text string The whole report
+--- @return string|nil url The link, or nil
+--- @return string|nil reason Why it could not be uploaded
+local function upload(text)
+    if not component.isAvailable("internet") then
+
+        return nil, "no Internet Card in this computer"
+    end
+
+    local ok, internet = pcall(require, "internet")
+    if not ok then
+
+        return nil, "the internet library is not available"
+    end
+
+    local body = nil
+    local sent, err = pcall(function()
+        local handle = internet.request("https://paste.rs", text,
+            {["Content-Type"] = "text/plain"})
+
+        body = ""
+        for chunk in handle do
+            body = body .. chunk
+        end
+    end)
+
+    if not sent then
+
+        return nil, tostring(err)
+    end
+    if not body or body == "" then
+
+        return nil, "the paste service answered nothing"
+    end
+
+    return (body:gsub("%s+$", ""))
 end
 
 -- Addresses rather than component.<name>: OpenOS caches a proxy per address in a Lua
@@ -376,6 +436,8 @@ end
 w()
 
 -- 5. State the migration depends on -----------------------------------------
+-- Skipped by --brief: setting the config needs the sides and the offset, not the hive state.
+if not BRIEF then
 w(string.rep("=", 72))
 w("STATE READOUT")
 w(string.rep("=", 72))
@@ -483,6 +545,8 @@ if adv then
     w()
 end
 
+end  -- not BRIEF
+
 w(string.rep("=", 72))
 w("Report these lines back:")
 w("  - the two OFFSET verdicts")
@@ -493,4 +557,20 @@ w(string.rep("=", 72))
 if out then
     out:close()
     print("written to " .. OUT_PATH)
+end
+
+if UPLOAD then
+    print("Uploading the report...")
+
+    local url, reason = upload(table.concat(lines, "\n"))
+    if url then
+        print()
+        print("  " .. url)
+        print()
+        print("Send that link. Add .txt to it to read it in a browser.")
+    else
+        print("Upload failed: " .. tostring(reason))
+        print("Fall back to:  check_slots --out=/home/rapport.txt")
+        print("then read it with:  edit /home/rapport.txt")
+    end
 end
