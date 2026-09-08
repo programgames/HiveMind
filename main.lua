@@ -3222,6 +3222,43 @@ local function occupantOf(side, slot)
     return tostring(held.label or held.name or "something")
 end
 
+--- Empty the apiary's queen slot and its outputs before putting a bee in
+---
+--- Everything that inserts into the apiary aimed straight at the queen slot and failed the moment
+--- something was already there -- a princess from the last cycle, products not yet harvested, a
+--- bee a stopped run left behind. Nothing said what; the move simply returned zero.
+--- @return boolean cleared True when the queen slot is free afterwards
+--- @return string|nil report What was moved, or what could not be
+function clearApiary()
+    applyDriverSlots()
+
+    local side = config.apiary_side
+    local moved = {}
+
+    -- Harvest first: an apiary with full output slots cannot take a new queen either.
+    if collectApiaryProducts then
+        pcall(collectApiaryProducts)
+    end
+
+    local held = occupantOf(side, config.apiary_input_slot)
+    if held then
+        if moveItem(side, config.apiary_input_slot, config.output_chest_side, nil, 64) then
+            table.insert(moved, held .. " -> output chest")
+        else
+
+            return false, "The apiary still holds " .. held ..
+                          " in its queen slot and it could not be moved out"
+        end
+    end
+
+    if #moved == 0 then
+
+        return true, nil
+    end
+
+    return true, "Cleared the apiary: " .. table.concat(moved, ", ")
+end
+
 --- Empty the mutatron's slots before loading it again
 ---
 --- A run that stopped part way -- a crash, an abort, a cross that was refused -- leaves the
@@ -3578,6 +3615,18 @@ function moveQueenToApiary()
     end
 
     print("Queen ready! Moving to apiary...")
+
+    -- Whatever the last cycle left in the apiary goes out before the new queen goes in.
+    local apiary_clear, apiary_report = clearApiary()
+    if not apiary_clear then
+        drawGUI({progress = "Cannot insert the queen", errors = apiary_report, status = "Error"})
+
+        return false
+    end
+
+    if apiary_report then
+        drawGUI({progress = apiary_report, status = "Working"})
+    end
 
     -- Move queen to apiary with the apiary held still, so the insertion cannot race
     -- a cycle that is already running (task 20)
@@ -6338,13 +6387,30 @@ function executeAccumulationCycle(species)
         return false
     end
 
+    -- Whatever the last cycle left behind goes out first.
+    local apiary_clear, apiary_report = clearApiary()
+    if not apiary_clear then
+        drawGUI({progress = "Accumulation blocked", errors = apiary_report, status = "Error"})
+
+        return false
+    end
+
+    if apiary_report then
+        drawGUI({progress = apiary_report, status = "Working"})
+    end
+
     -- Move queen to apiary, apiary held still during the transfer (task 20)
     local insert_mode = freezeApiary()
     local success = moveItem(queen_side, queen_slot, config.apiary_side, config.apiary_input_slot, 1)
     unfreezeApiary(insert_mode)
 
     if not success then
-        drawGUI({progress = "Move failed", errors = "Failed to move queen to apiary", status = "Error"})
+        local blocker = occupantOf(config.apiary_side, config.apiary_input_slot)
+
+        drawGUI({progress = "Move failed",
+                 errors = "Could not put the " .. species .. " queen into the apiary" ..
+                          (blocker and (": its queen slot holds " .. blocker) or ""),
+                 status = "Error"})
 
         return false
     end
@@ -6889,6 +6955,7 @@ return {
     collectBlockingLeaves = collectBlockingLeaves,
     collectConsumedBaseSpecies = collectConsumedBaseSpecies,
     clearMutatron = clearMutatron,
+    clearApiary = clearApiary,
     trace = trace,
     describeLoadFailure = describeLoadFailure,
     checkGendustryAPI = checkGendustryAPI,
