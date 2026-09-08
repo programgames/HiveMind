@@ -724,6 +724,11 @@ config = {
     -- Driver driven timings (used only when the Gendustry drivers are reachable)
     mutatron_timeout = 180,           -- Max wait for "advmutatron_finished" (seconds)
     apiary_cycle_timeout = 600,       -- Max wait for "apiary_finished" (seconds)
+
+    -- How many further waits of that length to grant while the apiary still reports itself
+    -- working. Without an Assassin in the beebee gun nothing shortens a cycle: the queen lives
+    -- out her whole lifespan, which is far longer than one timeout.
+    apiary_patience_rounds = 12,
     apiary_mating_timeout = 60,       -- Max wait for a princess to be mated (seconds)
     beebee_gun_retries = 3,           -- Shots allowed before declaring the gun empty
     signal_interval_ticks = 20        -- Output scan rate; _started/_finished are never throttled
@@ -4840,6 +4845,7 @@ control_state = {
     abort_requested = false,
     validation_required = false,
     beebee_unreadable_warned = false,  -- The unreadable-gun warning is only worth saying once
+    beebee_ineffective = false,        -- Set once shots are shown not to kill the queen
     signal_queue = {},              -- Machine signals pulled while waiting for another one
     automation_warned = false       -- The Automation upgrade warning is only worth saying once
 }
@@ -5250,6 +5256,14 @@ end
 --- @return boolean fired True if the queen slot was freed by the shot
 --- @return string|nil reason Why nothing was fired, or why the shot did not carry
 function killQueenWithBeebeeGun()
+    -- Once the gun has been shown not to kill anything, stop firing it. Three shots a second
+    -- apart, on every cycle of a sixteen-step plan, is a lot of time spent proving the same
+    -- point -- and the run does not depend on it.
+    if control_state.beebee_ineffective then
+
+        return false, "No Assassin in the beebee gun; letting the queen finish on her own"
+    end
+
     local status = getApiaryPrincessStatus()
 
     if not status then
@@ -5302,8 +5316,15 @@ function killQueenWithBeebeeGun()
                  status = "Working"})
     end
 
-    return false, "BeeBee Gun fired " .. config.beebee_gun_retries ..
-                  " times without freeing the queen slot - check the ammunition"
+    -- Not an error. Until there is an Assassin in the gun nothing shortens a cycle, and the very
+    -- first thing this program is used for is breeding that Assassin. The queen simply lives out
+    -- her lifespan; the wait that follows is prepared for it.
+    control_state.beebee_ineffective = true
+
+    return false, string.format(
+        "The queen is still alive after %d shot(s). Without an Assassin in the beebee gun "
+        .. "nothing cuts a cycle short, so she will be left to die of old age -- which is slower "
+        .. "but works. No more shots will be fired this run.", config.beebee_gun_retries)
 end
 
 --- Wait for the apiary cycle to end and time it (tasks 13, 21)
@@ -5354,12 +5375,44 @@ function waitForApiaryCycle()
             return false, "Operation aborted by user"
         end
 
-        -- Timeout: a long cycle is not a stalled machine
-        local working = apiaryCall("isWorking")
-        if working then
+        -- A machine still working is not a stalled one, and a queen left to die of old age takes
+        -- far longer than a shot one. Keep waiting as long as the apiary says it is working,
+        -- rather than giving up on a cycle that is simply running its course -- which is what
+        -- every cycle does until there is an Assassin in the beebee gun.
+        local rounds = 0
 
-            return false, string.format("Apiary still working after %ds - raise config.apiary_cycle_timeout",
-                                        math.floor(elapsed))
+        while apiaryCall("isWorking") and rounds < config.apiary_patience_rounds do
+            rounds = rounds + 1
+
+            drawGUI({step_type = "Processing",
+                     progress = string.format("Apiary still working after %ds -- waiting (%d/%d)",
+                        math.floor(computer.uptime() - started), rounds,
+                        config.apiary_patience_rounds),
+                     status = "Working"})
+
+            local again = waitForMachineSignal("apiary_finished", config.apiary_cycle_timeout, tick)
+            if again then
+
+                return true, computer.uptime() - started
+            end
+
+            local now = getApiaryPrincessStatus()
+            if now and (now.freed or now.type == "none") then
+
+                return true, computer.uptime() - started
+            end
+
+            if control_state.abort_requested then
+
+                return false, "Operation aborted by user"
+            end
+        end
+
+        if apiaryCall("isWorking") then
+
+            return false, string.format(
+                "Apiary still working after %ds - raise config.apiary_cycle_timeout or "
+                .. "config.apiary_patience_rounds", math.floor(computer.uptime() - started))
         end
 
         return false, "Apiary stopped without finishing - " .. describeApiaryErrors()
