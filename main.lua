@@ -3157,6 +3157,53 @@ function clearMutatron()
     return true, "Cleared the mutatron: " .. table.concat(moved, ", ")
 end
 
+--- Explain, in one sentence, why a bee could not be put into the mutatron
+---
+--- "Check mutatron inventory space" was true of only one of the reasons. A machine can refuse an
+--- insertion because the slot is taken, because the face the adapter touches does not accept it,
+--- or because the bee is no longer where it was found. Each needs a different fix, so each is
+--- named.
+--- @param species string Species being loaded
+--- @param kind string "princess" or "drone"
+--- @param from_side number Where the bee was found
+--- @param from_slot number Slot it was found in
+--- @param to_slot number|nil Slot it was aimed at
+--- @return string reason
+function describeLoadFailure(species, kind, from_side, from_slot, to_slot)
+    local blocker = occupantOf(config.mutatron_side, to_slot)
+    if blocker then
+
+        return string.format("Could not load the %s %s: mutatron slot %s already holds %s",
+            species, kind, tostring(to_slot), blocker)
+    end
+
+    local source = occupantOf(from_side, from_slot)
+    if not source then
+
+        return string.format("Could not load the %s %s: it is no longer in %s slot %d",
+            species, kind, getSideName(from_side), from_slot)
+    end
+
+    local size = inv_controller.getInventorySize(config.mutatron_side)
+    if not size then
+
+        return string.format("Could not load the %s %s: nothing readable on the %s side -- is "
+            .. "config.mutatron_side right?", species, kind, getSideName(config.mutatron_side))
+    end
+
+    if to_slot and to_slot > size then
+
+        return string.format("Could not load the %s %s: slot %d is beyond the mutatron's %d "
+            .. "slots -- check config.slot_offset", species, kind, to_slot, size)
+    end
+
+    return string.format(
+        "The mutatron refused the %s %s into slot %s and into every free slot. It has %d slots "
+        .. "and the target is empty, so the face the adapter touches is not accepting bees -- "
+        .. "try an adapter on another face of the machine.",
+        species, kind, tostring(to_slot), size)
+end
+
 --- Insert princess and drone into mutatron
 --- @param parent1 string Species name for princess/queen
 --- @param parent2 string Species name for drone
@@ -3244,11 +3291,17 @@ function loadMutatron(parent1, parent2)
         local species, kind, from_side, from_slot, to_slot = table.unpack(move)
 
         if not moveItem(from_side, from_slot, config.mutatron_side, to_slot, 1) then
-            local blocker = occupantOf(config.mutatron_side, to_slot)
+            -- The named slot was refused. A Gendustry machine is sided: the face the adapter
+            -- touches decides which slots accept an insertion, and it need not be the one the
+            -- driver numbers. Let the machine choose a slot itself before giving up.
+            if moveItem(from_side, from_slot, config.mutatron_side, nil, 1) then
+                drawGUI({progress = string.format(
+                    "Mutatron refused slot %s for the %s %s; it placed it itself",
+                    tostring(to_slot), species, kind), status = "Warning"})
+            else
 
-            return false, string.format("Could not put the %s %s into mutatron slot %s%s",
-                species, kind, tostring(to_slot),
-                blocker and (" -- " .. blocker .. " is already there") or "")
+                return false, describeLoadFailure(species, kind, from_side, from_slot, to_slot)
+            end
         end
     end
 
@@ -6623,6 +6676,7 @@ return {
     collectBlockingLeaves = collectBlockingLeaves,
     collectConsumedBaseSpecies = collectConsumedBaseSpecies,
     clearMutatron = clearMutatron,
+    describeLoadFailure = describeLoadFailure,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
     waitForMutatronOutput = waitForMutatronOutput,
