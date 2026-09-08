@@ -2910,11 +2910,14 @@ end
 function moveItem(from_side, from_slot, to_side, to_slot, count)
     count = count or 64
 
-    -- A nil slot used to reach transferItem and raise from inside OpenComputers, which produced a
-    -- stack trace and no clue about which item was missing. Say it plainly instead.
-    if from_side == nil or from_slot == nil or to_side == nil or to_slot == nil then
-        print(string.format("Cannot move: side/slot missing (from %s/%s to %s/%s)",
-            tostring(from_side), tostring(from_slot), tostring(to_side), tostring(to_slot)))
+    -- A nil source slot used to reach transferItem and raise from inside OpenComputers, which
+    -- produced a stack trace and no clue about which item was missing. Say it plainly instead.
+    --
+    -- A nil DESTINATION slot is not an error: OpenComputers reads it as "the first free slot",
+    -- which is what putting something back in a chest wants.
+    if from_side == nil or from_slot == nil or to_side == nil then
+        print(string.format("Cannot move: side/slot missing (from %s/%s to %s)",
+            tostring(from_side), tostring(from_slot), tostring(to_side)))
 
         return false
     end
@@ -2928,13 +2931,17 @@ function moveItem(from_side, from_slot, to_side, to_slot, count)
 
     moved = moved or 0
 
+    local destination = to_slot and ("slot " .. to_slot) or "the first free slot"
+
     if moved > 0 then
-        print("Moved " .. moved .. " items from slot " .. from_slot .. " to slot " .. to_slot)
+        print("Moved " .. moved .. " items from slot " .. from_slot .. " to " .. destination)
+
         return true
-    else
-        print("Failed to move items from slot " .. from_slot .. " to slot " .. to_slot)
-        return false
     end
+
+    print("Failed to move items from slot " .. from_slot .. " to " .. destination)
+
+    return false
 end
 
 -- Find item in inventory by name pattern (searches multiple inventories)
@@ -3088,6 +3095,68 @@ function collectConsumedBaseSpecies(tree)
     return entries
 end
 
+--- Describe what occupies a slot, for a message a player can act on
+--- @param side number Inventory side
+--- @param slot number|nil Slot index
+--- @return string|nil label Item name, or nil when the slot is free
+local function occupantOf(side, slot)
+    if not slot then return nil end
+
+    local held = inv_controller.getStackInSlot(side, slot)
+    if not held then return nil end
+
+    return tostring(held.label or held.name or "something")
+end
+
+--- Empty the mutatron's slots before loading it again
+---
+--- A run that stopped part way -- a crash, an abort, a cross that was refused -- leaves the
+--- parents it had already inserted sitting in the machine. The next attempt then finds those
+--- slots taken and fails on "check mutatron inventory space", which says nothing about the two
+--- bees standing in the way. Put them back where they came from instead.
+--- @return boolean cleared True when every input slot is free afterwards
+--- @return string|nil report What was moved, or what could not be
+function clearMutatron()
+    applyDriverSlots()
+
+    local side = config.mutatron_side
+    local moved = {}
+
+    -- A finished queen belongs in the apiary, but this is not the moment: park it in the output
+    -- chest so the cycle can be restarted from a clean machine.
+    local output = occupantOf(side, config.mutatron_output_slot)
+    if output then
+        if moveItem(side, config.mutatron_output_slot, config.output_chest_side, nil, 64) then
+            table.insert(moved, output .. " (leftover product) -> output chest")
+        else
+
+            return false, "The mutatron still holds " .. output ..
+                          " in its output slot and it could not be moved out"
+        end
+    end
+
+    for _, slot in ipairs(config.mutatron_input_slots or {}) do
+        local held = occupantOf(side, slot)
+
+        if held then
+            if moveItem(side, slot, config.input_chest_side, nil, 64) then
+                table.insert(moved, held .. " -> input chest")
+            else
+
+                return false, "The mutatron still holds " .. held ..
+                              " and the input chest has no room for it"
+            end
+        end
+    end
+
+    if #moved == 0 then
+
+        return true, nil
+    end
+
+    return true, "Cleared the mutatron: " .. table.concat(moved, ", ")
+end
+
 --- Insert princess and drone into mutatron
 --- @param parent1 string Species name for princess/queen
 --- @param parent2 string Species name for drone
@@ -3147,12 +3216,40 @@ function loadMutatron(parent1, parent2)
     -- literals from config are used, which is the degraded mode.
     applyDriverSlots()
 
-    local success1 = moveItem(princess_side, princess_slot, config.mutatron_side, config.mutatron_input_slots[1], 1)
-    local success2 = moveItem(drone_side, drone_slot, config.mutatron_side, config.mutatron_input_slots[2], 1)
-
-    if not (success1 and success2) then
-        handleError("Failed to load mutatron properly - check mutatron inventory space", nil)
+    -- Anything a previous attempt left in the machine goes back to a chest first.
+    local cleared, clear_report = clearMutatron()
+    if not cleared then
+        handleError(clear_report, nil)
         if control_state.abort_requested then return false, "Aborted" end
+
+        cleared, clear_report = clearMutatron()
+        if not cleared then
+
+            return false, clear_report
+        end
+    end
+
+    if clear_report then
+        drawGUI({progress = clear_report, status = "Working"})
+    end
+
+    -- Named individually. "Check mutatron inventory space" did not say which bee could not go in,
+    -- nor what was in its way, which is the whole of what you need to fix it.
+    local moves = {
+        {parent1, "princess", princess_side, princess_slot, config.mutatron_input_slots[1]},
+        {parent2, "drone", drone_side, drone_slot, config.mutatron_input_slots[2]},
+    }
+
+    for _, move in ipairs(moves) do
+        local species, kind, from_side, from_slot, to_slot = table.unpack(move)
+
+        if not moveItem(from_side, from_slot, config.mutatron_side, to_slot, 1) then
+            local blocker = occupantOf(config.mutatron_side, to_slot)
+
+            return false, string.format("Could not put the %s %s into mutatron slot %s%s",
+                species, kind, tostring(to_slot),
+                blocker and (" -- " .. blocker .. " is already there") or "")
+        end
     end
 
     -- The mutatron consumes one labware per cycle and refuses to start without it. Nothing fed
@@ -6525,6 +6622,7 @@ return {
     isBaseSpecies = isBaseSpecies,
     collectBlockingLeaves = collectBlockingLeaves,
     collectConsumedBaseSpecies = collectConsumedBaseSpecies,
+    clearMutatron = clearMutatron,
     checkGendustryAPI = checkGendustryAPI,
     loadMutatron = loadMutatron,
     waitForMutatronOutput = waitForMutatronOutput,

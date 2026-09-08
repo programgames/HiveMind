@@ -602,6 +602,21 @@ check("the apiary was released after the transfer", world.apiary.redstone_mode =
     world.apiary.redstone_mode)
 print()
 
+print("A machine left loaded by a previous attempt")
+-- Exactly the state a crashed or aborted run leaves behind.
+setDriverSlot(world.mutatron.side, world.mutatron.slots.in1,
+    stack("forestry:bee_princess_ge", "Common Princess"))
+setDriverSlot(world.mutatron.side, world.mutatron.slots.output,
+    stack("forestry:bee_queen_ge", "Common Queen"))
+
+local cleared, report = hive.clearMutatron()
+check("the leftovers are cleared", cleared == true, tostring(report))
+check("the parent slot is free again",
+    driverSlot(world.mutatron.side, world.mutatron.slots.in1) == nil)
+check("the output slot is free again",
+    driverSlot(world.mutatron.side, world.mutatron.slots.output) == nil)
+print()
+
 print("A cross whose parents are not in stock")
 -- The bee is absent and no one is there to put one in a chest, so handleError waits forever --
 -- which is what a headless run of the real thing does too. What matters is that it stops on a
