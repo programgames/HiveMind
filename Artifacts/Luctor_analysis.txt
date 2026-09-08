@@ -1,23 +1,23 @@
 === Breeding Analysis for Luctor ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
+Planning duration: 0.00 ms
 Total steps: 15
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Modest
   2. Forest
-  3. Rocky
-  4. Meadows
+  3. Meadows
+  4. Rocky
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     1 Modest princess OR 1 Modest drone
     2 Forest princesses OR 2 Forest drones
-    2 Rocky princesses OR 2 Rocky drones
     4 Meadows princesses OR 2 Meadows drones
+    2 Rocky princesses OR 2 Rocky drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

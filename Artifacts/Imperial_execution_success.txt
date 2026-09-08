@@ -1,6 +1,6 @@
 === Execution Analysis for Imperial ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 5
@@ -21,27 +21,27 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=4, step_type=breeding, total_steps=6
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=6, current_step=4
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=5, step_type=breeding, total_steps=6
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=6, current_step=5
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   9. [BREEDING] ✅ Cultivated + Common -> Noble
-  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=6, step_type=breeding, total_steps=6
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=6, current_step=6
      Progress: Completed Noble
   11. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
      Progress: Breeding: Noble + Cultivated -> Majestic
   12. [BREEDING] ✅ Noble + Cultivated -> Majestic
-  13. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, current_step=7, step_type=breeding, total_steps=6
+  13. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, step_type=breeding, total_steps=6, current_step=7
      Progress: Completed Majestic
   14. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
      Progress: Breeding: Noble + Majestic -> Imperial
   15. [BREEDING] ✅ Noble + Majestic -> Imperial
-  16. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, current_step=8, step_type=breeding, total_steps=6
+  16. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, step_type=breeding, total_steps=6, current_step=8
      Progress: Completed Imperial
   17. [EXECUTION_RESULT] ✅ Returned: true
 

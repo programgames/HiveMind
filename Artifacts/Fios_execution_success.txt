@@ -1,6 +1,6 @@
 === Execution Analysis for Fios ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 11
@@ -21,57 +21,57 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=305, step_type=breeding, total_steps=11
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=11, current_step=305
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=306, step_type=breeding, total_steps=11
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=11, current_step=306
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Diligent
   9. [BREEDING] ✅ Common + Cultivated -> Diligent
-  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=307, step_type=breeding, total_steps=11
+  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, step_type=breeding, total_steps=11, current_step=307
      Progress: Completed Diligent
   11. [GUI_CALL] progress=Breeding: Valiant + Steadfast -> Heroic, current_species=Heroic, step_type=breeding
      Progress: Breeding: Valiant + Steadfast -> Heroic
   12. [BREEDING] ✅ Valiant + Steadfast -> Heroic
-  13. [GUI_CALL] progress=Completed Heroic, current_species=Heroic, current_step=308, step_type=breeding, total_steps=11
+  13. [GUI_CALL] progress=Completed Heroic, current_species=Heroic, step_type=breeding, total_steps=11, current_step=308
      Progress: Completed Heroic
   14. [GUI_CALL] progress=Breeding: Marble + Heroic -> Roman, current_species=Roman, step_type=breeding
      Progress: Breeding: Marble + Heroic -> Roman
   15. [BREEDING] ✅ Marble + Heroic -> Roman
-  16. [GUI_CALL] progress=Completed Roman, current_species=Roman, current_step=309, step_type=breeding, total_steps=11
+  16. [GUI_CALL] progress=Completed Roman, current_species=Roman, step_type=breeding, total_steps=11, current_step=309
      Progress: Completed Roman
-  17. [GUI_CALL] progress=Breeding: Forest + Diligent -> Blue, current_species=Blue, step_type=breeding
-     Progress: Breeding: Forest + Diligent -> Blue
-  18. [BREEDING] ✅ Forest + Diligent -> Blue
-  19. [GUI_CALL] progress=Completed Blue, current_species=Blue, current_step=310, step_type=breeding, total_steps=11
-     Progress: Completed Blue
-  20. [GUI_CALL] progress=Breeding: Wintry + Diligent -> White, current_species=White, step_type=breeding
+  17. [GUI_CALL] progress=Breeding: Wintry + Diligent -> White, current_species=White, step_type=breeding
      Progress: Breeding: Wintry + Diligent -> White
-  21. [BREEDING] ✅ Wintry + Diligent -> White
-  22. [GUI_CALL] progress=Completed White, current_species=White, current_step=311, step_type=breeding, total_steps=11
+  18. [BREEDING] ✅ Wintry + Diligent -> White
+  19. [GUI_CALL] progress=Completed White, current_species=White, step_type=breeding, total_steps=11, current_step=310
      Progress: Completed White
-  23. [GUI_CALL] progress=Breeding: Blue + White -> Light Blue, current_species=Light Blue, step_type=breeding
-     Progress: Breeding: Blue + White -> Light Blue
-  24. [BREEDING] ✅ Blue + White -> Light Blue
-  25. [GUI_CALL] progress=Completed Light Blue, current_species=Light Blue, current_step=312, step_type=breeding, total_steps=11
-     Progress: Completed Light Blue
-  26. [GUI_CALL] progress=Breeding: Roman + Marble -> Greek, current_species=Greek, step_type=breeding
+  20. [GUI_CALL] progress=Breeding: Forest + Diligent -> Blue, current_species=Blue, step_type=breeding
+     Progress: Breeding: Forest + Diligent -> Blue
+  21. [BREEDING] ✅ Forest + Diligent -> Blue
+  22. [GUI_CALL] progress=Completed Blue, current_species=Blue, step_type=breeding, total_steps=11, current_step=311
+     Progress: Completed Blue
+  23. [GUI_CALL] progress=Breeding: Roman + Marble -> Greek, current_species=Greek, step_type=breeding
      Progress: Breeding: Roman + Marble -> Greek
-  27. [BREEDING] ✅ Roman + Marble -> Greek
-  28. [GUI_CALL] progress=Completed Greek, current_species=Greek, current_step=313, step_type=breeding, total_steps=11
+  24. [BREEDING] ✅ Roman + Marble -> Greek
+  25. [GUI_CALL] progress=Completed Greek, current_species=Greek, step_type=breeding, total_steps=11, current_step=312
      Progress: Completed Greek
+  26. [GUI_CALL] progress=Breeding: Blue + White -> Light Blue, current_species=Light Blue, step_type=breeding
+     Progress: Breeding: Blue + White -> Light Blue
+  27. [BREEDING] ✅ Blue + White -> Light Blue
+  28. [GUI_CALL] progress=Completed Light Blue, current_species=Light Blue, step_type=breeding, total_steps=11, current_step=313
+     Progress: Completed Light Blue
   29. [GUI_CALL] progress=Breeding: Greek + Roman -> Classical, current_species=Classical, step_type=breeding
      Progress: Breeding: Greek + Roman -> Classical
   30. [BREEDING] ✅ Greek + Roman -> Classical
-  31. [GUI_CALL] progress=Completed Classical, current_species=Classical, current_step=314, step_type=breeding, total_steps=11
+  31. [GUI_CALL] progress=Completed Classical, current_species=Classical, step_type=breeding, total_steps=11, current_step=314
      Progress: Completed Classical
   32. [GUI_CALL] progress=Breeding: Light Blue + Classical -> Fios, current_species=Fios, step_type=breeding
      Progress: Breeding: Light Blue + Classical -> Fios
   33. [BREEDING] ✅ Light Blue + Classical -> Fios
-  34. [GUI_CALL] progress=Completed Fios, current_species=Fios, current_step=315, step_type=breeding, total_steps=11
+  34. [GUI_CALL] progress=Completed Fios, current_species=Fios, step_type=breeding, total_steps=11, current_step=315
      Progress: Completed Fios
   35. [EXECUTION_RESULT] ✅ Returned: true
 

@@ -1,21 +1,21 @@
 === Breeding Analysis for Herblore ===
-Generated: Tue Sep  8 14:08:57 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
+Planning duration: 0.00 ms
 Total steps: 17
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
-  2. Monastic
-  3. Ender
+  1. Ender
+  2. Modest
+  3. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
+    2 Ender princesses OR 2 Ender drones
     3 Modest princesses OR 3 Modest drones
     3 Monastic princesses OR 2 Monastic drones
-    2 Ender princesses OR 2 Ender drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

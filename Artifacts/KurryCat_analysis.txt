@@ -1,5 +1,5 @@
 === Breeding Analysis for KurryCat ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 0.00 ms
@@ -8,14 +8,14 @@ Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Forest
-  2. Monastic
-  3. Meadows
+  2. Meadows
+  3. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     2 Forest princesses OR 2 Forest drones
-    2 Monastic princesses
     2 Meadows princesses OR 1 Meadows drone
+    2 Monastic princesses
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

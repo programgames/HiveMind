@@ -1,5 +1,5 @@
 === Breeding Analysis for Thermally Expanded ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 1.00 ms
@@ -7,21 +7,21 @@ Total steps: 24
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
+  1. Infernal
   2. Smouldering
-  3. Infernal
-  4. Monastic
+  3. Monastic
+  4. Meadows
   5. Forest
-  6. Meadows
+  6. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    3 Modest princesses OR 2 Modest drones
-    1 Smouldering princess OR 1 Smouldering drone
     2 Infernal princesses OR 1 Infernal drone
+    1 Smouldering princess OR 1 Smouldering drone
     1 Monastic princess OR 1 Monastic drone
-    4 Forest princesses OR 3 Forest drones
     5 Meadows princesses OR 3 Meadows drones
+    4 Forest princesses OR 3 Forest drones
+    3 Modest princesses OR 2 Modest drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

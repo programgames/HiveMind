@@ -1,5 +1,5 @@
 === Breeding Analysis for Necronomibee ===
-Generated: Tue Sep  8 14:08:57 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 0.00 ms
@@ -7,19 +7,19 @@ Total steps: 17
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Rocky
-  2. Modest
+  1. Forest
+  2. Rocky
   3. Meadows
-  4. Forest
-  5. Monastic
+  4. Monastic
+  5. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
+    3 Forest princesses OR 3 Forest drones
     2 Rocky princesses OR 2 Rocky drones
     3 Meadows princesses OR 1 Meadows drone
-    3 Forest princesses OR 3 Forest drones
-    1 Modest princess OR 1 Modest drone
     2 Monastic princesses
+    1 Modest princess OR 1 Modest drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

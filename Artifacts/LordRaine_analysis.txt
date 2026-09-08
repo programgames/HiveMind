@@ -1,5 +1,5 @@
 === Breeding Analysis for LordRaine ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 0.00 ms
@@ -7,23 +7,23 @@ Total steps: 13
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
+  1. Forest
   2. Sorcerous
-  3. Ender
-  4. Mad Scientist
-  5. Monastic
-  6. Forest
-  7. Meadows
+  3. Monastic
+  4. Ender
+  5. Meadows
+  6. Mad Scientist
+  7. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    3 Modest princesses OR 1 Modest drone
-    1 Sorcerous princess OR 1 Sorcerous drone
-    2 Ender princesses OR 1 Ender drone
-    2 Mad Scientist princesses OR 2 Mad Scientist drones
-    2 Monastic princesses
     1 Forest princess OR 1 Forest drone
+    1 Sorcerous princess OR 1 Sorcerous drone
+    2 Monastic princesses
+    2 Ender princesses OR 1 Ender drone
     2 Meadows princesses OR 1 Meadows drone
+    2 Mad Scientist princesses OR 2 Mad Scientist drones
+    3 Modest princesses OR 1 Modest drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

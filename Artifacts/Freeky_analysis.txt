@@ -1,5 +1,5 @@
 === Breeding Analysis for Freeky ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 0.00 ms
@@ -7,17 +7,17 @@ Total steps: 19
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Monastic
-  2. Forest
+  1. Forest
+  2. Meadows
   3. Valiant
-  4. Meadows
+  4. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Monastic princess OR 1 Monastic drone
     3 Forest princesses OR 3 Forest drones
-    1 Valiant princess OR 1 Valiant drone
     5 Meadows princesses OR 5 Meadows drones
+    1 Valiant princess OR 1 Valiant drone
+    1 Monastic princess OR 1 Monastic drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

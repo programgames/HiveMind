@@ -1,35 +1,35 @@
 === Breeding Analysis for Ringbearer ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
+Planning duration: 2.00 ms
 Total steps: 39
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Rocky
-  2. Infernal
-  3. Monastic
-  4. Forest
-  5. Oblivion
-  6. Meadows
+  1. Infernal
+  2. Forest
+  3. Rocky
+  4. Meadows
+  5. Monastic
+  6. Oblivion
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Rocky princess OR 1 Rocky drone
     2 Infernal princesses OR 2 Infernal drones
-    2 Monastic princesses OR 2 Monastic drones
     4 Forest princesses OR 4 Forest drones
-    1 Oblivion princess OR 1 Oblivion drone
+    1 Rocky princess OR 1 Rocky drone
     10 Meadows princesses OR 9 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
+    1 Oblivion princess OR 1 Oblivion drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 
 ⚠️  OPTIMIZATION ANALYSIS:
   Potential missed reuse opportunities:
-    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
     → Noble: 3 occurrences, 0 reused, could reuse 1 more
     → Eldritch: 2 occurrences, 0 reused, could reuse 0 more
+    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
 
 📊 PLAN STATISTICS:
   Unique species in tree: 32

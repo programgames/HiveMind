@@ -1,6 +1,6 @@
 === Execution Analysis for NerdySpider ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 15
@@ -21,77 +21,77 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=484, step_type=breeding, total_steps=16
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=16, current_step=484
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=485, step_type=breeding, total_steps=16
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=16, current_step=485
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   9. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=486, step_type=breeding, total_steps=16
+  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=16, current_step=486
      Progress: Completed Sinister
   11. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   12. [BREEDING] ✅ Modest + Sinister -> Frugal
-  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=487, step_type=breeding, total_steps=16
+  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=16, current_step=487
      Progress: Completed Frugal
   14. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
      Progress: Breeding: Modest + Frugal -> Austere
   15. [BREEDING] ✅ Modest + Frugal -> Austere
-  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, current_step=488, step_type=breeding, total_steps=16
+  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, step_type=breeding, total_steps=16, current_step=488
      Progress: Completed Austere
   17. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   18. [BREEDING] ✅ Cultivated + Common -> Noble
-  19. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=489, step_type=breeding, total_steps=16
+  19. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=16, current_step=489
      Progress: Completed Noble
   20. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
      Progress: Breeding: Noble + Cultivated -> Majestic
   21. [BREEDING] ✅ Noble + Cultivated -> Majestic
-  22. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, current_step=490, step_type=breeding, total_steps=16
+  22. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, step_type=breeding, total_steps=16, current_step=490
      Progress: Completed Majestic
   23. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
      Progress: Breeding: Noble + Majestic -> Imperial
   24. [BREEDING] ✅ Noble + Majestic -> Imperial
-  25. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, current_step=491, step_type=breeding, total_steps=16
+  25. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, step_type=breeding, total_steps=16, current_step=491
      Progress: Completed Imperial
-  26. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
-     Progress: Breeding: Austere + Monastic -> Secluded
-  27. [BREEDING] ✅ Austere + Monastic -> Secluded
-  28. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, current_step=492, step_type=breeding, total_steps=16
-     Progress: Completed Secluded
-  29. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
-     Progress: Breeding: Secluded + Monastic -> Hermitic
-  30. [BREEDING] ✅ Secluded + Monastic -> Hermitic
-  31. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, current_step=493, step_type=breeding, total_steps=16
-     Progress: Completed Hermitic
-  32. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
-     Progress: Breeding: Ender + Hermitic -> Spectral
-  33. [BREEDING] ✅ Ender + Hermitic -> Spectral
-  34. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, current_step=494, step_type=breeding, total_steps=16
-     Progress: Completed Spectral
-  35. [GUI_CALL] progress=Breeding: Ender + Spectral -> Phantasmal, current_species=Phantasmal, step_type=breeding
-     Progress: Breeding: Ender + Spectral -> Phantasmal
-  36. [BREEDING] ✅ Ender + Spectral -> Phantasmal
-  37. [GUI_CALL] progress=Completed Phantasmal, current_species=Phantasmal, current_step=495, step_type=breeding, total_steps=16
-     Progress: Completed Phantasmal
-  38. [GUI_CALL] progress=Breeding: Modest + Imperial -> Argentum, current_species=Argentum, step_type=breeding
+  26. [GUI_CALL] progress=Breeding: Modest + Imperial -> Argentum, current_species=Argentum, step_type=breeding
      Progress: Breeding: Modest + Imperial -> Argentum
-  39. [BREEDING] ✅ Modest + Imperial -> Argentum
-  40. [GUI_CALL] progress=Completed Argentum, current_species=Argentum, current_step=496, step_type=breeding, total_steps=16
+  27. [BREEDING] ✅ Modest + Imperial -> Argentum
+  28. [GUI_CALL] progress=Completed Argentum, current_species=Argentum, step_type=breeding, total_steps=16, current_step=492
      Progress: Completed Argentum
-  41. [GUI_CALL] progress=Breeding: Austere + Argentum -> Esmeraldi, current_species=Esmeraldi, step_type=breeding
+  29. [GUI_CALL] progress=Breeding: Austere + Argentum -> Esmeraldi, current_species=Esmeraldi, step_type=breeding
      Progress: Breeding: Austere + Argentum -> Esmeraldi
-  42. [BREEDING] ✅ Austere + Argentum -> Esmeraldi
-  43. [GUI_CALL] progress=Completed Esmeraldi, current_species=Esmeraldi, current_step=497, step_type=breeding, total_steps=16
+  30. [BREEDING] ✅ Austere + Argentum -> Esmeraldi
+  31. [GUI_CALL] progress=Completed Esmeraldi, current_species=Esmeraldi, step_type=breeding, total_steps=16, current_step=493
      Progress: Completed Esmeraldi
+  32. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
+     Progress: Breeding: Austere + Monastic -> Secluded
+  33. [BREEDING] ✅ Austere + Monastic -> Secluded
+  34. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, step_type=breeding, total_steps=16, current_step=494
+     Progress: Completed Secluded
+  35. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
+     Progress: Breeding: Secluded + Monastic -> Hermitic
+  36. [BREEDING] ✅ Secluded + Monastic -> Hermitic
+  37. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, step_type=breeding, total_steps=16, current_step=495
+     Progress: Completed Hermitic
+  38. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
+     Progress: Breeding: Ender + Hermitic -> Spectral
+  39. [BREEDING] ✅ Ender + Hermitic -> Spectral
+  40. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, step_type=breeding, total_steps=16, current_step=496
+     Progress: Completed Spectral
+  41. [GUI_CALL] progress=Breeding: Ender + Spectral -> Phantasmal, current_species=Phantasmal, step_type=breeding
+     Progress: Breeding: Ender + Spectral -> Phantasmal
+  42. [BREEDING] ✅ Ender + Spectral -> Phantasmal
+  43. [GUI_CALL] progress=Completed Phantasmal, current_species=Phantasmal, step_type=breeding, total_steps=16, current_step=497
+     Progress: Completed Phantasmal
   44. [GUI_CALL] progress=Breeding: Phantasmal + Esmeraldi -> NerdySpider, current_species=NerdySpider, step_type=breeding
      Progress: Breeding: Phantasmal + Esmeraldi -> NerdySpider
   45. [BREEDING] ✅ Phantasmal + Esmeraldi -> NerdySpider
-  46. [GUI_CALL] progress=Completed NerdySpider, current_species=NerdySpider, current_step=498, step_type=breeding, total_steps=16
+  46. [GUI_CALL] progress=Completed NerdySpider, current_species=NerdySpider, step_type=breeding, total_steps=16, current_step=498
      Progress: Completed NerdySpider
   47. [EXECUTION_RESULT] ✅ Returned: true
 

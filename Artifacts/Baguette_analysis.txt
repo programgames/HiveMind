@@ -1,25 +1,25 @@
 === Breeding Analysis for Baguette ===
-Generated: Tue Sep  8 14:08:57 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
+Planning duration: 1.00 ms
 Total steps: 17
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
+  1. Forest
   2. Valiant
   3. Monastic
-  4. Forest
-  5. Meadows
+  4. Meadows
+  5. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Modest princess OR 1 Modest drone
+    4 Forest princesses OR 4 Forest drones
     1 Valiant princess OR 1 Valiant drone
     2 Monastic princesses
-    4 Forest princesses OR 4 Forest drones
     4 Meadows princesses OR 1 Meadows drone
+    1 Modest princess OR 1 Modest drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

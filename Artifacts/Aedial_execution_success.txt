@@ -1,6 +1,6 @@
 === Execution Analysis for Aedial ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 17
@@ -21,87 +21,87 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=66, step_type=breeding, total_steps=21
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=21, current_step=66
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=67, step_type=breeding, total_steps=21
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=21, current_step=67
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   9. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=68, step_type=breeding, total_steps=21
+  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=21, current_step=68
      Progress: Completed Sinister
   11. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   12. [BREEDING] ✅ Modest + Sinister -> Frugal
-  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=69, step_type=breeding, total_steps=21
+  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=21, current_step=69
      Progress: Completed Frugal
   14. [GUI_CALL] progress=Breeding: Meadows + Frugal -> Arid, current_species=Arid, step_type=breeding
      Progress: Breeding: Meadows + Frugal -> Arid
   15. [BREEDING] ✅ Meadows + Frugal -> Arid
-  16. [GUI_CALL] progress=Completed Arid, current_species=Arid, current_step=70, step_type=breeding, total_steps=21
+  16. [GUI_CALL] progress=Completed Arid, current_species=Arid, step_type=breeding, total_steps=21, current_step=70
      Progress: Completed Arid
   17. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   18. [BREEDING] ✅ Cultivated + Common -> Noble
-  19. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=71, step_type=breeding, total_steps=21
+  19. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=21, current_step=71
      Progress: Completed Noble
   20. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
      Progress: Breeding: Noble + Monastic -> Mystical
   21. [BREEDING] ✅ Noble + Monastic -> Mystical
-  22. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, current_step=72, step_type=breeding, total_steps=21
+  22. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, step_type=breeding, total_steps=21, current_step=72
      Progress: Completed Mystical
   23. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
      Progress: Breeding: Mystical + Cultivated -> Eldritch
   24. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
-  25. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, current_step=73, step_type=breeding, total_steps=21
+  25. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, step_type=breeding, total_steps=21, current_step=73
      Progress: Completed Eldritch
   26. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
      Progress: Breeding: Cultivated + Eldritch -> Esoteric
   27. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
-  28. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, current_step=74, step_type=breeding, total_steps=21
+  28. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, step_type=breeding, total_steps=21, current_step=74
      Progress: Completed Esoteric
   29. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
      Progress: Breeding: Forest + Common -> Mysterious
   30. [BREEDING] ✅ Forest + Common -> Mysterious
-  31. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, current_step=75, step_type=breeding, total_steps=21
+  31. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, step_type=breeding, total_steps=21, current_step=75
      Progress: Completed Mysterious
   32. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
      Progress: Breeding: Esoteric + Mysterious -> Arcane
   33. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
-  34. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, current_step=76, step_type=breeding, total_steps=21
+  34. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, step_type=breeding, total_steps=21, current_step=76
      Progress: Completed Arcane
   35. [GUI_CALL] progress=Breeding: Common + Arid -> Barren, current_species=Barren, step_type=breeding
      Progress: Breeding: Common + Arid -> Barren
   36. [BREEDING] ✅ Common + Arid -> Barren
-  37. [GUI_CALL] progress=Completed Barren, current_species=Barren, current_step=77, step_type=breeding, total_steps=21
+  37. [GUI_CALL] progress=Completed Barren, current_species=Barren, step_type=breeding, total_steps=21, current_step=77
      Progress: Completed Barren
   38. [GUI_CALL] progress=Breeding: Arid + Barren -> Desolate, current_species=Desolate, step_type=breeding
      Progress: Breeding: Arid + Barren -> Desolate
   39. [BREEDING] ✅ Arid + Barren -> Desolate
-  40. [GUI_CALL] progress=Completed Desolate, current_species=Desolate, current_step=78, step_type=breeding, total_steps=21
+  40. [GUI_CALL] progress=Completed Desolate, current_species=Desolate, step_type=breeding, total_steps=21, current_step=78
      Progress: Completed Desolate
   41. [GUI_CALL] progress=Breeding: Forest + Desolate -> Skeletal, current_species=Skeletal, step_type=breeding
      Progress: Breeding: Forest + Desolate -> Skeletal
   42. [BREEDING] ✅ Forest + Desolate -> Skeletal
-  43. [GUI_CALL] progress=Completed Skeletal, current_species=Skeletal, current_step=79, step_type=breeding, total_steps=21
+  43. [GUI_CALL] progress=Completed Skeletal, current_species=Skeletal, step_type=breeding, total_steps=21, current_step=79
      Progress: Completed Skeletal
   44. [GUI_CALL] progress=Breeding: Arcane + Monastic -> Pupil, current_species=Pupil, step_type=breeding
      Progress: Breeding: Arcane + Monastic -> Pupil
   45. [BREEDING] ✅ Arcane + Monastic -> Pupil
-  46. [GUI_CALL] progress=Completed Pupil, current_species=Pupil, current_step=80, step_type=breeding, total_steps=21
+  46. [GUI_CALL] progress=Completed Pupil, current_species=Pupil, step_type=breeding, total_steps=21, current_step=80
      Progress: Completed Pupil
   47. [GUI_CALL] progress=Breeding: Pupil + Arcane -> Scholarly, current_species=Scholarly, step_type=breeding
      Progress: Breeding: Pupil + Arcane -> Scholarly
   48. [BREEDING] ✅ Pupil + Arcane -> Scholarly
-  49. [GUI_CALL] progress=Completed Scholarly, current_species=Scholarly, current_step=81, step_type=breeding, total_steps=21
+  49. [GUI_CALL] progress=Completed Scholarly, current_species=Scholarly, step_type=breeding, total_steps=21, current_step=81
      Progress: Completed Scholarly
   50. [GUI_CALL] progress=Breeding: Skeletal + Scholarly -> Aedial, current_species=Aedial, step_type=breeding
      Progress: Breeding: Skeletal + Scholarly -> Aedial
   51. [BREEDING] ✅ Skeletal + Scholarly -> Aedial
-  52. [GUI_CALL] progress=Completed Aedial, current_species=Aedial, current_step=82, step_type=breeding, total_steps=21
+  52. [GUI_CALL] progress=Completed Aedial, current_species=Aedial, step_type=breeding, total_steps=21, current_step=82
      Progress: Completed Aedial
   53. [EXECUTION_RESULT] ✅ Returned: true
 

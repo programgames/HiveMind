@@ -1,6 +1,6 @@
 === Execution Analysis for Meatball ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 6
@@ -21,32 +21,32 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=462, step_type=breeding, total_steps=7
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=7, current_step=462
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=463, step_type=breeding, total_steps=7
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=7, current_step=463
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Diligent
   9. [BREEDING] ✅ Common + Cultivated -> Diligent
-  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=464, step_type=breeding, total_steps=7
+  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, step_type=breeding, total_steps=7, current_step=464
      Progress: Completed Diligent
   11. [GUI_CALL] progress=Breeding: Diligent + Cultivated -> Unweary, current_species=Unweary, step_type=breeding
      Progress: Breeding: Diligent + Cultivated -> Unweary
   12. [BREEDING] ✅ Diligent + Cultivated -> Unweary
-  13. [GUI_CALL] progress=Completed Unweary, current_species=Unweary, current_step=465, step_type=breeding, total_steps=7
+  13. [GUI_CALL] progress=Completed Unweary, current_species=Unweary, step_type=breeding, total_steps=7, current_step=465
      Progress: Completed Unweary
   14. [GUI_CALL] progress=Breeding: Diligent + Unweary -> Industrious, current_species=Industrious, step_type=breeding
      Progress: Breeding: Diligent + Unweary -> Industrious
   15. [BREEDING] ✅ Diligent + Unweary -> Industrious
-  16. [GUI_CALL] progress=Completed Industrious, current_species=Industrious, current_step=466, step_type=breeding, total_steps=7
+  16. [GUI_CALL] progress=Completed Industrious, current_species=Industrious, step_type=breeding, total_steps=7, current_step=466
      Progress: Completed Industrious
   17. [GUI_CALL] progress=Breeding: Industrious + Common -> Meatball, current_species=Meatball, step_type=breeding
      Progress: Breeding: Industrious + Common -> Meatball
   18. [BREEDING] ✅ Industrious + Common -> Meatball
-  19. [GUI_CALL] progress=Completed Meatball, current_species=Meatball, current_step=467, step_type=breeding, total_steps=7
+  19. [GUI_CALL] progress=Completed Meatball, current_species=Meatball, step_type=breeding, total_steps=7, current_step=467
      Progress: Completed Meatball
   20. [EXECUTION_RESULT] ✅ Returned: true
 

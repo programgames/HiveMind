@@ -1,21 +1,21 @@
 === Breeding Analysis for Pyromaniacal ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
+Planning duration: 1.00 ms
 Total steps: 19
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
+  1. Meadows
   2. Forest
-  3. Meadows
+  3. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Modest princess OR 1 Modest drone
-    1 Forest princess OR 1 Forest drone
     5 Meadows princesses OR 4 Meadows drones
+    1 Forest princess OR 1 Forest drone
+    1 Modest princess OR 1 Modest drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

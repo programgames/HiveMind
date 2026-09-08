@@ -1,5 +1,5 @@
 === Breeding Analysis for Connor ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 1.00 ms
@@ -7,21 +7,21 @@ Total steps: 44
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Rocky
-  2. Modest
-  3. Forest
-  4. Monastic
-  5. Oblivion
-  6. Meadows
+  1. Forest
+  2. Rocky
+  3. Oblivion
+  4. Meadows
+  5. Monastic
+  6. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    3 Modest princesses OR 2 Modest drones
-    2 Monastic princesses OR 2 Monastic drones
     2 Forest princesses OR 2 Forest drones
     1 Rocky princess OR 1 Rocky drone
     2 Oblivion princesses OR 1 Oblivion drone
     8 Meadows princesses OR 7 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
+    3 Modest princesses OR 2 Modest drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

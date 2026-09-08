@@ -1,25 +1,25 @@
 === Breeding Analysis for Formic ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
+Planning duration: 0.00 ms
 Total steps: 13
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
   1. Tropical
-  2. Modest
-  3. Forest
+  2. Forest
+  3. Meadows
   4. Water
-  5. Meadows
+  5. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Tropical princesses OR 2 Tropical drones
-    3 Modest princesses OR 3 Modest drones
     1 Forest princess OR 1 Forest drone
     1 Water princess OR 1 Water drone
     3 Meadows princesses OR 3 Meadows drones
+    2 Tropical princesses OR 2 Tropical drones
+    3 Modest princesses OR 3 Modest drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

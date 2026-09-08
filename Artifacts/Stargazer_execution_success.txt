@@ -1,6 +1,6 @@
 === Execution Analysis for Stargazer ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 16
@@ -21,82 +21,82 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=657, step_type=breeding, total_steps=16
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=16, current_step=657
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=658, step_type=breeding, total_steps=16
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=16, current_step=658
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   9. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=659, step_type=breeding, total_steps=16
+  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=16, current_step=659
      Progress: Completed Sinister
   11. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   12. [BREEDING] ✅ Modest + Sinister -> Frugal
-  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=660, step_type=breeding, total_steps=16
+  13. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=16, current_step=660
      Progress: Completed Frugal
   14. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
      Progress: Breeding: Modest + Frugal -> Austere
   15. [BREEDING] ✅ Modest + Frugal -> Austere
-  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, current_step=661, step_type=breeding, total_steps=16
+  16. [GUI_CALL] progress=Completed Austere, current_species=Austere, step_type=breeding, total_steps=16, current_step=661
      Progress: Completed Austere
   17. [GUI_CALL] progress=Breeding: Austere + Monastic -> Secluded, current_species=Secluded, step_type=breeding
      Progress: Breeding: Austere + Monastic -> Secluded
   18. [BREEDING] ✅ Austere + Monastic -> Secluded
-  19. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, current_step=662, step_type=breeding, total_steps=16
+  19. [GUI_CALL] progress=Completed Secluded, current_species=Secluded, step_type=breeding, total_steps=16, current_step=662
      Progress: Completed Secluded
   20. [GUI_CALL] progress=Breeding: Secluded + Monastic -> Hermitic, current_species=Hermitic, step_type=breeding
      Progress: Breeding: Secluded + Monastic -> Hermitic
   21. [BREEDING] ✅ Secluded + Monastic -> Hermitic
-  22. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, current_step=663, step_type=breeding, total_steps=16
+  22. [GUI_CALL] progress=Completed Hermitic, current_species=Hermitic, step_type=breeding, total_steps=16, current_step=663
      Progress: Completed Hermitic
   23. [GUI_CALL] progress=Breeding: Valiant + Steadfast -> Heroic, current_species=Heroic, step_type=breeding
      Progress: Breeding: Valiant + Steadfast -> Heroic
   24. [BREEDING] ✅ Valiant + Steadfast -> Heroic
-  25. [GUI_CALL] progress=Completed Heroic, current_species=Heroic, current_step=664, step_type=breeding, total_steps=16
+  25. [GUI_CALL] progress=Completed Heroic, current_species=Heroic, step_type=breeding, total_steps=16, current_step=664
      Progress: Completed Heroic
   26. [GUI_CALL] progress=Breeding: Marble + Heroic -> Roman, current_species=Roman, step_type=breeding
      Progress: Breeding: Marble + Heroic -> Roman
   27. [BREEDING] ✅ Marble + Heroic -> Roman
-  28. [GUI_CALL] progress=Completed Roman, current_species=Roman, current_step=665, step_type=breeding, total_steps=16
+  28. [GUI_CALL] progress=Completed Roman, current_species=Roman, step_type=breeding, total_steps=16, current_step=665
      Progress: Completed Roman
-  29. [GUI_CALL] progress=Breeding: Ender + Secluded -> Abnormal, current_species=Abnormal, step_type=breeding
-     Progress: Breeding: Ender + Secluded -> Abnormal
-  30. [BREEDING] ✅ Ender + Secluded -> Abnormal
-  31. [GUI_CALL] progress=Completed Abnormal, current_species=Abnormal, current_step=666, step_type=breeding, total_steps=16
-     Progress: Completed Abnormal
-  32. [GUI_CALL] progress=Breeding: Abnormal + Hermitic -> Spatial, current_species=Spatial, step_type=breeding
-     Progress: Breeding: Abnormal + Hermitic -> Spatial
-  33. [BREEDING] ✅ Abnormal + Hermitic -> Spatial
-  34. [GUI_CALL] progress=Completed Spatial, current_species=Spatial, current_step=667, step_type=breeding, total_steps=16
-     Progress: Completed Spatial
-  35. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
+  29. [GUI_CALL] progress=Breeding: Ender + Hermitic -> Spectral, current_species=Spectral, step_type=breeding
      Progress: Breeding: Ender + Hermitic -> Spectral
-  36. [BREEDING] ✅ Ender + Hermitic -> Spectral
-  37. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, current_step=668, step_type=breeding, total_steps=16
+  30. [BREEDING] ✅ Ender + Hermitic -> Spectral
+  31. [GUI_CALL] progress=Completed Spectral, current_species=Spectral, step_type=breeding, total_steps=16, current_step=666
      Progress: Completed Spectral
+  32. [GUI_CALL] progress=Breeding: Ender + Secluded -> Abnormal, current_species=Abnormal, step_type=breeding
+     Progress: Breeding: Ender + Secluded -> Abnormal
+  33. [BREEDING] ✅ Ender + Secluded -> Abnormal
+  34. [GUI_CALL] progress=Completed Abnormal, current_species=Abnormal, step_type=breeding, total_steps=16, current_step=667
+     Progress: Completed Abnormal
+  35. [GUI_CALL] progress=Breeding: Abnormal + Hermitic -> Spatial, current_species=Spatial, step_type=breeding
+     Progress: Breeding: Abnormal + Hermitic -> Spatial
+  36. [BREEDING] ✅ Abnormal + Hermitic -> Spatial
+  37. [GUI_CALL] progress=Completed Spatial, current_species=Spatial, step_type=breeding, total_steps=16, current_step=668
+     Progress: Completed Spatial
   38. [GUI_CALL] progress=Breeding: Spectral + Spatial -> Quantum, current_species=Quantum, step_type=breeding
      Progress: Breeding: Spectral + Spatial -> Quantum
   39. [BREEDING] ✅ Spectral + Spatial -> Quantum
-  40. [GUI_CALL] progress=Completed Quantum, current_species=Quantum, current_step=669, step_type=breeding, total_steps=16
+  40. [GUI_CALL] progress=Completed Quantum, current_species=Quantum, step_type=breeding, total_steps=16, current_step=669
      Progress: Completed Quantum
   41. [GUI_CALL] progress=Breeding: Roman + Marble -> Greek, current_species=Greek, step_type=breeding
      Progress: Breeding: Roman + Marble -> Greek
   42. [BREEDING] ✅ Roman + Marble -> Greek
-  43. [GUI_CALL] progress=Completed Greek, current_species=Greek, current_step=670, step_type=breeding, total_steps=16
+  43. [GUI_CALL] progress=Completed Greek, current_species=Greek, step_type=breeding, total_steps=16, current_step=670
      Progress: Completed Greek
   44. [GUI_CALL] progress=Breeding: Greek + Roman -> Classical, current_species=Classical, step_type=breeding
      Progress: Breeding: Greek + Roman -> Classical
   45. [BREEDING] ✅ Greek + Roman -> Classical
-  46. [GUI_CALL] progress=Completed Classical, current_species=Classical, current_step=671, step_type=breeding, total_steps=16
+  46. [GUI_CALL] progress=Completed Classical, current_species=Classical, step_type=breeding, total_steps=16, current_step=671
      Progress: Completed Classical
   47. [GUI_CALL] progress=Breeding: Quantum + Classical -> Stargazer, current_species=Stargazer, step_type=breeding
      Progress: Breeding: Quantum + Classical -> Stargazer
   48. [BREEDING] ✅ Quantum + Classical -> Stargazer
-  49. [GUI_CALL] progress=Completed Stargazer, current_species=Stargazer, current_step=672, step_type=breeding, total_steps=16
+  49. [GUI_CALL] progress=Completed Stargazer, current_species=Stargazer, step_type=breeding, total_steps=16, current_step=672
      Progress: Completed Stargazer
   50. [EXECUTION_RESULT] ✅ Returned: true
 

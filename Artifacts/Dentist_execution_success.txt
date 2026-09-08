@@ -1,6 +1,6 @@
 === Execution Analysis for Dentist ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 9
@@ -21,47 +21,47 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=282, step_type=breeding, total_steps=10
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=10, current_step=282
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=283, step_type=breeding, total_steps=10
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=10, current_step=283
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   9. [BREEDING] ✅ Cultivated + Common -> Noble
-  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=284, step_type=breeding, total_steps=10
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=10, current_step=284
      Progress: Completed Noble
-  11. [GUI_CALL] progress=Breeding: Oxygen + Deep Learner -> High-Pitched, current_species=High-Pitched, step_type=breeding
-     Progress: Breeding: Oxygen + Deep Learner -> High-Pitched
-  12. [BREEDING] ✅ Oxygen + Deep Learner -> High-Pitched
-  13. [GUI_CALL] progress=Completed High-Pitched, current_species=High-Pitched, current_step=285, step_type=breeding, total_steps=10
-     Progress: Completed High-Pitched
-  14. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
+  11. [GUI_CALL] progress=Breeding: Noble + Cultivated -> Majestic, current_species=Majestic, step_type=breeding
      Progress: Breeding: Noble + Cultivated -> Majestic
-  15. [BREEDING] ✅ Noble + Cultivated -> Majestic
-  16. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, current_step=286, step_type=breeding, total_steps=10
+  12. [BREEDING] ✅ Noble + Cultivated -> Majestic
+  13. [GUI_CALL] progress=Completed Majestic, current_species=Majestic, step_type=breeding, total_steps=10, current_step=285
      Progress: Completed Majestic
-  17. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
+  14. [GUI_CALL] progress=Breeding: Noble + Majestic -> Imperial, current_species=Imperial, step_type=breeding
      Progress: Breeding: Noble + Majestic -> Imperial
-  18. [BREEDING] ✅ Noble + Majestic -> Imperial
-  19. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, current_step=287, step_type=breeding, total_steps=10
+  15. [BREEDING] ✅ Noble + Majestic -> Imperial
+  16. [GUI_CALL] progress=Completed Imperial, current_species=Imperial, step_type=breeding, total_steps=10, current_step=286
      Progress: Completed Imperial
-  20. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
+  17. [GUI_CALL] progress=Breeding: Common + Cultivated -> Student, current_species=Student, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Student
-  21. [BREEDING] ✅ Common + Cultivated -> Student
-  22. [GUI_CALL] progress=Completed Student, current_species=Student, current_step=288, step_type=breeding, total_steps=10
+  18. [BREEDING] ✅ Common + Cultivated -> Student
+  19. [GUI_CALL] progress=Completed Student, current_species=Student, step_type=breeding, total_steps=10, current_step=287
      Progress: Completed Student
-  23. [GUI_CALL] progress=Breeding: Imperial + Student -> Hyperventilating, current_species=Hyperventilating, step_type=breeding
+  20. [GUI_CALL] progress=Breeding: Imperial + Student -> Hyperventilating, current_species=Hyperventilating, step_type=breeding
      Progress: Breeding: Imperial + Student -> Hyperventilating
-  24. [BREEDING] ✅ Imperial + Student -> Hyperventilating
-  25. [GUI_CALL] progress=Completed Hyperventilating, current_species=Hyperventilating, current_step=289, step_type=breeding, total_steps=10
+  21. [BREEDING] ✅ Imperial + Student -> Hyperventilating
+  22. [GUI_CALL] progress=Completed Hyperventilating, current_species=Hyperventilating, step_type=breeding, total_steps=10, current_step=288
      Progress: Completed Hyperventilating
+  23. [GUI_CALL] progress=Breeding: Oxygen + Deep Learner -> High-Pitched, current_species=High-Pitched, step_type=breeding
+     Progress: Breeding: Oxygen + Deep Learner -> High-Pitched
+  24. [BREEDING] ✅ Oxygen + Deep Learner -> High-Pitched
+  25. [GUI_CALL] progress=Completed High-Pitched, current_species=High-Pitched, step_type=breeding, total_steps=10, current_step=289
+     Progress: Completed High-Pitched
   26. [GUI_CALL] progress=Breeding: High-Pitched + Hyperventilating -> Dentist, current_species=Dentist, step_type=breeding
      Progress: Breeding: High-Pitched + Hyperventilating -> Dentist
   27. [BREEDING] ✅ High-Pitched + Hyperventilating -> Dentist
-  28. [GUI_CALL] progress=Completed Dentist, current_species=Dentist, current_step=290, step_type=breeding, total_steps=10
+  28. [GUI_CALL] progress=Completed Dentist, current_species=Dentist, step_type=breeding, total_steps=10, current_step=290
      Progress: Completed Dentist
   29. [EXECUTION_RESULT] ✅ Returned: true
 

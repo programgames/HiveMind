@@ -1,6 +1,6 @@
 === Execution Analysis for Formic ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 13
@@ -21,67 +21,67 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=316, step_type=breeding, total_steps=13
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=13, current_step=316
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=317, step_type=breeding, total_steps=13
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=13, current_step=317
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   9. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=318, step_type=breeding, total_steps=13
+  10. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=13, current_step=318
      Progress: Completed Sinister
   11. [GUI_CALL] progress=Breeding: Tropical + Sinister -> Malicious, current_species=Malicious, step_type=breeding
      Progress: Breeding: Tropical + Sinister -> Malicious
   12. [BREEDING] ✅ Tropical + Sinister -> Malicious
-  13. [GUI_CALL] progress=Completed Malicious, current_species=Malicious, current_step=319, step_type=breeding, total_steps=13
+  13. [GUI_CALL] progress=Completed Malicious, current_species=Malicious, step_type=breeding, total_steps=13, current_step=319
      Progress: Completed Malicious
   14. [GUI_CALL] progress=Breeding: Modest + Sinister -> Frugal, current_species=Frugal, step_type=breeding
      Progress: Breeding: Modest + Sinister -> Frugal
   15. [BREEDING] ✅ Modest + Sinister -> Frugal
-  16. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, current_step=320, step_type=breeding, total_steps=13
+  16. [GUI_CALL] progress=Completed Frugal, current_species=Frugal, step_type=breeding, total_steps=13, current_step=320
      Progress: Completed Frugal
   17. [GUI_CALL] progress=Breeding: Modest + Frugal -> Austere, current_species=Austere, step_type=breeding
      Progress: Breeding: Modest + Frugal -> Austere
   18. [BREEDING] ✅ Modest + Frugal -> Austere
-  19. [GUI_CALL] progress=Completed Austere, current_species=Austere, current_step=321, step_type=breeding, total_steps=13
+  19. [GUI_CALL] progress=Completed Austere, current_species=Austere, step_type=breeding, total_steps=13, current_step=321
      Progress: Completed Austere
   20. [GUI_CALL] progress=Breeding: Austere + Tropical -> Exotic, current_species=Exotic, step_type=breeding
      Progress: Breeding: Austere + Tropical -> Exotic
   21. [BREEDING] ✅ Austere + Tropical -> Exotic
-  22. [GUI_CALL] progress=Completed Exotic, current_species=Exotic, current_step=322, step_type=breeding, total_steps=13
+  22. [GUI_CALL] progress=Completed Exotic, current_species=Exotic, step_type=breeding, total_steps=13, current_step=322
      Progress: Completed Exotic
   23. [GUI_CALL] progress=Breeding: Water + Exotic -> Viscous, current_species=Viscous, step_type=breeding
      Progress: Breeding: Water + Exotic -> Viscous
   24. [BREEDING] ✅ Water + Exotic -> Viscous
-  25. [GUI_CALL] progress=Completed Viscous, current_species=Viscous, current_step=323, step_type=breeding, total_steps=13
+  25. [GUI_CALL] progress=Completed Viscous, current_species=Viscous, step_type=breeding, total_steps=13, current_step=323
      Progress: Completed Viscous
   26. [GUI_CALL] progress=Breeding: Malicious + Viscous -> Corrosive, current_species=Corrosive, step_type=breeding
      Progress: Breeding: Malicious + Viscous -> Corrosive
   27. [BREEDING] ✅ Malicious + Viscous -> Corrosive
-  28. [GUI_CALL] progress=Completed Corrosive, current_species=Corrosive, current_step=324, step_type=breeding, total_steps=13
+  28. [GUI_CALL] progress=Completed Corrosive, current_species=Corrosive, step_type=breeding, total_steps=13, current_step=324
      Progress: Completed Corrosive
   29. [GUI_CALL] progress=Breeding: Sinister + Cultivated -> Fiendish, current_species=Fiendish, step_type=breeding
      Progress: Breeding: Sinister + Cultivated -> Fiendish
   30. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
-  31. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, current_step=325, step_type=breeding, total_steps=13
+  31. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, step_type=breeding, total_steps=13, current_step=325
      Progress: Completed Fiendish
   32. [GUI_CALL] progress=Breeding: Fiendish + Corrosive -> Caustic, current_species=Caustic, step_type=breeding
      Progress: Breeding: Fiendish + Corrosive -> Caustic
   33. [BREEDING] ✅ Fiendish + Corrosive -> Caustic
-  34. [GUI_CALL] progress=Completed Caustic, current_species=Caustic, current_step=326, step_type=breeding, total_steps=13
+  34. [GUI_CALL] progress=Completed Caustic, current_species=Caustic, step_type=breeding, total_steps=13, current_step=326
      Progress: Completed Caustic
   35. [GUI_CALL] progress=Breeding: Corrosive + Caustic -> Acidic, current_species=Acidic, step_type=breeding
      Progress: Breeding: Corrosive + Caustic -> Acidic
   36. [BREEDING] ✅ Corrosive + Caustic -> Acidic
-  37. [GUI_CALL] progress=Completed Acidic, current_species=Acidic, current_step=327, step_type=breeding, total_steps=13
+  37. [GUI_CALL] progress=Completed Acidic, current_species=Acidic, step_type=breeding, total_steps=13, current_step=327
      Progress: Completed Acidic
   38. [GUI_CALL] progress=Breeding: Meadows + Acidic -> Formic, current_species=Formic, step_type=breeding
      Progress: Breeding: Meadows + Acidic -> Formic
   39. [BREEDING] ✅ Meadows + Acidic -> Formic
-  40. [GUI_CALL] progress=Completed Formic, current_species=Formic, current_step=328, step_type=breeding, total_steps=13
+  40. [GUI_CALL] progress=Completed Formic, current_species=Formic, step_type=breeding, total_steps=13, current_step=328
      Progress: Completed Formic
   41. [EXECUTION_RESULT] ✅ Returned: true
 

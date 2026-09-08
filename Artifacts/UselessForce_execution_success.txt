@@ -1,6 +1,6 @@
 === Execution Analysis for UselessForce ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 7
@@ -21,37 +21,37 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=720, step_type=breeding, total_steps=8
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=8, current_step=720
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=721, step_type=breeding, total_steps=8
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=8, current_step=721
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Diligent
   9. [BREEDING] ✅ Common + Cultivated -> Diligent
-  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=722, step_type=breeding, total_steps=8
+  10. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, step_type=breeding, total_steps=8, current_step=722
      Progress: Completed Diligent
   11. [GUI_CALL] progress=Breeding: Modest + Cultivated -> Sinister, current_species=Sinister, step_type=breeding
      Progress: Breeding: Modest + Cultivated -> Sinister
   12. [BREEDING] ✅ Modest + Cultivated -> Sinister
-  13. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, current_step=723, step_type=breeding, total_steps=8
+  13. [GUI_CALL] progress=Completed Sinister, current_species=Sinister, step_type=breeding, total_steps=8, current_step=723
      Progress: Completed Sinister
-  14. [GUI_CALL] progress=Breeding: Common + Diligent -> Red, current_species=Red, step_type=breeding
-     Progress: Breeding: Common + Diligent -> Red
-  15. [BREEDING] ✅ Common + Diligent -> Red
-  16. [GUI_CALL] progress=Completed Red, current_species=Red, current_step=724, step_type=breeding, total_steps=8
-     Progress: Completed Red
-  17. [GUI_CALL] progress=Breeding: Sinister + Cultivated -> Fiendish, current_species=Fiendish, step_type=breeding
+  14. [GUI_CALL] progress=Breeding: Sinister + Cultivated -> Fiendish, current_species=Fiendish, step_type=breeding
      Progress: Breeding: Sinister + Cultivated -> Fiendish
-  18. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
-  19. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, current_step=725, step_type=breeding, total_steps=8
+  15. [BREEDING] ✅ Sinister + Cultivated -> Fiendish
+  16. [GUI_CALL] progress=Completed Fiendish, current_species=Fiendish, step_type=breeding, total_steps=8, current_step=724
      Progress: Completed Fiendish
+  17. [GUI_CALL] progress=Breeding: Common + Diligent -> Red, current_species=Red, step_type=breeding
+     Progress: Breeding: Common + Diligent -> Red
+  18. [BREEDING] ✅ Common + Diligent -> Red
+  19. [GUI_CALL] progress=Completed Red, current_species=Red, step_type=breeding, total_steps=8, current_step=725
+     Progress: Completed Red
   20. [GUI_CALL] progress=Breeding: Red + Fiendish -> UselessForce, current_species=UselessForce, step_type=breeding
      Progress: Breeding: Red + Fiendish -> UselessForce
   21. [BREEDING] ✅ Red + Fiendish -> UselessForce
-  22. [GUI_CALL] progress=Completed UselessForce, current_species=UselessForce, current_step=726, step_type=breeding, total_steps=8
+  22. [GUI_CALL] progress=Completed UselessForce, current_species=UselessForce, step_type=breeding, total_steps=8, current_step=726
      Progress: Completed UselessForce
   23. [EXECUTION_RESULT] ✅ Returned: true
 

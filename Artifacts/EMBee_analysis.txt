@@ -1,20 +1,20 @@
 === Breeding Analysis for EMBee ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
+Planning duration: 1.00 ms
 Total steps: 15
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Forest
-  2. Meadows
+  1. Meadows
+  2. Forest
   3. Monastic
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Forest princesses OR 2 Forest drones
     4 Meadows princesses OR 3 Meadows drones
+    2 Forest princesses OR 2 Forest drones
     1 Monastic princess OR 1 Monastic drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.

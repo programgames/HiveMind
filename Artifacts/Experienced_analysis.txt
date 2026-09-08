@@ -1,5 +1,5 @@
 === Breeding Analysis for Experienced ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 0.00 ms
@@ -7,13 +7,13 @@ Total steps: 1
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Radiant
-  2. Armored
+  1. Armored
+  2. Radiant
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Radiant princess OR 1 Radiant drone
     1 Armored princess OR 1 Armored drone
+    1 Radiant princess OR 1 Radiant drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

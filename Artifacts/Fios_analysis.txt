@@ -1,27 +1,27 @@
 === Breeding Analysis for Fios ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 1.00 ms
+Planning duration: 0.00 ms
 Total steps: 11
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Marble
-  2. Forest
-  3. Valiant
-  4. Wintry
-  5. Steadfast
-  6. Meadows
+  1. Forest
+  2. Valiant
+  3. Steadfast
+  4. Meadows
+  5. Wintry
+  6. Marble
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    2 Marble princesses OR 1 Marble drone
     2 Forest princesses OR 1 Forest drone
     1 Valiant princess OR 1 Valiant drone
     1 Wintry princess OR 1 Wintry drone
-    1 Steadfast princess OR 1 Steadfast drone
     2 Meadows princesses OR 2 Meadows drones
+    1 Steadfast princess OR 1 Steadfast drone
+    2 Marble princesses OR 1 Marble drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

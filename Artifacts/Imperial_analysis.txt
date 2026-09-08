@@ -1,8 +1,8 @@
 === Breeding Analysis for Imperial ===
-Generated: Tue Sep  8 14:08:57 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
+Planning duration: 1.00 ms
 Total steps: 6
 Can execute: NO
 

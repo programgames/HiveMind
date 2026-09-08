@@ -1,25 +1,25 @@
 === Breeding Analysis for NerdySpider ===
-Generated: Tue Sep  8 14:08:58 2026
+Generated: Tue Sep  8 14:16:36 2026
 
 ✅ BREEDING PLAN SUCCESS
-Planning duration: 0.00 ms
+Planning duration: 1.00 ms
 Total steps: 16
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Modest
-  2. Ender
-  3. Forest
-  4. Monastic
-  5. Meadows
+  1. Forest
+  2. Monastic
+  3. Ender
+  4. Meadows
+  5. Modest
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
     1 Forest princess OR 1 Forest drone
-    2 Ender princesses OR 1 Ender drone
     2 Monastic princesses
-    4 Modest princesses OR 2 Modest drones
+    2 Ender princesses OR 1 Ender drone
     3 Meadows princesses OR 2 Meadows drones
+    4 Modest princesses OR 2 Modest drones
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 

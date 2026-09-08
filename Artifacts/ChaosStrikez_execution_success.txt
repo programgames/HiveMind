@@ -1,6 +1,6 @@
 === Execution Analysis for ChaosStrikez ===
 Test Type: success
-Generated: Tue Sep  8 14:08:59 2026
+Generated: Tue Sep  8 14:16:37 2026
 
 ✅ EXECUTION SUCCESS
 Total breeding steps: 15
@@ -21,77 +21,77 @@ Total accumulation cycles: 0
   2. [GUI_CALL] progress=Breeding: Meadows + Forest -> Common, current_species=Common, step_type=breeding
      Progress: Breeding: Meadows + Forest -> Common
   3. [BREEDING] ✅ Meadows + Forest -> Common
-  4. [GUI_CALL] progress=Completed Common, current_species=Common, current_step=174, step_type=breeding, total_steps=16
+  4. [GUI_CALL] progress=Completed Common, current_species=Common, step_type=breeding, total_steps=16, current_step=174
      Progress: Completed Common
   5. [GUI_CALL] progress=Breeding: Meadows + Common -> Cultivated, current_species=Cultivated, step_type=breeding
      Progress: Breeding: Meadows + Common -> Cultivated
   6. [BREEDING] ✅ Meadows + Common -> Cultivated
-  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, current_step=175, step_type=breeding, total_steps=16
+  7. [GUI_CALL] progress=Completed Cultivated, current_species=Cultivated, step_type=breeding, total_steps=16, current_step=175
      Progress: Completed Cultivated
   8. [GUI_CALL] progress=Breeding: Cultivated + Common -> Noble, current_species=Noble, step_type=breeding
      Progress: Breeding: Cultivated + Common -> Noble
   9. [BREEDING] ✅ Cultivated + Common -> Noble
-  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, current_step=176, step_type=breeding, total_steps=16
+  10. [GUI_CALL] progress=Completed Noble, current_species=Noble, step_type=breeding, total_steps=16, current_step=176
      Progress: Completed Noble
   11. [GUI_CALL] progress=Breeding: Noble + Monastic -> Mystical, current_species=Mystical, step_type=breeding
      Progress: Breeding: Noble + Monastic -> Mystical
   12. [BREEDING] ✅ Noble + Monastic -> Mystical
-  13. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, current_step=177, step_type=breeding, total_steps=16
+  13. [GUI_CALL] progress=Completed Mystical, current_species=Mystical, step_type=breeding, total_steps=16, current_step=177
      Progress: Completed Mystical
   14. [GUI_CALL] progress=Breeding: Mystical + Cultivated -> Eldritch, current_species=Eldritch, step_type=breeding
      Progress: Breeding: Mystical + Cultivated -> Eldritch
   15. [BREEDING] ✅ Mystical + Cultivated -> Eldritch
-  16. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, current_step=178, step_type=breeding, total_steps=16
+  16. [GUI_CALL] progress=Completed Eldritch, current_species=Eldritch, step_type=breeding, total_steps=16, current_step=178
      Progress: Completed Eldritch
   17. [GUI_CALL] progress=Breeding: Cultivated + Eldritch -> Esoteric, current_species=Esoteric, step_type=breeding
      Progress: Breeding: Cultivated + Eldritch -> Esoteric
   18. [BREEDING] ✅ Cultivated + Eldritch -> Esoteric
-  19. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, current_step=179, step_type=breeding, total_steps=16
+  19. [GUI_CALL] progress=Completed Esoteric, current_species=Esoteric, step_type=breeding, total_steps=16, current_step=179
      Progress: Completed Esoteric
   20. [GUI_CALL] progress=Breeding: Forest + Common -> Mysterious, current_species=Mysterious, step_type=breeding
      Progress: Breeding: Forest + Common -> Mysterious
   21. [BREEDING] ✅ Forest + Common -> Mysterious
-  22. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, current_step=180, step_type=breeding, total_steps=16
+  22. [GUI_CALL] progress=Completed Mysterious, current_species=Mysterious, step_type=breeding, total_steps=16, current_step=180
      Progress: Completed Mysterious
   23. [GUI_CALL] progress=Breeding: Esoteric + Mysterious -> Arcane, current_species=Arcane, step_type=breeding
      Progress: Breeding: Esoteric + Mysterious -> Arcane
   24. [BREEDING] ✅ Esoteric + Mysterious -> Arcane
-  25. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, current_step=181, step_type=breeding, total_steps=16
+  25. [GUI_CALL] progress=Completed Arcane, current_species=Arcane, step_type=breeding, total_steps=16, current_step=181
      Progress: Completed Arcane
   26. [GUI_CALL] progress=Breeding: Arcane + Monastic -> Pupil, current_species=Pupil, step_type=breeding
      Progress: Breeding: Arcane + Monastic -> Pupil
   27. [BREEDING] ✅ Arcane + Monastic -> Pupil
-  28. [GUI_CALL] progress=Completed Pupil, current_species=Pupil, current_step=182, step_type=breeding, total_steps=16
+  28. [GUI_CALL] progress=Completed Pupil, current_species=Pupil, step_type=breeding, total_steps=16, current_step=182
      Progress: Completed Pupil
   29. [GUI_CALL] progress=Breeding: Common + Cultivated -> Diligent, current_species=Diligent, step_type=breeding
      Progress: Breeding: Common + Cultivated -> Diligent
   30. [BREEDING] ✅ Common + Cultivated -> Diligent
-  31. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, current_step=183, step_type=breeding, total_steps=16
+  31. [GUI_CALL] progress=Completed Diligent, current_species=Diligent, step_type=breeding, total_steps=16, current_step=183
      Progress: Completed Diligent
   32. [GUI_CALL] progress=Breeding: Valiant + Cultivated -> Excited, current_species=Excited, step_type=breeding
      Progress: Breeding: Valiant + Cultivated -> Excited
   33. [BREEDING] ✅ Valiant + Cultivated -> Excited
-  34. [GUI_CALL] progress=Completed Excited, current_species=Excited, current_step=184, step_type=breeding, total_steps=16
+  34. [GUI_CALL] progress=Completed Excited, current_species=Excited, step_type=breeding, total_steps=16, current_step=184
      Progress: Completed Excited
   35. [GUI_CALL] progress=Breeding: Diligent + Excited -> Energetic, current_species=Energetic, step_type=breeding
      Progress: Breeding: Diligent + Excited -> Energetic
   36. [BREEDING] ✅ Diligent + Excited -> Energetic
-  37. [GUI_CALL] progress=Completed Energetic, current_species=Energetic, current_step=185, step_type=breeding, total_steps=16
+  37. [GUI_CALL] progress=Completed Energetic, current_species=Energetic, step_type=breeding, total_steps=16, current_step=185
      Progress: Completed Energetic
   38. [GUI_CALL] progress=Breeding: Pupil + Arcane -> Scholarly, current_species=Scholarly, step_type=breeding
      Progress: Breeding: Pupil + Arcane -> Scholarly
   39. [BREEDING] ✅ Pupil + Arcane -> Scholarly
-  40. [GUI_CALL] progress=Completed Scholarly, current_species=Scholarly, current_step=186, step_type=breeding, total_steps=16
+  40. [GUI_CALL] progress=Completed Scholarly, current_species=Scholarly, step_type=breeding, total_steps=16, current_step=186
      Progress: Completed Scholarly
   41. [GUI_CALL] progress=Breeding: Scholarly + Pupil -> Savant, current_species=Savant, step_type=breeding
      Progress: Breeding: Scholarly + Pupil -> Savant
   42. [BREEDING] ✅ Scholarly + Pupil -> Savant
-  43. [GUI_CALL] progress=Completed Savant, current_species=Savant, current_step=187, step_type=breeding, total_steps=16
+  43. [GUI_CALL] progress=Completed Savant, current_species=Savant, step_type=breeding, total_steps=16, current_step=187
      Progress: Completed Savant
   44. [GUI_CALL] progress=Breeding: Energetic + Savant -> ChaosStrikez, current_species=ChaosStrikez, step_type=breeding
      Progress: Breeding: Energetic + Savant -> ChaosStrikez
   45. [BREEDING] ✅ Energetic + Savant -> ChaosStrikez
-  46. [GUI_CALL] progress=Completed ChaosStrikez, current_species=ChaosStrikez, current_step=188, step_type=breeding, total_steps=16
+  46. [GUI_CALL] progress=Completed ChaosStrikez, current_species=ChaosStrikez, step_type=breeding, total_steps=16, current_step=188
      Progress: Completed ChaosStrikez
   47. [EXECUTION_RESULT] ✅ Returned: true
 

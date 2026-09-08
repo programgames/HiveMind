@@ -1,5 +1,5 @@
 === Breeding Analysis for Controller ===
-Generated: Tue Sep  8 14:08:57 2026
+Generated: Tue Sep  8 14:16:35 2026
 
 ✅ BREEDING PLAN SUCCESS
 Planning duration: 2.00 ms
@@ -7,30 +7,30 @@ Total steps: 59
 Can execute: NO
 
 📋 STARTING PRINCESSES NEEDED:
-  1. Rocky
-  2. Monastic
-  3. Infernal
+  1. Infernal
+  2. Forest
+  3. Rocky
   4. Wintry
-  5. Forest
-  6. Oblivion
-  7. Meadows
+  5. Meadows
+  6. Monastic
+  7. Oblivion
 
 ⚠️  EXECUTION REQUIREMENTS:
   To execute this plan, you need one of the following:
-    1 Rocky princess OR 1 Rocky drone
-    2 Monastic princesses OR 2 Monastic drones
     2 Infernal princesses OR 2 Infernal drones
-    1 Wintry princess OR 1 Wintry drone
     7 Forest princesses OR 7 Forest drones
-    1 Oblivion princess OR 1 Oblivion drone
+    1 Rocky princess OR 1 Rocky drone
+    1 Wintry princess OR 1 Wintry drone
     14 Meadows princesses OR 12 Meadows drones
+    2 Monastic princesses OR 2 Monastic drones
+    1 Oblivion princess OR 1 Oblivion drone
 
   Note: Providing princesses is often more efficient due to reuse optimization.
 
 ⚠️  OPTIMIZATION ANALYSIS:
   Potential missed reuse opportunities:
-    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
     → Noble: 4 occurrences, 0 reused, could reuse 2 more
+    → Mystical: 2 occurrences, 0 reused, could reuse 0 more
     → Eldritch: 2 occurrences, 0 reused, could reuse 0 more
 
 📊 PLAN STATISTICS:
