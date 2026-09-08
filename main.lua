@@ -5797,14 +5797,20 @@ function executeSingleBreedingNode(node, drone_requirements, hasAPI, total_steps
         end
     end
 
-    -- Execute the actual breeding step
-    local success = executeSingleBreedingStep(princess_parent, drone_parent, node.species, hasAPI)
+    -- Execute the actual breeding step.
+    --
+    -- The reason comes back with the failure and is kept. Dropping it and writing "could not
+    -- complete breeding step for X" replaced the one sentence that said what went wrong -- the
+    -- missing bee, the refused mutation, the stalled machine -- with a restatement of the
+    -- obvious.
+    local success, step_error = executeSingleBreedingStep(princess_parent, drone_parent, node.species, hasAPI)
     if not success then
         drawGUI({
             current_species = node.species,
             step_type = "breeding",
             progress = "FAILED: " .. node.species,
-            errors = "Could not complete breeding step for " .. node.species,
+            errors = step_error and (node.species .. ": " .. tostring(step_error))
+                     or ("Could not complete breeding step for " .. node.species),
             status = "Error"
         })
         return false
@@ -6033,8 +6039,20 @@ function executeSingleBreedingStep(princess_species, drone_species, target_speci
     -- Phase 3: Move Queen to Apiary
     local queen_success = moveQueenToApiary()
     if not queen_success then
-        drawGUI({step_type = "Breeding", progress = "Moving queen failed", errors = "Could not move queen to apiary", status = "Error"})
-        return false
+        local reason = "Could not move the queen from the mutatron to the apiary"
+
+        -- Name what is in the way rather than restating the step.
+        local blocker = occupantOf(config.apiary_side, config.apiary_input_slot)
+        if blocker then
+            reason = reason .. ": its queen slot already holds " .. blocker
+        elseif not occupantOf(config.mutatron_side, config.mutatron_output_slot) then
+            reason = reason .. ": the mutatron produced nothing"
+        end
+
+        drawGUI({step_type = "Breeding", progress = "Moving queen failed", errors = reason,
+                 status = "Error"})
+
+        return false, reason
     end
 
     -- Phase 4: Process in Apiary
