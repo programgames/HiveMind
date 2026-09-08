@@ -622,6 +622,29 @@ check("loading with only a queen does not raise", converted, tostring(why))
 check("the queen went through the apiary", world.apiary.shot == true)
 print()
 
+print("A queen is not counted as a princess")
+-- From a clean world: earlier checks left princesses in the output chest, and one of those would
+-- answer the question instead of the queen under test.
+world.inventories[SIDES.back] = chest(27, {
+    [1] = stack("forestry:bee_queen_ge", "Meadows Queen"),
+    [2] = stack("forestry:bee_drone_ge", "Forest Drone"),
+    [3] = stack("gendustry:labware", "Genetics Labware", 64),
+})
+world.inventories[SIDES.down] = chest(27, {})
+world.inventories[SIDES.right] = chest(10, {})
+world.inventories[SIDES.left] = chest(15, {})
+hive.scanInventory()
+
+check("a queen still counts as available", hive.hasSpeciesPrincess("Meadows") == true)
+check("but not as a princess", hive.hasSpeciesTruePrincess("Meadows") == false)
+check("and it is flagged as queen-only", hive.heldOnlyAsQueen("Meadows") == true)
+
+world.inventories[SIDES.back].slots[1] = stack("forestry:bee_princess_ge", "Meadows Princess")
+hive.scanInventory()
+check("a real princess is not flagged", hive.heldOnlyAsQueen("Meadows") == false)
+check("and it is a true princess", hive.hasSpeciesTruePrincess("Meadows") == true)
+print()
+
 print("A queen that cannot be converted must never reach the mutatron")
 -- The apiary refuses to take her, so the conversion cannot happen. What matters is that the
 -- program stops and says so, rather than handing the queen to a machine that will refuse it and

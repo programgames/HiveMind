@@ -854,6 +854,63 @@ function setupDisplay()
     updateStatusIndicators("idle", "System started - Ready for commands")
 end
 
+--- File a princess or a queen, keeping the two apart
+---
+--- Both were filed as princesses, so a plan showed "[P] from stock" for a species held only as a
+--- queen -- and the mutatron's refusal was the first anyone heard of it, halfway through a run. A
+--- queen is still usable, at the cost of one apiary cycle to turn her back into a princess, so
+--- she still counts as available. She is simply no longer counted as the same thing.
+--- @param species string Species identified
+--- @param label string The item name as read
+--- @param side number Inventory side
+--- @param slot number Slot index
+function recordBeeStock(species, label, side, slot)
+    local is_queen = label:lower():find("queen") ~= nil and not label:lower():find("princess")
+
+    table.insert(inventory.princesses, species)
+
+    if is_queen then
+        table.insert(inventory.queens, species)
+    else
+        table.insert(inventory.true_princesses, species)
+    end
+
+    recordBeeSource(species, is_queen and "queen" or "princess", side, slot, label)
+end
+
+--- Is a real princess of this species in stock, as opposed to a queen?
+--- @param species string Species name
+--- @return boolean
+function hasSpeciesTruePrincess(species)
+    for _, held in ipairs(inventory.true_princesses or {}) do
+        if held == species then
+
+            return true
+        end
+    end
+
+    return false
+end
+
+--- Is this species held only as a queen, needing an apiary cycle before it can be crossed?
+--- @param species string Species name
+--- @return boolean
+function heldOnlyAsQueen(species)
+    if hasSpeciesTruePrincess(species) then
+
+        return false
+    end
+
+    for _, held in ipairs(inventory.queens or {}) do
+        if held == species then
+
+            return true
+        end
+    end
+
+    return false
+end
+
 --- Note where a bee was found, so the plan can be questioned
 ---
 --- "It says I have a Cultivated -- where does that come from?" had no answer: the scan counted
@@ -909,6 +966,8 @@ end
 function scanInventory()
     print("Scanning inventories for bees...")
     inventory.princesses = {}
+    inventory.true_princesses = {}
+    inventory.queens = {}
     inventory.drones = {}
     inventory.sources = {}
 
@@ -939,8 +998,7 @@ function scanInventory()
                     if item_name:lower():find("princess") or item_name:lower():find("queen") then
                         local species = extractSpecies(item_name)
                         if species then
-                            table.insert(inventory.princesses, species)
-                            recordBeeSource(species, "princess", side, slot, item_name)
+                            recordBeeStock(species, item_name, side, slot)
                         end
                     elseif item_name:lower():find("drone") then
                         local species = extractSpecies(item_name)
@@ -982,8 +1040,7 @@ function scanInventory()
                         if item_name:lower():find("princess") or item_name:lower():find("queen") then
                             local species = extractSpecies(item_name)
                             if species then
-                                table.insert(inventory.princesses, species)
-                                recordBeeSource(species, "princess", side, slot, item_name)
+                                recordBeeStock(species, item_name, side, slot)
                             end
                         elseif item_name:lower():find("drone") then
                             local species = extractSpecies(item_name)
@@ -3183,6 +3240,34 @@ function collectBlockingLeaves(tree)
     return list
 end
 
+--- List the species in a plan that are held only as a queen
+--- @param tree table|nil The breeding tree
+--- @return string[] species Sorted, without repeats
+function collectQueenOnlySpecies(tree)
+    local found = {}
+
+    local function walk(node)
+        if not node then return end
+
+        if heldOnlyAsQueen(node.species) then
+            found[node.species] = true
+        end
+
+        walk(node.left_parent)
+        walk(node.right_parent)
+    end
+
+    walk(tree)
+
+    local list = {}
+    for species in pairs(found) do
+        table.insert(list, species)
+    end
+    table.sort(list)
+
+    return list
+end
+
 --- List the unbreedable species a plan will consume, and what is held of each
 ---
 --- The mutatron eats both parents, and a species absent from the database cannot be remade. This
@@ -4607,6 +4692,30 @@ function displayBreedingPlan(target, breeding_plan)
     -- the screen -- and this is the one thing you have to act on before pressing 1.
     local blocking = collectBlockingLeaves(breeding_plan.tree)
 
+    -- Species held only as a queen. Surfaced here, where it can be acted on, rather than when the
+    -- mutatron refuses her partway through a run.
+    local queens_only = collectQueenOnlySpecies(breeding_plan.tree)
+
+    if #queens_only > 0 then
+        print("=== HELD ONLY AS A QUEEN ===")
+
+        for _, species in ipairs(queens_only) do
+            print(string.format("  %-18s marked [Q] in the tree", species))
+        end
+
+        print()
+        print("The mutatron takes a princess, never a queen. Each of these costs one extra apiary")
+        print("cycle first: the queen goes in, dies, and leaves the princess the cross needs.")
+
+        if config.convert_queens then
+            print("That is done for you (config.convert_queens is on).")
+        else
+            print("config.convert_queens is off, so the run will stop at the first one.")
+        end
+
+        print()
+    end
+
     if config.warn_last_base_species then
         local at_risk = collectConsumedBaseSpecies(breeding_plan.tree)
 
@@ -4661,7 +4770,14 @@ function displayTree(tree, prefix, isLast)
     if not tree then return end
 
     local connector = isLast and "└── " or "├── "
-    local status_princess = hasSpeciesPrincess(tree.species) and "P" or " "
+    -- Q, not P, when the only one in stock is a queen: she costs an apiary cycle before she can
+    -- be crossed, and reading "P" was how a plan looked ready when it was not.
+    local status_princess = " "
+    if hasSpeciesTruePrincess(tree.species) then
+        status_princess = "P"
+    elseif hasSpeciesPrincess(tree.species) then
+        status_princess = "Q"
+    end
     local status_drone = hasSpeciesDrone(tree.species) and "D" or " "
     local breeding_marker = (tree.left_parent or tree.right_parent) and " *" or ""
 
@@ -7047,9 +7163,12 @@ return {
     scanInventory = scanInventory,
     printInventoryDetail = printInventoryDetail,
     countSpecies = countSpecies,
+    hasSpeciesTruePrincess = hasSpeciesTruePrincess,
+    heldOnlyAsQueen = heldOnlyAsQueen,
     isBaseSpecies = isBaseSpecies,
     collectBlockingLeaves = collectBlockingLeaves,
     collectConsumedBaseSpecies = collectConsumedBaseSpecies,
+    collectQueenOnlySpecies = collectQueenOnlySpecies,
     clearMutatron = clearMutatron,
     clearApiary = clearApiary,
     trace = trace,
